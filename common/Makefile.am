@@ -1,7 +1,8 @@
 noinst_LTLIBRARIES = libcommon.la
 
 libcommon_la_SOURCES = \
-    libmain.c
+    libmain.c \
+    memory.c
 
 libcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
