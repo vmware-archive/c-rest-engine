@@ -1,6 +1,6 @@
 #include "includes.h"
 
-DWORD
+uint32_t
 VmRESTCommonInit(
     VOID
     )

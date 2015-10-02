@@ -99,12 +99,6 @@ AC_SUBST(PTHREAD_LIBS)
 AC_SUBST(CRYPTO_LIBS)
 AC_SUBST(UUID_LIBS)
 
-AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
-
-if test x"$IDL" = x"no"; then
-    AC_MSG_ERROR([DCERPC IDL compiler not found])
-fi
-
 vmrestconfdir="$datadir/config"
 AC_SUBST(vmrestconfdir)
 AS_AC_EXPAND(VMREST_CONFIG_DIR, $vmrestconfdir)

@@ -15,6 +15,5 @@ libvmrestclient_la_LIBADD = \
     @PTHREAD_LIBS@
 
 libvmrestclient_la_LDFLAGS = \
-    -export-symbols @top_srcdir@/client/libvmrestclient.exp \
     @OPENSSL_LDFLAGS@
 
