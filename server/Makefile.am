@@ -1,19 +1,7 @@
-sbin_PROGRAMS = vmrestd
+CLOCAL_AMFLAGS = -I m4
 
-vmrestd_SOURCES = \
-    main.c
+SUBDIRS = \
+    restengine \
+    transport \
+    vmrestd
 
-vmrestd_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/include/public \
-    @OPENSSL_INCLUDES@
-
-vmrestd_LDADD = \
-    $(top_builddir)/common/libcommon.la \
-    @UUID_LIBS@ \
-    @CRYPTO_LIBS@ \
-    @PTHREAD_LIBS@
-
-vmrestd_LDFLAGS = \
-    -rdynamic \
-    @OPENSSL_LDFLAGS@
