@@ -10,6 +10,13 @@ BuildArch: x86_64
 Requires:  coreutils >= 8.22, openssl >= 1.0.1
 BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.1
 
+%if "%{_debug}" == "1"
+%define __strip /bin/true
+%define _enable_debug yes
+%else
+%define _enable_debug no
+%endif
+
 %description
 VMware REST Library
 
@@ -20,7 +27,8 @@ autoreconf -mif ..
 ../configure \
     --prefix=%{_prefix} \
     --libdir=%{_lib64dir} \
-    --with-ssl=/usr
+    --with-ssl=/usr \
+    --enable-debug=%{_enable_debug}
 
 make
 

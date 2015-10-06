@@ -12,6 +12,8 @@ RPMBUILD_SOURCES=$(RPMBUILD_ROOT)/SOURCES
 RPMBUILD_SRPMS=$(RPMBUILD_ROOT)/SRPMS
 RPMBUILD_TMP=$(RPMBUILD_ROOT)/tmp
 
+DEBUG ?= 0
+
 RPMBUILD_DIRS= \
     $(RPMBUILD_BUILD) \
     $(RPMBUILD_SPECS) \
@@ -63,6 +65,7 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_lib64dir /opt/vmware/lib64" \
               --define "_datadir /opt/vmware/share" \
               --define "_includedir /opt/vmware/include" \
+              --define "_debug $$DEBUG" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 
