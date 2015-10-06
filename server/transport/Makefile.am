@@ -6,7 +6,9 @@ libtransport_la_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 libtransport_la_SOURCES = \
-    libtransport.c
+    globals.c \
+    libtransport.c \
+    socket.c
 
 libtransport_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
