@@ -1,5 +1,5 @@
-#include "structs.h"
+#include "includes.h"
 
-PVM_SOCKET gServerSocketInfo = {0};
+VM_SOCKET gServerSocketInfo = {0};
 
 
