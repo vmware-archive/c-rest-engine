@@ -12,27 +12,27 @@
  * under the License.
  */
 
-#include "includes.h"
+/* service.c */
 
-int main(int argc, char *argv[])
-{
-    uint32_t dwError = 0;
+uint32_t
+VmRESTSrvInitialize(
+    void
+    );
 
-    VmRESTSrvBlockSignals();
+uint32_t
+VmRESTSrvShutdown(
+    void
+    );
 
-    dwError = VmRESTSrvInitialize();
-    BAIL_ON_VMREST_ERROR(dwError);
-    
-    dwError = VmRESTSrvHandleSignals();
-    BAIL_ON_VMREST_ERROR(dwError);
+/* signal.c */
 
-cleanup:
+void
+VmRESTSrvBlockSignals(
+    void
+    );
 
-    VmRESTSrvShutdown();
+uint32_t
+VmRESTSrvHandleSignals(
+    void
+    );
 
-    return dwError;
-
-error:
-
-    goto cleanup;
-}

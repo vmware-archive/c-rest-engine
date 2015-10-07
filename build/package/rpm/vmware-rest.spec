@@ -21,7 +21,6 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.1
 VMware REST Library
 
 %build
-export CFLAGS="-Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare"
 cd build
 autoreconf -mif ..
 ../configure \

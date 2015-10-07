@@ -12,27 +12,5 @@
  * under the License.
  */
 
-#include "includes.h"
+extern VMREST_GLOBALS gVMRESTGlobals;
 
-int main(int argc, char *argv[])
-{
-    uint32_t dwError = 0;
-
-    VmRESTSrvBlockSignals();
-
-    dwError = VmRESTSrvInitialize();
-    BAIL_ON_VMREST_ERROR(dwError);
-    
-    dwError = VmRESTSrvHandleSignals();
-    BAIL_ON_VMREST_ERROR(dwError);
-
-cleanup:
-
-    VmRESTSrvShutdown();
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}

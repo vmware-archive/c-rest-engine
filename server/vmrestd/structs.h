@@ -12,27 +12,7 @@
  * under the License.
  */
 
-#include "includes.h"
-
-int main(int argc, char *argv[])
+typedef struct _VMREST_GLOBALS
 {
-    uint32_t dwError = 0;
+} VMREST_GLOBALS, *PVMREST_GLOBALS;
 
-    VmRESTSrvBlockSignals();
-
-    dwError = VmRESTSrvInitialize();
-    BAIL_ON_VMREST_ERROR(dwError);
-    
-    dwError = VmRESTSrvHandleSignals();
-    BAIL_ON_VMREST_ERROR(dwError);
-
-cleanup:
-
-    VmRESTSrvShutdown();
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}

@@ -14,25 +14,22 @@
 
 #include "includes.h"
 
-int main(int argc, char *argv[])
+uint32_t
+VmRESTSrvInitialize(
+    void
+    )
 {
     uint32_t dwError = 0;
 
-    VmRESTSrvBlockSignals();
+    return dwError;
+}
 
-    dwError = VmRESTSrvInitialize();
-    BAIL_ON_VMREST_ERROR(dwError);
-    
-    dwError = VmRESTSrvHandleSignals();
-    BAIL_ON_VMREST_ERROR(dwError);
-
-cleanup:
-
-    VmRESTSrvShutdown();
+uint32_t
+VmRESTSrvShutdown(
+    void
+    )
+{
+    uint32_t dwError = 0;
 
     return dwError;
-
-error:
-
-    goto cleanup;
 }

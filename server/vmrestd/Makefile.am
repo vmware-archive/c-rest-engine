@@ -1,7 +1,9 @@
 sbin_PROGRAMS = vmrestd
 
 vmrestd_SOURCES = \
-    main.c
+    main.c \
+    service.c \
+    signal.c
 
 vmrestd_CPPFLAGS = \
     -I$(top_srcdir)/include \
@@ -10,6 +12,7 @@ vmrestd_CPPFLAGS = \
 
 vmrestd_LDADD = \
     $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/server/restengine/librestengine.la \
     @UUID_LIBS@ \
     @CRYPTO_LIBS@ \
     @PTHREAD_LIBS@
