@@ -19,14 +19,14 @@ VmRestTransportInit(
     /* populate the global server structure for keeping address and port information of server */
     
     /* TODO:  If addr information is not passed, make default as localhost */
-/*
+
     strncpy(gServerSocketInfo.address, addr, addrlen);
 
     gServerSocketInfo.address[addrlen] = '\0';
     gServerSocketInfo.port[portlen] = '\0';
 
     strncpy(gServerSocketInfo.port, port, portlen);
-*/
+
     ret = VmSockPosixCreateServerSocket();
 cleanup:
     return ret;
