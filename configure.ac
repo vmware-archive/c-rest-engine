@@ -112,6 +112,8 @@ AC_CONFIG_FILES([Makefile
                  server/Makefile
                  server/restengine/Makefile
                  server/transport/Makefile
+                 server/transport/api/Makefile
+                 server/transport/posix/Makefile
                  server/vmrestd/Makefile
                  client/Makefile
                  tools/Makefile
