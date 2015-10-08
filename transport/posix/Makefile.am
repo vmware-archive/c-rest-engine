@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libvmsockposix.la
 libvmsockposix_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
-    -I$(top_srcdir)/server/transport/includes \
+    -I$(top_srcdir)/transport/includes \
     @OPENSSL_INCLUDES@
 
 libvmsockposix_la_SOURCES = \

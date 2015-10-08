@@ -1,6 +1,5 @@
 
 SUBDIRS = \
     restengine \
-    transport \
     vmrestd
 

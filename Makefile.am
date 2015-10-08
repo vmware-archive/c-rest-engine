@@ -5,4 +5,5 @@ SUBDIRS = \
     common \
     client \
     server \
-    tools
+    tools \
+    transport
