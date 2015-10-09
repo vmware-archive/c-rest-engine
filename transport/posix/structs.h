@@ -13,6 +13,7 @@
  */
 
 #include "defines.h"
+
 typedef struct _VM_SOCKET
 {
     int fd;
@@ -21,3 +22,19 @@ typedef struct _VM_SOCKET
 
 } VM_SOCKET;
 
+typedef struct _QUEUE_NODE
+{
+    int fd;
+    uint32_t flag;
+    struct _QUEUE_NODE *next;
+}EVENT_NODE;
+
+typedef struct _VM_EVENT_QUEUE
+{
+    EVENT_NODE *head;
+    EVENT_NODE *tail;
+    uint32_t count;
+    pthread_mutex_t lock;
+    int epoll_fd;
+    int server_fd;
+}QUEUE;

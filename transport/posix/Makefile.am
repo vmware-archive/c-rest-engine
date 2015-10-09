@@ -9,7 +9,8 @@ libvmsockposix_la_CPPFLAGS = \
 libvmsockposix_la_SOURCES = \
     globals.c \
     libtransport.c \
-    socket.c
+    socket.c \
+    utils.c
 
 libvmsockposix_la_LIBADD = \
     @top_builddir@/common/libcommon.la \

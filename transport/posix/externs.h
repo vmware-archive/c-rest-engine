@@ -13,3 +13,5 @@
  */
 
 extern VM_SOCKET gServerSocketInfo;
+
+extern QUEUE *pQueue;

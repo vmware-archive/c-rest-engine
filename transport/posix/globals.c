@@ -16,4 +16,4 @@
 
 VM_SOCKET gServerSocketInfo = {0};
 
-
+QUEUE *pQueue = NULL;

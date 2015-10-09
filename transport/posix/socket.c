@@ -21,20 +21,18 @@ VmSockPosixCreateServerSocket(
 {
 
     int server_fd = -1;
-    int accept_fd = -1;
     int epoll_fd = -1;
     int control_fd = -1;
     int hot_sockets = -1;
     struct addrinfo hints = {0};
     struct addrinfo *serinfo = NULL;
     struct addrinfo *p = NULL;
-    socklen_t sin_size = 0;
-    struct sockaddr_storage client_addr = {0};
     uint32_t ret = 0;
     int yes = 1;
     struct epoll_event ev = {0};
     struct epoll_event events[MAX_EVENT];
     int i = 0;
+    QUEUE *myQueue = NULL;
 
     memset(&hints, 0, sizeof(hints));
 
@@ -94,6 +92,11 @@ VmSockPosixCreateServerSocket(
         BAIL_ON_POSIX_SOCK_ERROR(ret);
     }
 
+    myQueue = (QUEUE*)malloc(sizeof(QUEUE));
+    init_queue(myQueue);
+    pQueue = myQueue;
+    
+
     epoll_fd = epoll_create1(0);
     if (epoll_fd == -1) 
     {
@@ -101,6 +104,8 @@ VmSockPosixCreateServerSocket(
         ret = ERROR_NOT_SUPPORTED;
         BAIL_ON_POSIX_SOCK_ERROR(ret);
     }
+    pQueue->epoll_fd = epoll_fd;
+    pQueue->server_fd = server_fd;
     ev.data.fd = server_fd;
     ev.events = EPOLLIN | EPOLLET;
 
@@ -114,69 +119,15 @@ VmSockPosixCreateServerSocket(
     while (1) 
     {
         hot_sockets = epoll_wait(epoll_fd, events, MAX_EVENT, -1);
-        for (i= 0; i< hot_sockets;i++) 
+            
+        pthread_mutex_lock(&(myQueue->lock));
+        for (i= 0; i< hot_sockets;i++)
         {
-            if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) 
-            {
-
-                /* Error on this socket, hence closing */
-                close(events[i].data.fd);
-                continue;
-            } 
-            else if (events[i].data.fd == server_fd) 
-            {
-                /* This event of for new connect. Accept connection and add it to epoll */
-                write(1,"New connection request", 24);
-                sin_size  =sizeof(client_addr);
-                accept_fd = accept(server_fd, (struct sockaddr *)&client_addr, &sin_size);
-                if (accept_fd == -1) 
-                {
-                    perror("accept failed");
-                    continue;
-                }
-                ret = VmSockPosixSetSocketNonBlocking(accept_fd);
-                if (ret == ERROR_NOT_SUPPORTED)
-                {
-                    perror("fcntl error");
-                    ret = ERROR_NOT_SUPPORTED;
-                    BAIL_ON_POSIX_SOCK_ERROR(ret);
-                }
-                
-                ev.data.fd = accept_fd;
-                ev.events = EPOLLIN | EPOLLET;
-
-                control_fd = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, accept_fd, &ev);
-                if (control_fd == -1) 
-                {
-                    perror("epoll_ctl command failed");
-                    ret = ERROR_NOT_SUPPORTED;
-                    BAIL_ON_POSIX_SOCK_ERROR(ret);
-                }
-            } 
-            else
-            {
-                /* This corresponds to incoming data from different connection. */
-                /* TODO :: Spawn threads for each connection. Thread poll will come into picture*/
-                int read_cnt;
-                char buffer[128];
-                while(1) 
-                {
-                    /* As this is edge-triggered mode of epoll, just keep on reading from the fd 
-                    unless no more data is left on the fd to be read. We are not going to get further 
-                    notificatiopn on this fd for same data */
-                    memset(buffer,'\0',128);
-                    read_cnt = read(events[i].data.fd, buffer, (sizeof(buffer) -1));
-                    buffer[read_cnt+1] = '\n';
-                    write(1,buffer, read_cnt+1);
-
-                    printf("Server received %s", buffer);
-                    if (read_cnt == -1 || read_cnt == 0) 
-                    {
-                        break;
-                    }
-                }
-            }
+            insert_element(events[i].data.fd, events[i].events, pQueue);
         }
+        pthread_mutex_unlock(&(myQueue->lock));
+        
+        
     }
 cleanup:
     return ret;
@@ -218,4 +169,114 @@ error:
     goto cleanup;
 }
 
+uint32_t VmSockPosixHandleEventsFromQueue(
+    QUEUE *q
+    )
+{
+    EVENT_NODE *temp = NULL;
+    uint32_t ret = 0;
+ 
+    /* get an element from queue */
+    pthread_mutex_lock(&(pQueue->lock));
+    temp = remove_element(pQueue);
+    pthread_mutex_unlock(&(pQueue->lock));
 
+    if (!temp)
+    {
+        ret = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(ret);
+
+    }   
+    
+    if ((temp->flag & EPOLLERR) || (temp->flag & EPOLLHUP) || (!(temp->flag & EPOLLIN)))
+    {
+        /* Error on this socket, hence closing */
+        close(temp->fd);
+       // continue;
+    }
+    else if (temp->fd == pQueue->server_fd)
+    {
+        ret = VmsockPosixAcceptNewConnection(temp->fd);
+      
+    }
+    else 
+    {  
+        ret = VmsockPosixReadDataAtOnce(temp->fd); 
+    }
+cleanup:
+    free(temp);
+    return ret;
+
+error:
+    goto cleanup;
+}
+
+
+uint32_t VmsockPosixAcceptNewConnection(
+    int server_fd
+    )
+{   
+    socklen_t sin_size = 0;
+    struct sockaddr_storage client_addr = {0};
+    uint32_t ret = 0;
+    int accept_fd = -1;
+    int control_fd = -1;
+    struct epoll_event ev = {0};
+
+    /* This event of for new connect. Accept connection and add it to epoll */
+    write(1,"New connection request", 24);
+    sin_size  = sizeof(client_addr);
+    accept_fd = accept(server_fd, (struct sockaddr *)&client_addr, &sin_size);
+    if (accept_fd == -1)
+    {
+        perror("accept failed");
+        return 1;
+    }
+    ret = VmSockPosixSetSocketNonBlocking(accept_fd);
+    if (ret == ERROR_NOT_SUPPORTED)
+    {
+        perror("fcntl error");
+        ret = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(ret);
+    }
+
+    ev.data.fd = accept_fd;
+    ev.events = EPOLLIN | EPOLLET;
+
+    control_fd = epoll_ctl(pQueue->epoll_fd, EPOLL_CTL_ADD, accept_fd, &ev);
+    if (control_fd == -1)
+    {
+        perror("epoll_ctl command failed");
+        ret = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(ret);
+    }
+           
+cleanup:
+    return ret;
+
+error:
+    goto cleanup;
+}
+
+
+uint32_t VmsockPosixReadDataAtOnce(
+    int fd
+    )
+{
+    int read_cnt;
+    char buffer[128];
+    while(1)
+    {
+        memset(buffer,'\0',128);
+        read_cnt = read(fd, buffer, (sizeof(buffer) -1));
+        buffer[read_cnt+1] = '\n';
+        write(1,buffer, read_cnt+1);
+
+        printf("Server received %s", buffer);
+        if (read_cnt == -1 || read_cnt == 0)
+        {
+            break;
+        }
+    }
+    return 0;
+}
