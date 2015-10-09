@@ -14,5 +14,6 @@
 
 typedef struct _VMREST_GLOBALS
 {
+    pthread_mutex_t mutex;
 } VMREST_GLOBALS, *PVMREST_GLOBALS;
 

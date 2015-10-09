@@ -12,4 +12,9 @@
  * under the License.
  */
 
-VMREST_GLOBALS gVMRESTGlobals = { 0 };
+#include "includes.h"
+
+VMREST_GLOBALS gVMRESTGlobals =
+{ 
+    .mutex = PTHREAD_MUTEX_INITIALIZER
+};
