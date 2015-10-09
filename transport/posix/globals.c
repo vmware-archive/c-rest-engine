@@ -12,4 +12,8 @@
  * under the License.
  */
 
-extern VM_SOCKET gServerSocketInfo;
+#include "includes.h"
+
+VM_SOCKET gServerSocketInfo = {0};
+
+QUEUE *pQueue = NULL;

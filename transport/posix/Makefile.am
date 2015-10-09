@@ -1,20 +1,22 @@
-lib_LTLIBRARIES = libtransport.la
+lib_LTLIBRARIES = libvmsockposix.la
 
-libtransport_la_CPPFLAGS = \
+libvmsockposix_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/transport/includes \
     @OPENSSL_INCLUDES@
 
-libtransport_la_SOURCES = \
+libvmsockposix_la_SOURCES = \
     globals.c \
     libtransport.c \
-    socket.c
+    socket.c \
+    utils.c
 
-libtransport_la_LIBADD = \
+libvmsockposix_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
     @UUID_LIBS@ \
     @CRYPTO_LIBS@ \
     @PTHREAD_LIBS@
 
-libtransport_la_LDFLAGS = \
+libvmsockposix_la_LDFLAGS = \
     @OPENSSL_LDFLAGS@

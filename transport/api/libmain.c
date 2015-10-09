@@ -12,8 +12,12 @@
  * under the License.
  */
 
-#include "includes.h"
+# include "includes.h"
 
-VM_SOCKET gServerSocketInfo = {0};
+uint32_t vmsockInit(
+    void
+    )
+{
+    return 0;
 
-
+}

@@ -12,12 +12,8 @@
  * under the License.
  */
 
-#include "defines.h"
-typedef struct _VM_SOCKET
-{
-    int fd;
-    char address[MAX_ADDRESS_LEN];
-    char port[MAX_PORT_LEN];
+#include <config.h>
 
-} VM_SOCKET;
+#include <vmrestsys.h>
+#include <vmrestdefines.h>
 
