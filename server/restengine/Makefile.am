@@ -6,10 +6,13 @@ librestengine_la_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 librestengine_la_SOURCES = \
-    librestengine.c
+    globals.c \
+    librestengine.c \
+    thread.c
 
 librestengine_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
+    @top_builddir@/transport/posix/libvmsockposix.la \
     @UUID_LIBS@ \
     @CRYPTO_LIBS@ \
     @PTHREAD_LIBS@

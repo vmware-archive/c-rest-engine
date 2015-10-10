@@ -109,10 +109,10 @@ AC_CONFIG_FILES([Makefile
                  include/Makefile
                  include/public/Makefile
                  common/Makefile
-                 server/Makefile
                  transport/Makefile
                  transport/api/Makefile
                  transport/posix/Makefile
+                 server/Makefile
                  server/restengine/Makefile
                  server/vmrestd/Makefile
                  client/Makefile

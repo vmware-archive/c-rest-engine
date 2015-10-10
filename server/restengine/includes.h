@@ -16,4 +16,9 @@
 
 #include <vmrestsys.h>
 #include <vmrestdefines.h>
+#include <vmrest.h>
 
+#include "structs.h"
+#include "externs.h"
+#include "defines.h"
+#include "prototype.h"

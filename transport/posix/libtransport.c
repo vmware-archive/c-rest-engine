@@ -21,13 +21,14 @@ VmRestTransportInit(
     )
 {
     uint32_t ret = 0;
-    uint32_t portlen = 0;
-    uint32_t addrlen = 0;
-    if (addr == NULL || port == NULL) 
-    {
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);        
-    }
+//    uint32_t portlen = 0;
+//    uint32_t addrlen = 0;
+//    if (addr == NULL || port == NULL) 
+//    {
+//        ret = ERROR_NOT_SUPPORTED;
+//        BAIL_ON_POSIX_SOCK_ERROR(ret);        
+//    }
+#if 0    
     portlen = strlen(port);
     addrlen = strlen(addr);
     /* populate the global server structure for keeping address and port information of server */
@@ -40,8 +41,9 @@ VmRestTransportInit(
     gServerSocketInfo.port[portlen] = '\0';
 
     strncpy(gServerSocketInfo.port, port, portlen);
-
+#endif
     ret = VmSockPosixCreateServerSocket();
+    BAIL_ON_POSIX_SOCK_ERROR(ret);
 cleanup:
     return ret;
 

@@ -14,9 +14,20 @@
 
 #include "includes.h"
 
-uint32_t 
+uint32_t
 VmSockPosixCreateServerSocket(
     void
+    )
+{   
+    pthread_t thr;
+    
+    pthread_create(&thr,NULL,&(VmSockPosixServerListenThread),NULL);
+    return 0;
+}
+
+void * 
+VmSockPosixServerListenThread(
+    void * Args
     )
 {
 
@@ -92,6 +103,8 @@ VmSockPosixCreateServerSocket(
         BAIL_ON_POSIX_SOCK_ERROR(ret);
     }
 
+    write(1,"Listening", 10);
+
     myQueue = (QUEUE*)malloc(sizeof(QUEUE));
     init_queue(myQueue);
     pQueue = myQueue;
@@ -119,18 +132,19 @@ VmSockPosixCreateServerSocket(
     while (1) 
     {
         hot_sockets = epoll_wait(epoll_fd, events, MAX_EVENT, -1);
-            
+        // kaushik
+        write(1,"\nPosting events", 20);    
         pthread_mutex_lock(&(myQueue->lock));
         for (i= 0; i< hot_sockets;i++)
         {
             insert_element(events[i].data.fd, events[i].events, pQueue);
         }
         pthread_mutex_unlock(&(myQueue->lock));
-        
+        pthread_cond_broadcast(&(myQueue->signal));        
         
     }
 cleanup:
-    return ret;
+    return NULL;
 
 error:
     goto cleanup;
@@ -170,17 +184,26 @@ error:
 }
 
 uint32_t VmSockPosixHandleEventsFromQueue(
-    QUEUE *q
+    void
     )
 {
     EVENT_NODE *temp = NULL;
     uint32_t ret = 0;
- 
+    
+    // kaushik
+    write(1,"\nTHREAD Handler ..", 20);
+    
+    while (1) 
+   { 
     /* get an element from queue */
     pthread_mutex_lock(&(pQueue->lock));
+    if (pQueue->count == 0)
+    {
+        pthread_cond_wait(&(pQueue->signal), &(pQueue->lock));
+    }
     temp = remove_element(pQueue);
     pthread_mutex_unlock(&(pQueue->lock));
-
+    write(1,"\nTHREAD Handler - AfterWait", 28);
     if (!temp)
     {
         ret = ERROR_NOT_SUPPORTED;
@@ -203,6 +226,7 @@ uint32_t VmSockPosixHandleEventsFromQueue(
     {  
         ret = VmsockPosixReadDataAtOnce(temp->fd); 
     }
+   }
 cleanup:
     free(temp);
     return ret;
@@ -222,6 +246,9 @@ uint32_t VmsockPosixAcceptNewConnection(
     int accept_fd = -1;
     int control_fd = -1;
     struct epoll_event ev = {0};
+    //kaushik
+
+    write(1,"\nIn accept Connection", 25);
 
     /* This event of for new connect. Accept connection and add it to epoll */
     write(1,"New connection request", 24);
@@ -265,6 +292,7 @@ uint32_t VmsockPosixReadDataAtOnce(
 {
     int read_cnt;
     char buffer[128];
+    write(1,"\nDATA Received ..", 20);
     while(1)
     {
         memset(buffer,'\0',128);

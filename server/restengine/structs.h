@@ -12,15 +12,17 @@
  * under the License.
  */
 
-#include "includes.h"
+typedef struct _REST_ENG_THREAD
+{
+    pthread_t                   thr;
+} REST_ENG_THREAD, *PREST_ENG_THREAD;
 
-uint32_t
-VmRESTEngineInit(
-    void
-    ) 
-{   
-    uint32_t dwError = 0;
-    dwError = VmRestSpawnThreads(5);
-    return dwError;
-}
+typedef struct _REST_ENG_GLOBALS
+{
+    pthread_t        threadpool[5];
+    uint32_t         nthreads;
+} REST_ENG_GLOBALS, *PREST_ENG_GLOBALS;
+
+   
+
 

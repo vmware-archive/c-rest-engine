@@ -19,8 +19,10 @@ VmRESTSrvInitialize(
     void
     )
 {
+    write(1,"\nService Init ..", 20);
     uint32_t dwError = 0;
-
+    dwError = VmRESTEngineInit();
+    dwError = VmRestTransportInit("localhost", "61010");
     return dwError;
 }
 

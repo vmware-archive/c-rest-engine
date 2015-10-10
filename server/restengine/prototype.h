@@ -1,3 +1,4 @@
+
 /*
  * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
  *
@@ -12,15 +13,27 @@
  * under the License.
  */
 
-#include "includes.h"
 
-uint32_t
-VmRESTEngineInit(
-    void
-    ) 
-{   
-    uint32_t dwError = 0;
-    dwError = VmRestSpawnThreads(5);
-    return dwError;
-}
+uint32_t 
+VmRestCreateThread(
+    pthread_t *thr,
+    PVMREST_START_ROUTINE pStartRoutine,
+    void * pArgs
+);
+
+
+uint32_t 
+VmRestJoinThread(
+    pthread_t thr
+    );
+
+
+void* VmRestWorkerThread(
+    void * Args
+    );
+
+uint32_t VmRestSpawnThreads(
+    uint32_t count
+    );
+
 

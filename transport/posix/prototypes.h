@@ -17,6 +17,11 @@ VmSockPosixCreateServerSocket(
     void
     );
 
+void *
+VmSockPosixServerListenThread(
+    void *
+    );
+
 
 uint32_t 
 VmSockPosixSetSocketNonBlocking(
@@ -34,9 +39,6 @@ EVENT_NODE* remove_element(QUEUE *q);
 
 uint32_t init_queue(QUEUE *q);
 
-uint32_t VmSockPosixHandleEventsFromQueue(
-    QUEUE *q
-    );
 
 uint32_t VmsockPosixAcceptNewConnection(
     int server_fd

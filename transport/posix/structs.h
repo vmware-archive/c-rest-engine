@@ -35,6 +35,7 @@ typedef struct _VM_EVENT_QUEUE
     EVENT_NODE *tail;
     uint32_t count;
     pthread_mutex_t lock;
+    pthread_cond_t  signal;
     int epoll_fd;
     int server_fd;
 }QUEUE;
