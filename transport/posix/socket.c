@@ -19,10 +19,37 @@ VmSockPosixCreateServerSocket(
     void
     )
 {   
-    pthread_t thr;
+    uint32_t dwError = 0;
+    pthread_t *thr = NULL;
+    QUEUE *myQueue = NULL;
     
-    pthread_create(&thr,NULL,&(VmSockPosixServerListenThread),NULL);
-    return 0;
+    dwError = VmRESTAllocateMemory(sizeof(QUEUE), (void *)&(myQueue));
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+    dwError = init_queue(myQueue);
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    
+    pQueue = myQueue;
+    
+    dwError = VmRESTAllocateMemory(sizeof(pthread_t), (void *)&(thr));
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+      
+    dwError = pthread_create(thr,NULL,&(VmSockPosixServerListenThread),NULL);
+    pQueue->server_thread = thr;
+    
+cleanup:
+    return dwError;
+
+error:
+    if (myQueue) 
+    {
+       VmRESTFreeMemory(myQueue);
+    }
+    if (thr)
+    {
+       VmRESTFreeMemory(thr);
+    }
+    goto cleanup;
 }
 
 void * 
@@ -38,12 +65,11 @@ VmSockPosixServerListenThread(
     struct addrinfo hints = {0};
     struct addrinfo *serinfo = NULL;
     struct addrinfo *p = NULL;
-    uint32_t ret = 0;
+    uint32_t dwError = 0;
     int yes = 1;
     struct epoll_event ev = {0};
     struct epoll_event events[MAX_EVENT];
     int i = 0;
-    QUEUE *myQueue = NULL;
 
     memset(&hints, 0, sizeof(hints));
 
@@ -51,13 +77,8 @@ VmSockPosixServerListenThread(
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    ret = getaddrinfo(NULL, "61001", &hints, &serinfo);
-    if (ret != 0) 
-    {
-        printf("getaddrifo return error: %s", gai_strerror(ret));
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
-    }
+    dwError = getaddrinfo(NULL, "61001", &hints, &serinfo);
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     for (p = serinfo; p!= NULL; p = p->ai_next) 
     {
@@ -69,12 +90,11 @@ VmSockPosixServerListenThread(
         if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) 
         {
             perror("setsockopt failed");
-            ret = ERROR_NOT_SUPPORTED;
-            BAIL_ON_POSIX_SOCK_ERROR(ret);
+            dwError = ERROR_NOT_SUPPORTED;
+            BAIL_ON_POSIX_SOCK_ERROR(dwError);
         }
         if(bind(server_fd, p->ai_addr,p->ai_addrlen) == -1) 
         {
-            close(server_fd);
             perror("Socket bind at Server failed");
             continue;
         }
@@ -84,38 +104,29 @@ VmSockPosixServerListenThread(
     if(p == NULL)
     {
         perror("Server Failed to bind");
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
-    ret = VmSockPosixSetSocketNonBlocking(server_fd);
-    if (ret == ERROR_NOT_SUPPORTED) 
-    {
-        perror("fcntl error");
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
-    }
+    dwError = VmSockPosixSetSocketNonBlocking(server_fd);
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     if (listen(server_fd, 10) == -1) 
     {
         perror("Listen failed");
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-
-    write(1,"Listening", 10);
-
-    myQueue = (QUEUE*)malloc(sizeof(QUEUE));
-    init_queue(myQueue);
-    pQueue = myQueue;
     
+    /* This is for debugging purpose, will remove once proper debug framework is put inplace */
+    write(1,"Listening", 10);
 
     epoll_fd = epoll_create1(0);
     if (epoll_fd == -1) 
     {
         perror("epoll create Error");
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
     pQueue->epoll_fd = epoll_fd;
     pQueue->server_fd = server_fd;
@@ -126,27 +137,31 @@ VmSockPosixServerListenThread(
     if (control_fd == -1) 
     {
         perror("epoll_ctl command failed");
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
     while (1) 
     {
         hot_sockets = epoll_wait(epoll_fd, events, MAX_EVENT, -1);
-        // kaushik
+        /* Just for debugging. Will remove */
         write(1,"\nPosting events", 20);    
-        pthread_mutex_lock(&(myQueue->lock));
+        pthread_mutex_lock(&(pQueue->lock));
         for (i= 0; i< hot_sockets;i++)
         {
             insert_element(events[i].data.fd, events[i].events, pQueue);
         }
-        pthread_mutex_unlock(&(myQueue->lock));
-        pthread_cond_broadcast(&(myQueue->signal));        
+        pthread_mutex_unlock(&(pQueue->lock));
+        pthread_cond_broadcast(&(pQueue->signal));        
         
     }
 cleanup:
     return NULL;
 
 error:
+    if (server_fd> 0)
+    {
+        close(server_fd);
+    }
     goto cleanup;
 }
 
@@ -157,14 +172,14 @@ uint32_t VmSockPosixSetSocketNonBlocking(
 {
     int cur_flags = 0;
     int set_flags = 0;
-    uint32_t ret = 0;
+    uint32_t dwError = 0;
 
     cur_flags = fcntl(server_fd, F_GETFL, 0);
     if (cur_flags == -1)
     {
         perror("fcntl error");
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
     cur_flags |= O_NONBLOCK;
     set_flags = fcntl(server_fd, F_SETFL, cur_flags);
@@ -172,12 +187,12 @@ uint32_t VmSockPosixSetSocketNonBlocking(
     if (set_flags == -1)
     {
         perror("Unable to mark listening socket as non blocking");
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
 cleanup:
-    return ret;
+    return dwError;
 
 error:
     goto cleanup;
@@ -188,50 +203,52 @@ uint32_t VmSockPosixHandleEventsFromQueue(
     )
 {
     EVENT_NODE *temp = NULL;
-    uint32_t ret = 0;
+    uint32_t dwError = 0;
     
-    // kaushik
+    /* Just for debugging purpose -  will remove */
     write(1,"\nTHREAD Handler ..", 20);
     
     while (1) 
-   { 
-    /* get an element from queue */
-    pthread_mutex_lock(&(pQueue->lock));
-    if (pQueue->count == 0)
-    {
-        pthread_cond_wait(&(pQueue->signal), &(pQueue->lock));
-    }
-    temp = remove_element(pQueue);
-    pthread_mutex_unlock(&(pQueue->lock));
-    write(1,"\nTHREAD Handler - AfterWait", 28);
-    if (!temp)
-    {
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
-
-    }   
+    { 
+        /* get an element from queue */
+        pthread_mutex_lock(&(pQueue->lock));
+        if (pQueue->count == 0)
+        {
+            pthread_cond_wait(&(pQueue->signal), &(pQueue->lock));
+        }
+        temp = remove_element(pQueue);
+        pthread_mutex_unlock(&(pQueue->lock));
+        write(1,"\nTHREAD Handler - AfterWait", 28);
+        if (!temp)
+        {
+            dwError = ERROR_NOT_SUPPORTED;
+            BAIL_ON_POSIX_SOCK_ERROR(dwError);
+        }   
     
-    if ((temp->flag & EPOLLERR) || (temp->flag & EPOLLHUP) || (!(temp->flag & EPOLLIN)))
-    {
-        /* Error on this socket, hence closing */
-        close(temp->fd);
-       // continue;
+        if ((temp->flag & EPOLLERR) || (temp->flag & EPOLLHUP) || (!(temp->flag & EPOLLIN)))
+        {
+            /* Error on this socket, hence closing */
+            close(temp->fd);
+            
+        }
+        else if (temp->fd == pQueue->server_fd)
+        {
+            dwError = VmsockPosixAcceptNewConnection(temp->fd);
+        }
+        else 
+        {  
+            dwError = VmsockPosixReadDataAtOnce(temp->fd); 
+        }
     }
-    else if (temp->fd == pQueue->server_fd)
-    {
-        ret = VmsockPosixAcceptNewConnection(temp->fd);
-      
-    }
-    else 
-    {  
-        ret = VmsockPosixReadDataAtOnce(temp->fd); 
-    }
-   }
 cleanup:
-    free(temp);
-    return ret;
+    if (temp)
+    {
+        free(temp);
+    }
+    return dwError;
 
 error:
+    temp = NULL;
     goto cleanup;
 }
 
@@ -242,29 +259,28 @@ uint32_t VmsockPosixAcceptNewConnection(
 {   
     socklen_t sin_size = 0;
     struct sockaddr_storage client_addr = {0};
-    uint32_t ret = 0;
+    uint32_t dwError = 0;
     int accept_fd = -1;
     int control_fd = -1;
     struct epoll_event ev = {0};
-    //kaushik
-
+   
+    /* Just for debugging: Will remove */
     write(1,"\nIn accept Connection", 25);
 
-    /* This event of for new connect. Accept connection and add it to epoll */
-    write(1,"New connection request", 24);
     sin_size  = sizeof(client_addr);
     accept_fd = accept(server_fd, (struct sockaddr *)&client_addr, &sin_size);
     if (accept_fd == -1)
     {
         perror("accept failed");
-        return 1;
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    ret = VmSockPosixSetSocketNonBlocking(accept_fd);
-    if (ret == ERROR_NOT_SUPPORTED)
+    dwError = VmSockPosixSetSocketNonBlocking(accept_fd);
+    if (dwError == ERROR_NOT_SUPPORTED)
     {
         perror("fcntl error");
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
     ev.data.fd = accept_fd;
@@ -274,12 +290,12 @@ uint32_t VmsockPosixAcceptNewConnection(
     if (control_fd == -1)
     {
         perror("epoll_ctl command failed");
-        ret = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(ret);
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
            
 cleanup:
-    return ret;
+    return dwError;
 
 error:
     goto cleanup;

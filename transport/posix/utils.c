@@ -16,12 +16,11 @@
 
 uint32_t insert_element(int fd, uint32_t event_flag, QUEUE *q)
 {
-    EVENT_NODE *node = (EVENT_NODE*)malloc (sizeof(EVENT_NODE)); 
-    if (node == NULL) 
-    {
-        return 1; 
-
-    }
+    uint32_t dwError = EXIT_SUCCESS;
+    EVENT_NODE *node = NULL;
+    dwError = VmRESTAllocateMemory(sizeof(EVENT_NODE), (void*)&node);
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);       
+ 
     node->fd = fd;
     node->flag = event_flag;
     node->next  = NULL;
@@ -34,20 +33,24 @@ uint32_t insert_element(int fd, uint32_t event_flag, QUEUE *q)
     {
         q->tail->next = node;
         q->tail = node;
-         
-
     }
     q->count++;
-    return 0;
+
+cleanup: 
+    return dwError;
+error:
+    goto cleanup;
 }
 
 
 EVENT_NODE* remove_element(QUEUE *q) 
 {
-    EVENT_NODE *temp; 
+    EVENT_NODE *temp = NULL;
+    uint32_t dwError = EXIT_SUCCESS; 
     if (q->count == 0)
     {
-        return NULL;
+        dwError = ERROR_NOT_SUPPORTED; 
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
     else if (q->count == 1)
     {
@@ -61,16 +64,21 @@ EVENT_NODE* remove_element(QUEUE *q)
         q->head = q->head->next;
     }
     q->count--;
+
+cleanup:
     return temp;
+error:
+    goto cleanup;
 }
 
 uint32_t init_queue(QUEUE *q)
 {
+    uint32_t dwError= EXIT_SUCCESS;
     q->count = 0;
     q->head = NULL;
     q->tail = NULL;
     pthread_mutex_init(&(q->lock),NULL);
     pthread_cond_init(&(q->signal),NULL);
-    return 0;
+    return dwError;
 }
 

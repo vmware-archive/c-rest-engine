@@ -13,5 +13,13 @@
  * under the License.
  */
 
-typedef uint32_t (VmRESTStartRoutine)(void*);
+typedef void* (VmRESTStartRoutine)(void*);
 typedef VmRESTStartRoutine* PVMREST_START_ROUTINE;
+
+#define WORKER_THREAD_COUNT 5
+
+#define BAIL_ON_POSIX_THREAD_ERROR(dwError) \
+        if (dwError) \
+            goto error;
+
+#define ERROR_NOT_SUPPORTED 100

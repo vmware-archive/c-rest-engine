@@ -12,6 +12,8 @@
  * under the License.
  */
 
+#include "defines.h"
+
 typedef struct _REST_ENG_THREAD
 {
     pthread_t                   thr;
@@ -19,7 +21,7 @@ typedef struct _REST_ENG_THREAD
 
 typedef struct _REST_ENG_GLOBALS
 {
-    pthread_t        threadpool[5];
+    PREST_ENG_THREAD threadpool[WORKER_THREAD_COUNT]; 
     uint32_t         nthreads;
 } REST_ENG_GLOBALS, *PREST_ENG_GLOBALS;
 

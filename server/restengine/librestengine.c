@@ -20,7 +20,7 @@ VmRESTEngineInit(
     ) 
 {   
     uint32_t dwError = 0;
-    dwError = VmRestSpawnThreads(5);
+    dwError = VmRestSpawnThreads(WORKER_THREAD_COUNT);
     return dwError;
 }
 

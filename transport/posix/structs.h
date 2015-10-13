@@ -38,4 +38,5 @@ typedef struct _VM_EVENT_QUEUE
     pthread_cond_t  signal;
     int epoll_fd;
     int server_fd;
+    pthread_t *server_thread;
 }QUEUE;

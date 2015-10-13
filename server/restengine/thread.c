@@ -23,15 +23,25 @@ VmRestCreateThread(
 )
 {
     uint32_t dwError = 0;
-    
+    if ((!pStartRoutine) || (!thr))
+    {   
+        dwError = ERROR_NOT_SUPPORTED; 
+        BAIL_ON_POSIX_THREAD_ERROR(dwError);
 
+    }
+    
     dwError = pthread_create(
         thr, 
         NULL,
-        &(VmRestWorkerThread),
+        (pStartRoutine),
         NULL
     );
+    BAIL_ON_POSIX_THREAD_ERROR(dwError);
+
+cleanup: 
     return dwError;
+error:
+    goto cleanup;
 }
 
 
@@ -60,14 +70,28 @@ uint32_t VmRestSpawnThreads(
     )
 {
     uint32_t i = 0;
-    gRESTEngGlobals.nthreads = count;
-    // kaushik
+    uint32_t  dwError = 0;
+    PREST_ENG_THREAD thr = NULL;
+
+ 
+    gRESTEngGlobals.nthreads = 0;
+
+    /* For debug purpose - will remove */
     write(1,"\nCreating Threads", 20);    
-    for (i = 0; i < 5; i++)
-    {
-        VmRestCreateThread(&(gRESTEngGlobals.threadpool[i]),NULL, NULL);
+    for (i = 0; i < WORKER_THREAD_COUNT; i++)
+    {  
+        dwError = VmRESTAllocateMemory(sizeof(PREST_ENG_THREAD), (void *)&thr);
+        BAIL_ON_POSIX_THREAD_ERROR(dwError);
+     
+        gRESTEngGlobals.threadpool[i] = thr;
+        gRESTEngGlobals.nthreads += 1;
+        VmRestCreateThread(&(thr->thr),&(VmRestWorkerThread), NULL);
     }
-    return 0;
+    
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
 }
 
 
