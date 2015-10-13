@@ -13,10 +13,9 @@
  * under the License.
  */
 
-typedef void* (VmRESTStartRoutine)(void*);
-typedef VmRESTStartRoutine* PVMREST_START_ROUTINE;
+typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 
-#define WORKER_THREAD_COUNT 5
+#define VMREST_WORKER_THREAD_COUNT 5
 
 #define BAIL_ON_POSIX_THREAD_ERROR(dwError) \
         if (dwError) \

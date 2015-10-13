@@ -13,27 +13,21 @@
  * under the License.
  */
 
-
-uint32_t 
-VmRestCreateThread(
-    pthread_t *thr,
-    PVMREST_START_ROUTINE pStartRoutine,
-    void * pArgs
-);
-
-
-uint32_t 
-VmRestJoinThread(
-    pthread_t thr
+uint32_t
+VmRestSpawnThreads(
+    PFN_VMREST_THR_ROUTINE pThrRoutine,
+    PVMREST_THREAD*        ppThreadpool,
+    uint32_t*              pThrCount
     );
 
-
-void* VmRestWorkerThread(
-    void * Args
+void *
+VmRestWorkerThread(
+    void* pArgs
     );
 
-uint32_t VmRestSpawnThreads(
-    uint32_t count
+void
+VmRestFreeThreadpool(
+    PVMREST_THREAD pThreadpool,
+    uint32_t       threadcount
     );
-
 

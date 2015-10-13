@@ -14,15 +14,31 @@
 
 #include "defines.h"
 
+typedef struct _REST_ENG_THREAD_DATA
+{
+    pthread_mutex_t  mutex;
+    pthread_mutex_t* pMutex;
+
+    pthread_cond_t   cond;
+    pthread_cond_t*  pCond;
+
+    int              bShutdown;
+
+} VMREST_THREAD_DATA, *PVMREST_THREAD_DATA;
+
 typedef struct _REST_ENG_THREAD
 {
-    pthread_t                   thr;
-} REST_ENG_THREAD, *PREST_ENG_THREAD;
+    pthread_t  thr;
+    pthread_t* pThread;
+
+    PVMREST_THREAD_DATA data;
+
+} VMREST_THREAD, *PVMREST_THREAD;
 
 typedef struct _REST_ENG_GLOBALS
 {
-    PREST_ENG_THREAD threadpool[WORKER_THREAD_COUNT]; 
-    uint32_t         nthreads;
+    PVMREST_THREAD   pThreadpool;
+    uint32_t         nThreads;
 } REST_ENG_GLOBALS, *PREST_ENG_GLOBALS;
 
    

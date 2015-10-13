@@ -7,7 +7,7 @@ librestengine_la_CPPFLAGS = \
 
 librestengine_la_SOURCES = \
     globals.c \
-    librestengine.c \
+    libmain.c \
     thread.c
 
 librestengine_la_LIBADD = \

@@ -15,5 +15,6 @@
 
 
 #include "includes.h"
-REST_ENG_GLOBALS gRESTEngGlobals;
+
+REST_ENG_GLOBALS gRESTEngGlobals = {0};
 

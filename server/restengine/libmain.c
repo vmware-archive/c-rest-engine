@@ -20,7 +20,38 @@ VmRESTEngineInit(
     ) 
 {   
     uint32_t dwError = 0;
-    dwError = VmRestSpawnThreads(WORKER_THREAD_COUNT);
+    PVMREST_THREAD pThreadpool = NULL;
+    uint32_t nThreads = 0;
+
+    dwError = VmRestSpawnThreads(
+                    &VmRestWorkerThread,
+                    &pThreadpool,
+                    &nThreads);
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    gRESTEngGlobals.pThreadpool = pThreadpool;
+    gRESTEngGlobals.nThreads = nThreads;
+
+cleanup:
+
     return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+void
+VmRESTEngineShutdown(
+    void
+    )
+{
+    if (gRESTEngGlobals.nThreads)
+    {
+        VmRestFreeThreadpool(gRESTEngGlobals.pThreadpool, gRESTEngGlobals.nThreads);
+
+        gRESTEngGlobals.pThreadpool = NULL;
+        gRESTEngGlobals.nThreads = 0;
+    }
 }
 
