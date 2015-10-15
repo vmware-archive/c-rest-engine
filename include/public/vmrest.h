@@ -14,4 +14,31 @@ uint32_t VmSockPosixHandleEventsFromQueue(
     void
     );
 
-uint32_t VmRESTEngineInit(void);
+
+/*
+ * @brief Rest engine initialization
+ *
+ * @param[in]           void
+ * @param[out]          void
+ * @return Returns 0 for success
+ */
+uint32_t 
+VmRESTEngineInit(
+    void
+    );
+
+
+/*
+ * @brief Rest engine shutdown
+ *
+ * @param[in]           void
+ * @param[out]          void
+ * @return Returns 0 for success
+ */
+void
+VmRESTEngineShutdown(
+    void
+    );
+
+
+

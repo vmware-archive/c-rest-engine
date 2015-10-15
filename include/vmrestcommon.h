@@ -19,11 +19,25 @@
 extern "C" {
 #endif
 
+/*
+ * @brief Allocation of heap memory for rest engine.
+ *
+ * @param[in]           size of memory to be allocated
+ * @param[out]          pointer to allocated memory
+ * @return Returns 0 for success
+ */
 uint32_t
 VmRESTAllocateMemory(
     size_t   dwSize,
     void**   ppMemory
     );
+
+/*
+ * @brief Free of head memory for rest engine.
+ *
+ * @param[in]           pointer to allocated memory
+ * @return Returns 0 for success
+ */
 
 void
 VmRESTFreeMemory(
