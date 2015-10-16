@@ -8,7 +8,8 @@ librestengine_la_CPPFLAGS = \
 librestengine_la_SOURCES = \
     globals.c \
     libmain.c \
-    thread.c
+    thread.c \
+    http_protocol.c
 
 librestengine_la_LIBADD = \
     @top_builddir@/common/libcommon.la \

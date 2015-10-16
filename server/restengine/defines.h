@@ -22,3 +22,38 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
             goto error;
 
 #define ERROR_NOT_SUPPORTED 100
+
+
+/* HTTP protocol header defines */
+
+#define MAX_METHOD_LEN             32
+#define MAX_URI_LEN                32
+#define MAX_VERSION_LEN            32
+#define MAX_STATUS_LEN             32
+#define MAX_REA_PHRASE_LEN         32
+#define MAX_ACCEPT_LEN             32
+#define MAX_ACCEPT_CHARSET_LEN     32
+#define MAX_ACCEPT_ENCODING_LEN    32
+#define MAX_ACCEPT_LANGUAGE_LEN    32
+#define MAX_AUTH_LEN               32
+#define MAX_FROM_LEN               32
+#define MAX_HOST_LEN               32
+#define MAX_REFERER_LEN            32
+#define MAX_ACCEPT_RANGE_LEN       32
+#define MAX_LOCATION_LEN           32
+#define MAX_PROXY_AUTH_LEN         32
+#define MAX_SERVER_LEN             32
+#define MAX_CACHE_CONTROL_LEN      32
+#define MAX_CONN_LEN               32
+#define MAX_TRAILER_LEN            32
+#define MAX_TRANSFER_ENCODING_LEN  32
+#define MAX_ALLOW_LEN              32
+#define MAX_CONTENT_ENCODING_LEN   32 
+#define MAX_CONTENT_LANGUAGE_LEN   32
+#define MAX_CONTENT_LENGTH_LEN     32
+#define MAX_CONTENT_LOCATION_LEN   32 
+#define MAX_CONTENT_MD5_LEN        32
+#define MAX_CONTENT_RANGE_LEN      32
+#define MAX_CONTENT_TYPE_LEN       32
+
+#define MAX_DATA_BUFFER_LEN        4096
