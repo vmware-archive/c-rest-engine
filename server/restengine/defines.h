@@ -57,3 +57,7 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define MAX_CONTENT_TYPE_LEN       32
 
 #define MAX_DATA_BUFFER_LEN        4096
+#define MAX_REQ_LIN_LEN            1024
+
+#define MAX_HTTP_HEADER_ATTR_LEN   32
+#define MAX_HTTP_HEADER_VAL_LEN    1024
