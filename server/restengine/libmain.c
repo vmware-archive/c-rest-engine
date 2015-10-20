@@ -23,6 +23,9 @@ VmRESTEngineInit(
     PVMREST_THREAD pThreadpool = NULL;
     uint32_t nThreads = 0;
 
+    /* Adding test code - will remove*/
+    dwError = VmRESTTestHTTPParser();
+
     dwError = VmRestSpawnThreads(
                     &VmRestWorkerThread,
                     &pThreadpool,
@@ -31,6 +34,7 @@ VmRESTEngineInit(
 
     gRESTEngGlobals.pThreadpool = pThreadpool;
     gRESTEngGlobals.nThreads = nThreads;
+
 
 cleanup:
 

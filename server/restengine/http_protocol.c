@@ -201,24 +201,44 @@ error:
 
 uint32_t 
 VmRESTHTTPGetmethod(
-    char*  line,
-    char*  result
+    char*    line,
+    uint32_t lineLen,
+    char*    result
     )
 {
     uint32_t dwError = 0;
     char*    buffer = NULL;
+    char     local[1024] = {0};
+    char*    temp = NULL;
+    uint32_t i = 0;
     
+    buffer = line;
+    temp = local;
+
+    while ((buffer != NULL) && (i <= lineLen))
+    {
+        if (*buffer == ' ')
+        {  
+            break;
+        }
+        *temp = *buffer;
+        temp++;
+        buffer++; 
+        i++;
+    }
+    *temp = '\0';
+     
     /* method will be first letter in line */
-    buffer = strtok(strdup(line)," ");
-    if (strcmp(buffer,"GET") == 0)
+    
+    if (strcmp(local,"GET") == 0)
     {
         strcpy(result,"GET");
     }
-    else if (strcmp(buffer,"POST") == 0)
+    else if (strcmp(local,"POST") == 0)
     {
         strcpy(result,"POST");
     }
-    else if (strcmp(buffer,"DELETE") == 0)
+    else if (strcmp(local,"DELETE") == 0)
     {
         strcpy(result,"DELETE");
     }
@@ -236,18 +256,45 @@ error:
 
 uint32_t
 VmRESTHTTPGetReqURI(
-    char*  line,
-    char*  result
+    char*    line,
+    uint32_t lineLen,
+    char*    result
     )
 {
     uint32_t  dwError = 0;
     char*     buffer = NULL;
+    char      local[1024] = {0};
+    char*     temp = NULL;
+    char      flag = '0';
+    uint32_t  i = 0;
 
+    buffer = line;
+    temp = local;
+
+    while ((buffer != NULL) && (i <= lineLen))
+    {
+        if (flag == '1')
+        {
+            *temp = *buffer;
+            temp++;
+        }
+        if (*buffer == ' ')
+        {
+            if (flag == '1') 
+            {
+                break;
+            }
+            flag = '1';
+        }
+        buffer++;
+        i++;
+    }
+    *temp = '\0';
+  
     /* URI will be second letter in line */
-    buffer = strtok(strdup(line)," ");
-    buffer = strtok(NULL," ");
-    if (buffer != NULL)
-    { 
+     
+    if (strlen(local) != 0)
+    {
         strcpy(result,buffer);
     }
     else
@@ -264,36 +311,51 @@ error:
 
 uint32_t
 VmRESTHTTPGetReqVersion(
-    char*  line,
-    char*  result
+    char*    line,
+    uint32_t lineLen,
+    char*    result
     )
 {
     uint32_t   dwError = 0;
-    uint32_t   count   = 1;
+    uint32_t   count   = 0;
     char*      buffer = NULL;
+    char       local[1024] = {0};
+    char*      temp = NULL;
+    uint32_t   i = 0;
 
     /* Version will be third letter in line */
-    
-    buffer = strtok(strdup(line)," ");
-    while (buffer != NULL)
+   
+    buffer = line;
+    temp = local;
+
+    while ((buffer != NULL) && (i <= lineLen)) 
     {   
-        buffer = strtok(NULL," ");
-        count++;
- 
-        if (count == 3)
-        { 
-           if ((strcmp(buffer, "HTTP/1.1")) == 0 )
-           {
-               strcpy(result,buffer);
-               break;
-           }
-           else 
-           {
-               dwError = ERROR_NOT_SUPPORTED;
-               BAIL_ON_VMREST_ERROR(dwError);
-           }
+        if (*buffer == ' ')
+        {
+            count++;
+            buffer++;
+            continue; 
         }
+        if (count == 2)
+        { 
+            *temp = *buffer;
+            temp++;
+        }
+        buffer++;
+        i++;
     }
+    *temp = '\0';
+        
+    if ((strcmp(local, "HTTP/1.1")) == 0 )
+    {
+        strcpy(result,local);
+    }
+    else 
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+       
 cleanup:
     return dwError;
 error:
@@ -303,29 +365,39 @@ error:
 uint32_t
 VmRESTHTTPPopulateHeader(
     char*                        line,
+    uint32_t                     lineLen,
     PVM_REST_HTTP_REQUEST_PACKET pReqPacket
     )
 {
     uint32_t dwError = 0;
-    uint32_t count = 0;
-    char*    buffer = NULL; //[MAX_HTTP_HEADER_VAL_LEN] = {0};
+    char*    buffer = NULL;
+    char     local[1024] = {0};
     char     attribute[MAX_HTTP_HEADER_ATTR_LEN] = {0};
     char     value[MAX_HTTP_HEADER_VAL_LEN] = {0};
+    char     *temp = NULL;
+    uint32_t i = 0;
 
-    buffer = strtok(strdup(line),":");
-    while (buffer != NULL)
+    buffer = line;
+    temp = local;
+    
+    while(buffer != NULL && i <= lineLen)
     {
-        if (count == 0) 
+        if (*buffer == ':')
         {
-            strcpy(attribute,buffer);
-        }
-        if (count == 1)
-        {
-            strcpy(value,buffer);
-        }
-        count++;
-        buffer = strtok(NULL, ":");
+            buffer++;
+            temp = '\0';
+            strcpy(attribute,local);
+            memset(local,'\0', sizeof(local));
+            temp = local;
+            continue; 
+        } 
+        *temp = *buffer;
+        buffer++;
+        temp++;
+        i++;
     }
+    *temp = '\0';
+    strcpy(value,local);
     
     /* write the specific attribute header field after matching */
 
@@ -348,7 +420,6 @@ VmRESTHTTPPopulateHeader(
     else if ((strcmp(attribute, "Content-Length")) == 0)
     {
         strcpy(pReqPacket->entityHeader->contentLength, value);
-
 
     }
     else if ((strcmp(attribute, "Content-Type")) == 0)
@@ -393,6 +464,7 @@ uint32_t
 VmRESTParseHTTPReqLine(
     uint32_t                      lineNo,
     char*                         line,
+    uint32_t                      lineLen,
     PVM_REST_HTTP_REQUEST_PACKET  pReqPacket
     )
 {
@@ -406,21 +478,22 @@ VmRESTParseHTTPReqLine(
         /* This is request Line */ 
         dwError = VmRESTHTTPGetmethod(
                       line,
+                      lineLen,
                       method
                       );
         BAIL_ON_VMREST_ERROR(dwError);
         
         strcpy(pReqPacket->requestLine->method, method);
-
         dwError = VmRESTHTTPGetReqURI(
                       line,
+                      lineLen,
                       URI
                       );
         BAIL_ON_VMREST_ERROR(dwError);
         strcpy(pReqPacket->requestLine->uri, URI);
-
         dwError = VmRESTHTTPGetReqVersion(
                       line,
+                      lineLen,
                       version
                       );
         BAIL_ON_VMREST_ERROR(dwError);
@@ -429,14 +502,15 @@ VmRESTParseHTTPReqLine(
     } else
     {
         /* These are header lines */
+        
         dwError = VmRESTHTTPPopulateHeader(
                       line,
+                      lineLen,
                       pReqPacket
                       );
         BAIL_ON_VMREST_ERROR(dwError);
         
     }
-             
 
 cleanup:
     return dwError;
@@ -456,34 +530,46 @@ VmRESTParseAndPopulateRawHTTPMessage(
     uint32_t lineNo = 0;
     char*    reqLine = NULL;
     uint32_t lineLen = 0;
+    char     local[1024]={0};
+    uint32_t contentLen = 0;
+    char*    temp = buffer;
 
-    reqLine = strtok(strdup(buffer), "\n");
+    reqLine = strtok(strdup(buffer), "\r\n");
+     
     while (1)
     {
+        if (reqLine) 
+        {
+           strcpy(local,reqLine);
+        }
         lineNo++;
-        lineLen = strlen(reqLine);
-        bytesRead = (bytesRead + lineLen + 1);
-
-        if(reqLine == NULL || bytesRead >= packetLen) {
+        
+        if(reqLine == NULL || bytesRead >= packetLen) 
+        {
+            if (pReqPacket->entityHeader->contentLength != NULL) 
+            {
+                contentLen = atoi(pReqPacket->entityHeader->contentLength);
+            } 
             
             /* Copy the payload to http structure */
-            memcpy(pReqPacket->messageBody->buffer, (buffer+bytesRead), (packetLen - bytesRead));
+            memcpy(pReqPacket->messageBody->buffer, (temp + bytesRead+3), contentLen);
             break;
+
         } 
-        
+        lineLen = strlen(local);
+        bytesRead = (bytesRead + lineLen + 2);       
         /* call handler function with reqLine */
-        
         dwError = VmRESTParseHTTPReqLine(
                       lineNo,
-                      reqLine,
+                      local,
+                      lineLen,
                       pReqPacket              
                       );
         BAIL_ON_VMREST_ERROR(dwError);
-   
-        reqLine = strtok(NULL, "\n");
-    
+      
+        reqLine = strtok(NULL, "\r\n");
+        memset(local,'\0',1024);
     }
-
 
 cleanup:
     return dwError;
@@ -662,4 +748,33 @@ error:
 }
 
 
+uint32_t 
+VmRESTTestHTTPParser(
+    void
+    )
+{
+    uint32_t dwError = 0;
+    char input[4096] = {0};
+    memcpy(input, "POST http://SITE/foobar.html HTTP/1.1\r\nHost: SITE\r\nConnection: Keep-Alive\r\nContent-Length: 17\r\n\0\r\nThis is payload\r\n",129);
+    PVM_REST_HTTP_REQUEST_PACKET pReqPacket = NULL;
 
+    dwError = VmRESTAllocateHTTPRequestPacket(
+        &pReqPacket
+    ); 
+
+    dwError = VmRESTParseAndPopulateRawHTTPMessage(
+                  input,
+                  4096,
+                  pReqPacket);
+
+    write(1,"\n METHOD:", 9);
+    write(1,pReqPacket->requestLine->method, 10);
+    write(1,"\n CONNECTION:", 12);
+    write(1,pReqPacket->generalHeader->connection, 20);
+    write(1,"\n Content Length: ", 18);
+    write(1,pReqPacket->entityHeader->contentLength,5);
+    write(1,"\n Message Body: ", 15);
+    write(1, pReqPacket->messageBody->buffer,30);
+
+    return dwError;
+}

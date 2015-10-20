@@ -31,3 +31,8 @@ VmRestFreeThreadpool(
     uint32_t       threadcount
     );
 
+uint32_t
+VmRESTTestHTTPParser(
+    void
+    );
+
