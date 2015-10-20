@@ -208,7 +208,7 @@ VmRESTHTTPGetmethod(
 {
     uint32_t dwError = 0;
     char*    buffer = NULL;
-    char     local[1024] = {0};
+    char     local[MAX_METHOD_LEN] = {0};
     char*    temp = NULL;
     uint32_t i = 0;
     
@@ -263,7 +263,7 @@ VmRESTHTTPGetReqURI(
 {
     uint32_t  dwError = 0;
     char*     buffer = NULL;
-    char      local[1024] = {0};
+    char      local[MAX_URI_LEN] = {0};
     char*     temp = NULL;
     char      flag = '0';
     uint32_t  i = 0;
@@ -319,7 +319,7 @@ VmRESTHTTPGetReqVersion(
     uint32_t   dwError = 0;
     uint32_t   count   = 0;
     char*      buffer = NULL;
-    char       local[1024] = {0};
+    char       local[MAX_VERSION_LEN] = {0};
     char*      temp = NULL;
     uint32_t   i = 0;
 
@@ -371,7 +371,7 @@ VmRESTHTTPPopulateHeader(
 {
     uint32_t dwError = 0;
     char*    buffer = NULL;
-    char     local[1024] = {0};
+    char     local[MAX_REQ_LIN_LEN] = {0};
     char     attribute[MAX_HTTP_HEADER_ATTR_LEN] = {0};
     char     value[MAX_HTTP_HEADER_VAL_LEN] = {0};
     char     *temp = NULL;
@@ -530,7 +530,7 @@ VmRESTParseAndPopulateRawHTTPMessage(
     uint32_t lineNo = 0;
     char*    reqLine = NULL;
     uint32_t lineLen = 0;
-    char     local[1024]={0};
+    char     local[MAX_REQ_LIN_LEN]={0};
     uint32_t contentLen = 0;
     char*    temp = buffer;
 
@@ -558,6 +558,7 @@ VmRESTParseAndPopulateRawHTTPMessage(
         } 
         lineLen = strlen(local);
         bytesRead = (bytesRead + lineLen + 2);       
+        
         /* call handler function with reqLine */
         dwError = VmRESTParseHTTPReqLine(
                       lineNo,
@@ -568,7 +569,7 @@ VmRESTParseAndPopulateRawHTTPMessage(
         BAIL_ON_VMREST_ERROR(dwError);
       
         reqLine = strtok(NULL, "\r\n");
-        memset(local,'\0',1024);
+        memset(local,'\0',MAX_REQ_LIN_LEN);
     }
 
 cleanup:
