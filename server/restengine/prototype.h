@@ -36,3 +36,13 @@ VmRESTTestHTTPParser(
     void
     );
 
+void
+VmRESTFreeHTTPRequestPacket(
+    PVM_REST_HTTP_REQUEST_PACKET*   ppReqPacket
+    );
+
+void
+VmRESTFreeHTTPResponsePacket(
+    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    );
+

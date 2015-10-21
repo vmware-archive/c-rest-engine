@@ -22,9 +22,21 @@ VmRESTAllocateRequestLine(
     );
 
 static
+void
+VmRESTFreeRequestLine(
+    PVM_REST_HTTP_REQUEST_LINE   pReqLine
+    );
+
+static
 uint32_t
 VmRESTAllocateStatusLine(
     PVM_REST_HTTP_STATUS_LINE* ppStatusLine
+    );
+
+static
+void
+VmRESTFreeStatusLine(
+    PVM_REST_HTTP_STATUS_LINE   pStatusLine
     );
 
 static
@@ -34,9 +46,21 @@ VmRESTAllocateGeneralHeader(
     );
 
 static
+void
+VmRESTFreeGeneralHeader(
+    PVM_REST_HTTP_GENERAL_HEADER   pGenHeader
+    );
+
+static
 uint32_t
 VmRESTAllocateRequestHeader(
     PVM_REST_HTTP_REQUEST_HEADER* ppReqHeader
+    );
+
+static
+void
+VmRESTFreeRequestHeader(
+    PVM_REST_HTTP_REQUEST_HEADER   pReqHeader
     );
 
 static
@@ -46,15 +70,34 @@ VmRESTAllocateResponseHeader(
     );
 
 static
+void
+VmRESTFreeResponseHeader(
+    PVM_REST_HTTP_RESPONSE_HEADER   pResHeader
+    );
+
+static
 uint32_t
 VmRESTAllocateEntityHeader(
     PVM_REST_HTTP_ENTITY_HEADER* ppEntityHeader
     );
 
 static
+void
+VmRESTFreeEntityHeader(
+    PVM_REST_HTTP_ENTITY_HEADER   pEntityHeader
+    );
+
+
+static
 uint32_t
 VmRESTAllocateMessageBody(
     PVM_REST_HTTP_MESSAGE_BODY* ppMsgBody
+    );
+
+static
+void
+VmRESTFreeMessageBody(
+    PVM_REST_HTTP_MESSAGE_BODY   pMsgBody
     );
 
 
@@ -64,43 +107,41 @@ VmRESTAllocateHTTPRequestPacket(
     )
 {
     uint32_t dwError = 0;
-    PVM_REST_HTTP_REQUEST_PACKET pReqPacket = NULL;
-    
+    PVM_REST_HTTP_REQUEST_PACKET   pReqPacket = NULL;
     PVM_REST_HTTP_REQUEST_LINE     pReqLine = NULL;
     PVM_REST_HTTP_GENERAL_HEADER   pGenHeader = NULL;
     PVM_REST_HTTP_REQUEST_HEADER   pReqHeader = NULL;
     PVM_REST_HTTP_ENTITY_HEADER    pEntityHeader= NULL;
     PVM_REST_HTTP_MESSAGE_BODY     pMessageBody = NULL;
 
-    dwError = VmRESTAllocateRequestLine(
-              &pReqLine);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTAllocateGeneralHeader(
-              &pGenHeader);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTAllocateRequestHeader(
-              &pReqHeader);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTAllocateEntityHeader(
-              &pEntityHeader);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTAllocateMessageBody(
-              &pMessageBody);
-    BAIL_ON_VMREST_ERROR(dwError);   
- 
     dwError = VmRESTAllocateMemory(
                    sizeof(VM_REST_HTTP_REQUEST_PACKET),
                    (void**)&pReqPacket);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    pReqPacket->requestLine = pReqLine;  
-    pReqPacket->generalHeader = pGenHeader;
+    dwError = VmRESTAllocateRequestLine(
+              &pReqLine);
+    BAIL_ON_VMREST_ERROR(dwError);
+    pReqPacket->requestLine = pReqLine;    
+
+    dwError = VmRESTAllocateGeneralHeader(
+              &pGenHeader);
+    BAIL_ON_VMREST_ERROR(dwError);
+    pReqPacket->generalHeader = pGenHeader;    
+
+    dwError = VmRESTAllocateRequestHeader(
+              &pReqHeader);
+    BAIL_ON_VMREST_ERROR(dwError);
     pReqPacket->requestHeader = pReqHeader;
-    pReqPacket->entityHeader = pEntityHeader; 
+
+    dwError = VmRESTAllocateEntityHeader(
+              &pEntityHeader);
+    BAIL_ON_VMREST_ERROR(dwError);
+    pReqPacket->entityHeader = pEntityHeader;
+
+    dwError = VmRESTAllocateMessageBody(
+              &pMessageBody);
+    BAIL_ON_VMREST_ERROR(dwError);   
     pReqPacket->messageBody = pMessageBody;
 
     *ppReqPacket = pReqPacket;
@@ -108,24 +149,52 @@ VmRESTAllocateHTTPRequestPacket(
 cleanup:
     return dwError;
 error:
-    /* TODO: Write cleanup routine */
+    VmRESTFreeHTTPRequestPacket(
+        &pReqPacket
+        );
+    *ppReqPacket = NULL;
     goto cleanup;
 }
 
-uint32_t
+void
 VmRESTFreeHTTPRequestPacket(
-    PVM_REST_HTTP_REQUEST_PACKET* ppReqPacket
+    PVM_REST_HTTP_REQUEST_PACKET*   ppReqPacket
     )
-{
-    uint32_t dwError = 0;
-    
-    BAIL_ON_VMREST_ERROR(dwError);
+{    
+    PVM_REST_HTTP_REQUEST_PACKET    pReqPacket = NULL;
+    pReqPacket = *ppReqPacket;
+    if (!pReqPacket) 
+    {    
+        if (pReqPacket->requestLine)
+        {
+            VmRESTFreeRequestLine(pReqPacket->requestLine);
+        }
+        if (pReqPacket->generalHeader)
+        {
+            VmRESTFreeGeneralHeader(pReqPacket->generalHeader);
+        }
+        if (pReqPacket->requestHeader)
+        {
+            VmRESTFreeRequestHeader(pReqPacket->requestHeader);
+        }
+        if (pReqPacket->entityHeader)
+        {
+            VmRESTFreeEntityHeader(pReqPacket->entityHeader);
+        }
+        if (pReqPacket->messageBody)
+        {
+            VmRESTFreeMessageBody(pReqPacket->messageBody);
+        }    
+        pReqPacket->requestLine = NULL;
+        pReqPacket->generalHeader = NULL;
+        pReqPacket->requestHeader = NULL;
+        pReqPacket->entityHeader = NULL;
+        pReqPacket->messageBody = NULL;
+       
+        VmRESTFreeMemory(pReqPacket);
 
-
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
+        *ppReqPacket = NULL;
+    }
 }
 
 
@@ -179,24 +248,54 @@ VmRESTAllocateHTTPResponsePacket(
 cleanup:
     return dwError;
 error:
-    /* TODO: Write cleanup routines */
+    VmRESTFreeHTTPResponsePacket(
+        &pResPacket
+        );
+    *ppResPacket = NULL;
     goto cleanup;
 }
 
-uint32_t
+void
 VmRESTFreeHTTPResponsePacket(
     PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
     )
 {
-    uint32_t dwError = 0;
-    BAIL_ON_VMREST_ERROR(dwError);
+    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket = NULL;
+    pResPacket = *ppResPacket;
+    if (!pResPacket)
+    {
+        if (pResPacket->statusLine)
+        {
+            VmRESTFreeStatusLine(pResPacket->statusLine);
+        }
+        if (pResPacket->generalHeader)
+        {
+            VmRESTFreeGeneralHeader(pResPacket->generalHeader);
+        }
+        if (pResPacket->responseHeader)
+        {
+            VmRESTFreeResponseHeader(pResPacket->responseHeader);
+        }
+        if (pResPacket->entityHeader)
+        {
+            VmRESTFreeEntityHeader(pResPacket->entityHeader);
+        }
+        if (pResPacket->messageBody)
+        {
+            VmRESTFreeMessageBody(pResPacket->messageBody);
+        }
+ 
+        pResPacket->statusLine = NULL;
+        pResPacket->generalHeader = NULL;
+        pResPacket->responseHeader = NULL;
+        pResPacket->entityHeader = NULL;
+        pResPacket->messageBody = NULL;
 
 
+        VmRESTFreeMemory(pResPacket);
 
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
+        *ppResPacket = NULL;
+    }    
 }
 
 uint32_t 
@@ -397,6 +496,7 @@ VmRESTHTTPPopulateHeader(
         i++;
     }
     *temp = '\0';
+
     strcpy(value,local);
     
     /* write the specific attribute header field after matching */
@@ -618,6 +718,18 @@ error:
 }
 
 static
+void
+VmRESTFreeRequestLine(
+    PVM_REST_HTTP_REQUEST_LINE  pReqLine
+    )
+{
+    if (pReqLine)
+    {
+        VmRESTFreeMemory(pReqLine);
+    }
+}
+
+static
 uint32_t
 VmRESTAllocateStatusLine(
     PVM_REST_HTTP_STATUS_LINE *ppStatusLine
@@ -637,6 +749,18 @@ cleanup:
     return dwError;
 error:
     goto cleanup;
+}
+
+static
+void
+VmRESTFreeStatusLine(
+    PVM_REST_HTTP_STATUS_LINE   pStatusLine
+    )
+{
+    if (pStatusLine)
+    {
+        VmRESTFreeMemory(pStatusLine);
+    }
 }
 
 static
@@ -662,6 +786,18 @@ error:
 }
 
 static
+void
+VmRESTFreeGeneralHeader(
+    PVM_REST_HTTP_GENERAL_HEADER  pGenHeader
+    )
+{
+    if( pGenHeader)
+    {
+        VmRESTFreeMemory(pGenHeader);
+    }
+}
+
+static
 uint32_t
 VmRESTAllocateRequestHeader(
     PVM_REST_HTTP_REQUEST_HEADER* ppReqHeader
@@ -681,6 +817,18 @@ cleanup:
     return dwError;
 error:
     goto cleanup;
+}
+
+static
+void
+VmRESTFreeRequestHeader(
+    PVM_REST_HTTP_REQUEST_HEADER  pReqHeader
+    )
+{
+    if (pReqHeader)
+    {
+        VmRESTFreeMemory(pReqHeader);
+    }
 }
 
 static
@@ -706,6 +854,18 @@ error:
 }
 
 static
+void
+VmRESTFreeResponseHeader(
+    PVM_REST_HTTP_RESPONSE_HEADER   pResHeader
+    )
+{
+    if (pResHeader)
+    {
+        VmRESTFreeMemory(pResHeader);
+    }
+}
+
+static
 uint32_t
 VmRESTAllocateEntityHeader(
     PVM_REST_HTTP_ENTITY_HEADER  *ppEntityHeader
@@ -725,6 +885,18 @@ cleanup:
     return dwError;
 error:
     goto cleanup;
+}
+
+static
+void
+VmRESTFreeEntityHeader(
+    PVM_REST_HTTP_ENTITY_HEADER    pEntityHeader
+    )
+{
+    if (pEntityHeader)
+    {
+        VmRESTFreeMemory(pEntityHeader);
+    }
 }
 
 static
@@ -749,6 +921,17 @@ error:
     goto cleanup;
 }
 
+static
+void
+VmRESTFreeMessageBody(
+    PVM_REST_HTTP_MESSAGE_BODY   pMsgBody
+    )
+{
+    if (pMsgBody)
+    {
+        VmRESTFreeMemory(pMsgBody);
+    }
+}
 
 uint32_t
 VmRESTProcessIncomingData(
