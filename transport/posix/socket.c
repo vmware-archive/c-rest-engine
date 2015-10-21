@@ -144,7 +144,7 @@ VmSockPosixServerListenThread(
     {
         hot_sockets = epoll_wait(epoll_fd, events, MAX_EVENT, -1);
         /* Just for debugging. Will remove */
-        write(1,"\nPosting events", 20);    
+        //write(1,"\nPosting events", 20);    
         pthread_mutex_lock(&(pQueue->lock));
         for (i= 0; i< hot_sockets;i++)
         {
@@ -206,7 +206,7 @@ uint32_t VmSockPosixHandleEventsFromQueue(
     uint32_t dwError = 0;
     
     /* Just for debugging purpose -  will remove */
-    write(1,"\nTHREAD Handler ..", 20);
+ //   write(1,"\nTHREAD Handler ..", 20);
     
     while (1) 
     { 
@@ -218,7 +218,7 @@ uint32_t VmSockPosixHandleEventsFromQueue(
         }
         temp = remove_element(pQueue);
         pthread_mutex_unlock(&(pQueue->lock));
-        write(1,"\nTHREAD Handler - AfterWait", 28);
+   //     write(1,"\nTHREAD Handler - AfterWait", 28);
         if (!temp)
         {
             dwError = ERROR_NOT_SUPPORTED;
@@ -265,7 +265,7 @@ uint32_t VmsockPosixAcceptNewConnection(
     struct epoll_event ev = {0};
    
     /* Just for debugging: Will remove */
-    write(1,"\nIn accept Connection", 25);
+   // write(1,"\nIn accept Connection", 25);
 
     sin_size  = sizeof(client_addr);
     accept_fd = accept(server_fd, (struct sockaddr *)&client_addr, &sin_size);
@@ -306,21 +306,30 @@ uint32_t VmsockPosixReadDataAtOnce(
     int fd
     )
 {
+    uint32_t dwError = 0;
     int read_cnt;
-    char buffer[128];
-    write(1,"\nDATA Received ..", 20);
+    char buffer[4096];
+  //  write(1,"\nDATA Received ..", 20);
     while(1)
     {
-        memset(buffer,'\0',128);
-        read_cnt = read(fd, buffer, (sizeof(buffer) -1));
-        buffer[read_cnt+1] = '\n';
-        write(1,buffer, read_cnt+1);
-
-        printf("Server received %s", buffer);
+        memset(buffer,'\0',4096);
+        read_cnt = read(fd, buffer, (sizeof(buffer)));
         if (read_cnt == -1 || read_cnt == 0)
         {
             break;
         }
+   //     write(1,buffer, read_cnt);
+        dwError =  VmRESTProcessIncomingData(
+                       buffer,
+                       (uint32_t)read_cnt
+                    );
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+      //  printf("Server received %s", buffer);
     }
-    return 0;
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;    
 }

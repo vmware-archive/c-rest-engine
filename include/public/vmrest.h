@@ -40,5 +40,18 @@ VmRESTEngineShutdown(
     void
     );
 
+/*
+ * @brief Rest engine exposed API to handle data from raw socket
+ *
+ * @param[in]           char*
+ * @param[in]           byteRead
+ * @return Returns 0 for success
+ */
+
+uint32_t
+VmRESTProcessIncomingData(
+    char     *buffer,
+    uint32_t byteRead
+    );
 
 

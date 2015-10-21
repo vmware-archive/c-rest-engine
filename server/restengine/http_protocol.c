@@ -537,7 +537,7 @@ VmRESTParseAndPopulateRawHTTPMessage(
     reqLine = strtok(strdup(buffer), "\r\n");
      
     while (1)
-    {
+    {   
         if (reqLine) 
         {
            strcpy(local,reqLine);
@@ -549,13 +549,14 @@ VmRESTParseAndPopulateRawHTTPMessage(
             if (pReqPacket->entityHeader->contentLength != NULL) 
             {
                 contentLen = atoi(pReqPacket->entityHeader->contentLength);
-            } 
-            
+            }
+  
             /* Copy the payload to http structure */
             memcpy(pReqPacket->messageBody->buffer, (temp + bytesRead+3), contentLen);
             break;
 
-        } 
+        }
+ 
         lineLen = strlen(local);
         bytesRead = (bytesRead + lineLen + 2);       
         
@@ -748,6 +749,41 @@ error:
     goto cleanup;
 }
 
+
+uint32_t
+VmRESTProcessIncomingData(
+    char         *buffer,
+    uint32_t     byteRead
+    )
+{
+    uint32_t                     dwError = 0;
+    PVM_REST_HTTP_REQUEST_PACKET pReqPacket = NULL;
+    
+    dwError = VmRESTAllocateHTTPRequestPacket(
+        &pReqPacket
+    );
+    BAIL_ON_VMREST_ERROR(dwError);
+    
+    dwError = VmRESTParseAndPopulateRawHTTPMessage(
+                  buffer,
+                  byteRead,
+                  pReqPacket);
+
+    write(1,"\n METHOD:", 9);
+    write(1,pReqPacket->requestLine->method, 10);
+    write(1,"\n CONNECTION:", 12);
+    write(1,pReqPacket->generalHeader->connection, 20);
+    write(1,"\n Content Length: ", 18);
+    write(1,pReqPacket->entityHeader->contentLength,5);
+    write(1,"\n Message Body: ", 15);
+    write(1, pReqPacket->messageBody->buffer,30);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+
+}
 
 uint32_t 
 VmRESTTestHTTPParser(
