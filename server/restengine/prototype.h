@@ -31,10 +31,85 @@ VmRestFreeThreadpool(
     uint32_t       threadcount
     );
 
+
+/* Add all Http internal exposed routines here */
+
+uint32_t
+VmRESTHTTPGetmethod(
+    char*    line,
+    uint32_t lineLen,
+    char*    result
+    );
+
+uint32_t
+VmRESTHTTPGetReqURI(
+    char*    line,
+    uint32_t lineLen,
+    char*    result
+    );
+
+uint32_t
+VmRESTHTTPGetReqVersion(
+    char*    line,
+    uint32_t lineLen,
+    char*    result
+    );
+
+uint32_t
+VmRESTHTTPPopulateHeader(
+    char*                        line,
+    uint32_t                     lineLen,
+    PVM_REST_HTTP_REQUEST_PACKET pReqPacket
+    );
+
+uint32_t
+VmRESTParseHTTPReqLine(
+    uint32_t                      lineNo,
+    char*                         line,
+    uint32_t                      lineLen,
+    PVM_REST_HTTP_REQUEST_PACKET  pReqPacket
+    );
+
+uint32_t
+VmRESTParseAndPopulateRawHTTPMessage(
+    char*                        buffer,
+    uint32_t                     packetLen,
+    PVM_REST_HTTP_REQUEST_PACKET pReqPacket
+    );
+
+uint32_t
+VmRESTCreateHTTPResponseMessage(
+    PVM_REST_HTTP_RESPONSE_PACKET* pResPacket
+    );
+
+/* This will be removed once cli module for modular testing is implemented */
 uint32_t
 VmRESTTestHTTPParser(
     void
     );
+
+uint32_t
+VmRESTAllocateHTTPRequestPacket(
+    PVM_REST_HTTP_REQUEST_PACKET* ppReqPacket
+    );
+
+void
+VmRESTFreeHTTPRequestPacket(
+    PVM_REST_HTTP_REQUEST_PACKET*   ppReqPacket
+    );
+
+uint32_t
+VmRESTAllocateHTTPResponsePacket(
+    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    );
+
+void
+VmRESTFreeHTTPResponsePacket(
+    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    );
+
+
+
 
 void
 VmRESTFreeHTTPRequestPacket(
