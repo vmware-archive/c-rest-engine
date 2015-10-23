@@ -16,7 +16,7 @@
 
 uint32_t
 VmRESTEngineInit(
-    void
+    PVMREST_ENGINE_METHODS*     pHandlers
     ) 
 {   
     uint32_t dwError = 0;

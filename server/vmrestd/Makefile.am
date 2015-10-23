@@ -1,6 +1,8 @@
 sbin_PROGRAMS = vmrestd
 
 vmrestd_SOURCES = \
+    globals.c \
+    httpHandlers.c \
     main.c \
     service.c \
     signal.c

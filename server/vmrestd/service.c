@@ -19,11 +19,24 @@ VmRESTSrvInitialize(
     void
     )
 {
-    write(1,"\nService Init ..", 20);
     uint32_t dwError = 0;
-    dwError = VmRESTEngineInit();
+    
+    dwError = VmRESTEngineInit(
+                  &gpVmRestHandlers
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
     dwError = VmRestTransportInit("localhost", "61010");
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+
     return dwError;
+
+error:
+
+    goto cleanup;
+
 }
 
 uint32_t
