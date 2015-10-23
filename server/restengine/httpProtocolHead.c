@@ -396,7 +396,6 @@ error:
     goto cleanup;
 }
 
-/* ------------------------- */
 uint32_t
 VmRESTPopulateStatusLine(
     char*                           httpVersion,
@@ -488,7 +487,6 @@ error:
     goto cleanup;
 }
 
-/* -------------------------- */
 uint32_t
 VmRESTCreateHTTPResponseMessage(
     PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
