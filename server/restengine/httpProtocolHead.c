@@ -396,13 +396,113 @@ error:
     goto cleanup;
 }
 
+/* ------------------------- */
 uint32_t
-VmRESTCreateHTTPResponseMessage(
-    PVM_REST_HTTP_RESPONSE_PACKET* pResPacket
+VmRESTPopulateStatusLine(
+    char*                           httpVersion,
+    char*                           statusCode,
+    char*                           reasonPhrase,
+    PVM_REST_HTTP_RESPONSE_PACKET   pResPacket
+    )
+{
+    uint32_t                       dwError = 0;
+    
+    if ( httpVersion == NULL || statusCode == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    
+    /* Reason phrase can be NULL */
+    
+    memcpy(pResPacket->statusLine->version, httpVersion, (strlen(httpVersion) + 1));
+    memcpy(pResPacket->statusLine->statusCode, statusCode, (strlen(statusCode) + 1));
+    if (httpVersion)
+    {
+        memcpy(pResPacket->statusLine->version, httpVersion,(strlen(httpVersion) + 1));
+    }
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t 
+VmRESTPopulateResponseHeader(
+    char*                           attribute,
+    char*                           value,
+    PVM_REST_HTTP_RESPONSE_PACKET   pResPacket
     )
 {
     uint32_t dwError = 0;
+    
+    if (attribute == NULL || value == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+   
+    if ((strcmp(attribute, "Accept-Ranges")) == 0)
+    {
+        strcpy(pResPacket->responseHeader->acceptRange, value);
+    }
+    else if ((strcmp(attribute, "Location")) == 0)
+    {
+        strcpy(pResPacket->responseHeader->location, value);
+    }
+    else if ((strcmp(attribute, "Connection")) == 0)
+    {
+        strcpy(pResPacket->generalHeader->connection, value);
+    }
+    else if ((strcmp(attribute, "Content-Length")) == 0)
+    {
+        strcpy(pResPacket->entityHeader->contentLength, value);
+    }
+    else if ((strcmp(attribute, "Content-Type")) == 0)
+    {
+        strcpy(pResPacket->entityHeader->contentType, value);
+    }
+    else if ((strcmp(attribute, "Content-Encoding")) == 0)
+    {
+        strcpy(pResPacket->entityHeader->contentEncoding, value);
+    }    
+    else if ((strcmp(attribute, "Proxy-Authenticate")) == 0)
+    {
+        strcpy(pResPacket->responseHeader->proxyAuth, value);
+    }
+    else if ((strcmp(attribute, "Server")) == 0)
+    {
+        strcpy(pResPacket->responseHeader->server, value);
+    }
+    else 
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    /* Keep on Adding Response Packet Headers here */
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+/* -------------------------- */
+uint32_t
+VmRESTCreateHTTPResponseMessage(
+    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    )
+{
+    uint32_t dwError = 0;
+    PVM_REST_HTTP_RESPONSE_PACKET   pResPacket = NULL;
+    dwError = VmRESTAllocateHTTPResponsePacket(
+        &pResPacket
+    );
     BAIL_ON_VMREST_ERROR(dwError);
+
+    
+
 
 
 
