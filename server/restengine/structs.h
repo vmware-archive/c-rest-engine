@@ -12,7 +12,6 @@
  * under the License.
  */
 
-#include "defines.h"
 
 typedef struct _REST_ENG_THREAD_DATA
 {

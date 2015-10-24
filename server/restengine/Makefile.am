@@ -10,7 +10,8 @@ librestengine_la_SOURCES = \
     libmain.c \
     thread.c \
     httpProtocolHead.c \
-    httpAllocStruct.c
+    httpAllocStruct.c \
+    httpUtils.c
 
 librestengine_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
