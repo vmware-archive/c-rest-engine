@@ -899,7 +899,267 @@ VmRESTSetHttpReasonPhrase(
     )
 {
     uint32_t                        dwError = 0;
+    uint32_t                        status = 0;
+    char                            buffer[MAX_REA_PHRASE_LEN] = {0};                       
+    PVM_REST_HTTP_RESPONSE_PACKET   pResponse = NULL;
+
+
+    if (ppResponse == NULL || *ppResponse == NULL)
+    {
+        /* Response object not allocated any memory */
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+ 
+    if (reasonPhrase == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+   
+    pResponse = *ppResponse;
+    
+    dwError = VmRESTMapStatusCodeToEnumAndReasonPhrase(
+                  reasonPhrase,
+                  &status,
+                  buffer
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
+
+    strcpy(pResponse->statusLine->reason_phrase, buffer);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+
+}
+
+uint32_t
+VmRESTMapStatusCodeToEnumAndReasonPhrase(
+    char*             statusCode,
+    uint32_t*         result,
+    char*             reasonPhrase
+    )
+{
+    uint32_t          dwError = 0;
+    if (statusCode == NULL || result == NULL || reasonPhrase == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    
+    if ((strcmp(statusCode, "100")) == 0) 
+    {
+        *result = CONTINUE;
+        strcpy(reasonPhrase, "continue");
+    } 
+    else if ((strcmp(statusCode, "101")) == 0)
+    {
+        *result = SWITCHING_PROTOCOL;
+        strcpy(reasonPhrase,"Switching Protocols");
+    }
+    else if ((strcmp(statusCode, "200")) == 0)
+    { 
+        *result = OK;
+        strcpy(reasonPhrase,"OK");
+    }
+    else if ((strcmp(statusCode, "201")) == 0)
+    {
+        *result = CREATED;
+        strcpy(reasonPhrase,"Created");
+    }
+    else if ((strcmp(statusCode, "202")) == 0)
+    {
+        *result = ACCEPTED;
+        strcpy(reasonPhrase,"Accepted");
+    }
+    else if ((strcmp(statusCode, "203")) == 0)
+    {
+        *result = NON_AUTH_INFO;
+        strcpy(reasonPhrase,"Non-Authoritative Information");
+    }
+    else if ((strcmp(statusCode, "204")) == 0)
+    {
+        *result = NO_CONTENT;
+        strcpy(reasonPhrase,"No Content");
+    }
+    else if ((strcmp(statusCode, "205")) == 0)
+    {
+        *result = RESET_CONTENT;
+        strcpy(reasonPhrase,"Reset Content");
+    }
+    else if ((strcmp(statusCode, "206")) == 0)
+    {
+        *result = PARTIAL_CONTENT;
+        strcpy(reasonPhrase,"Partial Content");
+    }
+    else if ((strcmp(statusCode, "300")) == 0)
+    {
+        *result = MULTIPLE_CHOICES;
+        strcpy(reasonPhrase,"Multiple Choices");
+    }
+    else if ((strcmp(statusCode, "301")) == 0)
+    {
+        *result = MOVED_PERMANENTLY;
+        strcpy(reasonPhrase,"Moved Permanently");
+    }
+    else if ((strcmp(statusCode, "302")) == 0)
+    {
+        *result = FOUND;
+        strcpy(reasonPhrase,"Found");
+    }
+    else if ((strcmp(statusCode, "303")) == 0)
+    {
+        *result = SEE_OTHER;
+        strcpy(reasonPhrase,"See Other");
+    }
+    else if ((strcmp(statusCode, "304")) == 0)
+    {
+        *result = NOT_MODIFIED;
+        strcpy(reasonPhrase,"Not Modified");
+    }
+    else if ((strcmp(statusCode, "305")) == 0)
+    {
+        *result = USE_PROXY;
+        strcpy(reasonPhrase,"Use Proxy");
+    }
+    else if ((strcmp(statusCode, "306")) == 0)
+    { 
+        *result = TEMPORARY_REDIRECT;
+        strcpy(reasonPhrase,"Temporary Redirect");
+    }
+    else if ((strcmp(statusCode, "400")) == 0)
+    {
+        *result = BAD_REQUEST;
+        strcpy(reasonPhrase,"Bad Request");
+    }
+    else if ((strcmp(statusCode, "401")) == 0)
+    {
+        *result = UNAUTHORIZED;
+        strcpy(reasonPhrase,"Unauthorized");
+    }
+    else if ((strcmp(statusCode, "402")) == 0)
+    {
+        *result = PAYMENT_REQUIRED;
+        strcpy(reasonPhrase,"Payment Required");
+    }
+    else if ((strcmp(statusCode, "403")) == 0)
+    {
+        *result = FORBIDDEN;
+        strcpy(reasonPhrase,"Forbidden");
+    }
+    else if ((strcmp(statusCode, "404")) == 0)
+    {
+        *result = NOT_FOUND;
+        strcpy(reasonPhrase,"Not Found");
+    }
+    else if ((strcmp(statusCode, "405")) == 0)
+    {
+        *result = METHOD_NOT_ALLOWED;
+        strcpy(reasonPhrase,"Method Not Allowed");
+    }
+    else if ((strcmp(statusCode, "406")) == 0)
+    {
+        *result = NOT_ACCEPTABLE;
+        strcpy(reasonPhrase,"Not Acceptable");
+    }
+    else if ((strcmp(statusCode, "407")) == 0)
+    {
+        *result = PROXY_AUTH_REQUIRED;
+        strcpy(reasonPhrase,"Proxy Authentication Required");
+    }
+    else if ((strcmp(statusCode, "408")) == 0)
+    {
+        *result = REQUEST_TIMEOUT;
+        strcpy(reasonPhrase,"Request Timeout");
+    }
+    else if ((strcmp(statusCode, "409")) == 0)
+    {
+        *result = CONFLICT;
+        strcpy(reasonPhrase,"Conflict");
+    }
+    else if ((strcmp(statusCode, "410")) == 0)
+    {
+        *result = GONE;
+        strcpy(reasonPhrase,"Gone");
+    }
+    else if ((strcmp(statusCode, "411")) == 0)
+    {
+        *result = LENGTH_REQUIRED;
+        strcpy(reasonPhrase,"Length Required");
+    }
+    else if ((strcmp(statusCode, "412")) == 0)
+    {
+        *result = PRECONDITION_FAILED;
+        strcpy(reasonPhrase,"Precondition Failed");
+    }
+    else if ((strcmp(statusCode, "413")) == 0)
+    {
+        *result = REQUEST_ENTITY_TOO_LARGE;
+        strcpy(reasonPhrase,"Request Entity Too Large");
+    }
+    else if ((strcmp(statusCode, "414")) == 0)
+    {
+        *result = REQUEST_URI_TOO_LARGE;
+        strcpy(reasonPhrase,"Request-URI Too Large ");
+    }
+    else if ((strcmp(statusCode, "415")) == 0)
+    {
+        *result = UNSUPPORTED_MEDIA_TYPE;
+        strcpy(reasonPhrase,"Unsupported Media Type");
+    }
+    else if ((strcmp(statusCode, "416")) == 0)
+    {
+        *result = REQUEST_RANGE_NOT_SATISFIABLE;
+        strcpy(reasonPhrase,"Request range not satisfiable");
+    }
+    else if ((strcmp(statusCode, "417")) == 0)
+    {
+        *result = EXPECTATION_FAILED;
+        strcpy(reasonPhrase,"Expectation Failed");
+    }
+    else if ((strcmp(statusCode, "500")) == 0)
+    {
+        *result = INTERNAL_SERVER_ERROR;
+        strcpy(reasonPhrase,"Internal Server Error");
+    }
+    else if ((strcmp(statusCode, "501")) == 0)
+    {
+        *result = NOT_IMPLEMENTED;
+        strcpy(reasonPhrase,"Not Implemented");
+    }
+    else if ((strcmp(statusCode, "502")) == 0)
+    {
+        *result = BAD_GATEWAY;
+        strcpy(reasonPhrase,"Bad Gateway");
+    }
+    else if ((strcmp(statusCode, "503")) == 0)
+    {
+        *result = SERVICE_UNAVAILABLE;
+        strcpy(reasonPhrase,"Service Unavailable");
+    }
+    else if ((strcmp(statusCode, "504")) == 0)
+    {
+        *result = GATEWAY_TIMEOUT;
+        strcpy(reasonPhrase,"Gateway Time-out");
+    }
+    else if ((strcmp(statusCode, "505")) == 0)
+    {
+        *result = HTTP_VERSION_NOT_SUPPORTED;
+        strcpy(reasonPhrase,"HTTP Version not supported");
+    }
+    else
+    {
+        result = NULL;
+        strcpy(reasonPhrase,"Status code is not valid");
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+  
 
 cleanup:
 

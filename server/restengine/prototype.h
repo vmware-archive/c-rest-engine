@@ -135,6 +135,12 @@ VmRESTMapMethodToEnum(
     uint32_t*         result
     );
 
+uint32_t
+VmRESTMapStatusCodeToEnumAndReasonPhrase(
+    char*             statusCode,
+    uint32_t*         result,
+    char*             reasonPhrase
+    );
 
 
 
