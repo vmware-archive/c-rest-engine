@@ -121,3 +121,28 @@ VmRESTFreeHTTPResponsePacket(
     PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
     );
 
+/* httpUtils.c */
+
+uint32_t
+VmRESTMapHeaderToEnum(
+    char*             header,
+    uint32_t*         result
+    );
+
+uint32_t
+VmRESTMapMethodToEnum(
+    char*             method,
+    uint32_t*         result
+    );
+
+
+
+
+
+
+
+
+
+
+
+

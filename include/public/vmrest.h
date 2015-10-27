@@ -103,4 +103,119 @@ VmRESTEngineInit(
     );
 
 
+
+/* Exposed Rest engine API's */
+
+/* httpUtils.c */
+
+
+/*
+ * @brief Retrieve method name associated with request http object.
+ *
+ * @param[in]           Reference to HTTP Request object
+ * @param[out]          HTTP method present in request object.
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTGetHttpMethod(
+    PVM_REST_HTTP_REQUEST_PACKET    pRequest,
+    char*                           response
+    );
+
+/*
+ * @brief Retrieve URI associated with request http object.
+ *
+ * @param[in]           Reference to HTTP Request object.
+ * @param[out]          URI present in request object.
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTGetHttpURI(
+    PVM_REST_HTTP_REQUEST_PACKET    pRequest,
+    char*                           response
+    );
+
+/*
+ * @brief Retrieve HTTP Version associated with request http object.
+ *
+ * @param[in]           Reference to HTTP Request object.
+ * @param[out]          HTTP version (1.0/1.1) present in request object.
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTGetHttpVersion(
+    PVM_REST_HTTP_REQUEST_PACKET    pRequest,
+    char*                           response
+    );
+
+/*
+ * @brief Retrieve Value of HTTP header associated with request http object.
+ *
+ * @param[in]           Reference to HTTP Request object.
+ * @param[in]           Header field to be retrieve.
+ * @param[out]          Value of header present in request object.
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTGetHttpHeader(
+    PVM_REST_HTTP_REQUEST_PACKET    pRequest,
+    char*                           header,
+    char*                           response
+    );
+
+/*
+ * @brief Set given value to given HTTP header in the response http object.
+ *
+ * @param[in]           Reference to HTTP Response object.
+ * @param[in]           Header field to be set.
+ * @param[in]           Value of header field to be set.
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTSetHttpHeader(
+    PVM_REST_HTTP_RESPONSE_PACKET*  ppResponse,
+    char*                           header,
+    char*                           value
+    );
+
+/*
+ * @brief Set given value to HTTP reponse object status line.
+ *
+ * @param[in]           Reference to HTTP Response object.
+ * @param[in]           StatusCode to be set.
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTSetHttpStatusCode(
+    PVM_REST_HTTP_RESPONSE_PACKET*  ppResponse,
+    char*                           statusCode
+    );
+
+/*
+ * @brief Set given HTTP Version to HTTP reponse object status line.
+ *
+ * @param[in]           Reference to HTTP Response object.
+ * @param[in]           HTTP Version to be set.
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTSetHttpStatusVersion(
+    PVM_REST_HTTP_RESPONSE_PACKET*  ppResponse,
+    char*                           version
+    );
+
+/*
+ * @brief Set given reason phrase to HTTP reponse object status line.
+ *
+ * @param[in]           Reference to HTTP Response object.
+ * @param[in]           reason phrase to be set.
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTSetHttpReasonPhrase(
+    PVM_REST_HTTP_RESPONSE_PACKET*  ppResponse,
+    char*                           reasonPhrase
+    );
+
+
 #endif /* __VMREST_H__ */

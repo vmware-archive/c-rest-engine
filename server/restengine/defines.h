@@ -28,7 +28,7 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define MAX_METHOD_LEN             32
 #define MAX_URI_LEN                64
 #define MAX_VERSION_LEN            32
-#define MAX_STATUS_LEN             32
+#define MAX_STATUS_LEN              4
 #define MAX_REA_PHRASE_LEN         32
 #define MAX_ACCEPT_LEN             32
 #define MAX_ACCEPT_CHARSET_LEN     32
@@ -73,6 +73,19 @@ typedef enum _HTTP_METHODS
     HTTP_METHOD_CONNECT
 }HTTP_METHODS;
 
+/* 
+*  Please DO NOT change first and last header of any 
+*  category.
+*  If new header has to be added, then it should be
+*  added INBETWEEN first and last header of the same category
+*  excluding first and last.
+*  Various category are:
+*  
+*  HTTP_REQUEST_HEADER
+*  HTTP_RESPONSE_HEADER
+*  HTTP_GENERAL_HEADER
+*  HTTP_ENTITY_HEADER 
+*/
 
 typedef enum _HTTP_HEADERS
 {
