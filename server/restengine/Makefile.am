@@ -11,7 +11,8 @@ librestengine_la_SOURCES = \
     thread.c \
     httpProtocolHead.c \
     httpAllocStruct.c \
-    httpUtils.c
+    httpUtilsInternal.c \
+    httpUtilsExternal.c
 
 librestengine_la_LIBADD = \
     @top_builddir@/common/libcommon.la \

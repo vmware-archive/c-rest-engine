@@ -121,7 +121,7 @@ VmRESTFreeHTTPResponsePacket(
     PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
     );
 
-/* httpUtils.c */
+/* httpUtilsInternal.c */
 
 uint32_t
 VmRESTMapHeaderToEnum(
@@ -142,6 +142,12 @@ VmRESTMapStatusCodeToEnumAndReasonPhrase(
     char*             reasonPhrase
     );
 
+uint32_t
+VmRESTGetHttpResponseHeader(
+    PVM_REST_HTTP_RESPONSE_PACKET    pResponse,
+    char*                           header,
+    char*                           response
+    );
 
 
 

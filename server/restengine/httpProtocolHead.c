@@ -498,9 +498,77 @@ VmRESTCreateHTTPResponseMessage(
         &pResPacket
     );
     BAIL_ON_VMREST_ERROR(dwError);
+    
+    ppResPacket = &pResPacket;
 
     
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
 
+/*************/
+#if 0
+
+void
+VmRESTAppendToHeaderBuffer(
+    char*       bufferIn,
+    char*       bufferOut,
+    char*       bufferData,
+    uint32_t    bytes
+    )
+{
+    memcpy(bufferIn, bufferData, bytes);
+    bufferIn = bufferIn + bytes;
+    *bufferIn = '\r';
+    bufferIn++;
+    *bufferIn = '\n';
+    bufferIn++;
+    bufferOut = bufferIn;
+}
+
+uint32_t 
+VmRESTAddAllHeaderInResponse(
+    PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
+    char*                         buffer
+    )
+{
+    uint32_t            dwError = 0;
+    uint32_t            len = 0;
+    uint32_t            streamBytes = 0;
+    char*               curr = NULL:
+    char*               after = NULL;
+
+    if (buffer == NULL || pResPacket == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    
+        
+ 
+    len = strlen(pResPacket->generalHeader->cacheControl);
+    if ( len > 0)
+    {
+        memcpy(curr,"Cache-Control : ", 16);
+        curr = curr + 16;
+        VmRESTAppendToHeaderBuffer(curr,after, pResPacket->generalHeader->cacheControl, len);
+        streamBytes = steamBytes + len + 2 + 16;
+        len = 0;        
+    }
+    len = strlen(pResPacket->generalHeader->)  
+    
+}
+
+uint32_t 
+VmRESTSendResponsePacket(
+    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    )
+{
+    uint32_t          dwError = 0;
+    BAIL_ON_VMREST_ERROR(dwError);
+        
 
 
 
@@ -508,8 +576,10 @@ cleanup:
     return dwError;
 error:
     goto cleanup;
-}
 
+}
+#endif
+/*****************/
 uint32_t
 VmRESTProcessIncomingData(
     char         *buffer,
