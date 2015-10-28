@@ -82,11 +82,26 @@ VmRESTCreateHTTPResponseMessage(
     PVM_REST_HTTP_RESPONSE_PACKET* pResPacket
     );
 
+uint32_t
+VmRESTAddAllHeaderInResponse(
+    PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
+    char*                         buffer,
+    uint32_t                      *bytes
+    );
+
+
+
 /* This will be removed once cli module for modular testing is implemented */
 uint32_t
 VmRESTTestHTTPParser(
     void
     );
+
+uint32_t
+VmRESTTestHTTPResponse(
+    int fd
+    );
+/**********************/
 
 uint32_t
 VmRESTAllocateHTTPRequestPacket(

@@ -7,6 +7,13 @@ VmRestTransportInit(
     char *port
     );
 
+uint32_t VmsockPosixWriteDataAtOnce(
+    int      fd,
+    char*    buffer,
+    uint32_t bytes
+    );
+
+
 uint32_t VmSockPosixHandleEventsFromQueue(
     void
     );
@@ -35,7 +42,8 @@ VmRESTEngineShutdown(
 uint32_t
 VmRESTProcessIncomingData(
     char     *buffer,
-    uint32_t byteRead
+    uint32_t byteRead,
+    int      fd
     );
 
 

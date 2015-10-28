@@ -508,57 +508,224 @@ error:
     goto cleanup;
 }
 
-/*************/
-#if 0
-
-void
-VmRESTAppendToHeaderBuffer(
-    char*       bufferIn,
-    char*       bufferOut,
-    char*       bufferData,
-    uint32_t    bytes
-    )
-{
-    memcpy(bufferIn, bufferData, bytes);
-    bufferIn = bufferIn + bytes;
-    *bufferIn = '\r';
-    bufferIn++;
-    *bufferIn = '\n';
-    bufferIn++;
-    bufferOut = bufferIn;
-}
-
 uint32_t 
 VmRESTAddAllHeaderInResponse(
     PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
-    char*                         buffer
+    char*                         buffer,
+    uint32_t                      *bytes
     )
 {
     uint32_t            dwError = 0;
     uint32_t            len = 0;
     uint32_t            streamBytes = 0;
-    char*               curr = NULL:
-    char*               after = NULL;
-
+    char*               curr = NULL;
+  
     if (buffer == NULL || pResPacket == NULL)
     {
         dwError = ERROR_NOT_SUPPORTED;
         BAIL_ON_VMREST_ERROR(dwError);
     }
-    
-        
- 
+
+    curr = buffer;
+   
     len = strlen(pResPacket->generalHeader->cacheControl);
     if ( len > 0)
     {
         memcpy(curr,"Cache-Control : ", 16);
         curr = curr + 16;
-        VmRESTAppendToHeaderBuffer(curr,after, pResPacket->generalHeader->cacheControl, len);
-        streamBytes = steamBytes + len + 2 + 16;
-        len = 0;        
+        memcpy(curr, pResPacket->generalHeader->cacheControl, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 16;
+        len = 0;
     }
-    len = strlen(pResPacket->generalHeader->)  
-    
+    len = strlen(pResPacket->generalHeader->connection);
+    if ( len > 0)
+    {
+        memcpy(curr,"Connection : ", 13);
+        curr = curr + 13;
+        memcpy(curr, pResPacket->generalHeader->connection, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 13;
+        len = 0;
+    }
+    len = strlen(pResPacket->generalHeader->trailer);
+    if ( len > 0)
+    {
+        memcpy(curr,"Trailer : ", 10);
+        curr = curr + 10;
+        memcpy(curr, pResPacket->generalHeader->trailer, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 10;
+        len = 0;
+    }
+    len = strlen(pResPacket->generalHeader->transferEncoding);
+    if ( len > 0)
+    {
+        memcpy(curr,"Transfer-Encoding: ", 19);
+        curr = curr + 19;
+        memcpy(curr, pResPacket->generalHeader->transferEncoding, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 19;
+        len = 0;
+    }
+    len = strlen(pResPacket->responseHeader->acceptRange);
+    if ( len > 0)
+    {
+        memcpy(curr,"Accept-Ranges : ", 16);
+        curr = curr + 16;
+        memcpy(curr, pResPacket->responseHeader->acceptRange, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 16;
+        len = 0;
+    }
+    len = strlen(pResPacket->responseHeader->location);
+    if ( len > 0)
+    {
+        memcpy(curr,"Location : ", 11);
+        curr = curr + 11;
+        memcpy(curr, pResPacket->responseHeader->location, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 11;
+        len = 0;
+    }
+    len = strlen(pResPacket->responseHeader->proxyAuth);
+    if ( len > 0)
+    {
+        memcpy(curr,"Proxy-Authenticate : ", 21);
+        curr = curr + 21;
+        memcpy(curr, pResPacket->responseHeader->proxyAuth, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 21;
+        len = 0;
+    }
+    len = strlen(pResPacket->responseHeader->server);
+    if ( len > 0)
+    {
+        memcpy(curr,"Server : ", 9);
+        curr = curr + 9;
+        memcpy(curr, pResPacket->responseHeader->server, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 9;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->allow);
+    if ( len > 0)
+    {
+        memcpy(curr,"Allow : ", 8);
+        curr = curr + 8;
+        memcpy(curr, pResPacket->entityHeader->allow, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 8;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentEncoding);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-Encoding : ", 19);
+        curr = curr + 19;
+        memcpy(curr, pResPacket->entityHeader->contentEncoding, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 19;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentLanguage);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-Language : ", 19);
+        curr = curr + 19;
+        memcpy(curr, pResPacket->entityHeader->contentLanguage, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 19;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentLength);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-Length : ", 17);
+        curr = curr + 17;
+        memcpy(curr,pResPacket->entityHeader->contentLength, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 17;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentLocation);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-Location : ", 19);
+        curr = curr + 19;
+        memcpy(curr, pResPacket->entityHeader->contentLocation, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 19;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentMD5);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-MD5 : ", 14);
+        curr = curr + 14;
+        memcpy(curr, pResPacket->entityHeader->contentMD5, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 14;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentRange);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-Range : ", 16);
+        curr = curr + 16;
+        memcpy(curr, pResPacket->entityHeader->contentRange, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 16;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentType);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-Type : ", 15);
+        curr = curr + 15;
+        memcpy(curr, pResPacket->entityHeader->contentType, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 15;
+        len = 0;
+    }
+
+    *bytes = streamBytes;
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
 }
 
 uint32_t 
@@ -578,12 +745,13 @@ error:
     goto cleanup;
 
 }
-#endif
+
 /*****************/
 uint32_t
 VmRESTProcessIncomingData(
     char         *buffer,
-    uint32_t     byteRead
+    uint32_t     byteRead,
+    int          fd
     )
 {
     uint32_t                     dwError = 0;
@@ -608,12 +776,18 @@ VmRESTProcessIncomingData(
     write(1,"\n Message Body: ", 15);
     write(1, pReqPacket->messageBody->buffer,30);
 
+
+    dwError = VmRESTTestHTTPResponse(fd);
+
+
 cleanup:
     return dwError;
 error:
     goto cleanup;
 
 }
+
+/* This is unit test API which will be removed */
 
 uint32_t 
 VmRESTTestHTTPParser(
@@ -642,6 +816,70 @@ VmRESTTestHTTPParser(
     write(1,pReqPacket->entityHeader->contentLength,5);
     write(1,"\n Message Body: ", 15);
     write(1, pReqPacket->messageBody->buffer,30);
+
+
+    return dwError;
+}
+
+/* This is unit test API which will be removed */
+
+uint32_t
+VmRESTTestHTTPResponse(
+    int fd
+    )
+{
+    char buffer[4096] = {0};
+    uint32_t dwError = 0;
+    char header[32] = {0};
+    char value[128] = {0};
+    uint32_t        bytes = 0;
+    PVM_REST_HTTP_RESPONSE_PACKET pResPacket = NULL;
+
+    /******** Allocate memory to response object */
+    
+    dwError = VmRESTAllocateHTTPResponsePacket(
+        &pResPacket
+    );
+
+    /******* set headers with exposed API */
+    
+    strcpy(header,"Connection");
+    strcpy(value, "close");
+    dwError = VmRESTSetHttpHeader( &pResPacket,
+                  header,
+                  value
+    );
+    memset(header, '\0', 32);
+    memset(value, '\0', 128);
+
+    strcpy(header,"Content-Length");
+    strcpy(value, "20");
+    dwError = VmRESTSetHttpHeader( &pResPacket,
+                  header,
+                  value
+    );
+    memset(header, '\0', 32);
+    memset(value, '\0', 128);
+   
+    
+ 
+    /* Use response object to write to buffer */
+
+    dwError = VmRESTAddAllHeaderInResponse(
+                                  pResPacket,
+                                  buffer,
+                                  &bytes
+    );
+
+    write(1, buffer, 4096);
+
+    dwError = VmsockPosixWriteDataAtOnce(
+                       fd,
+                       buffer,
+                       bytes
+    );
+  
+
 
     return dwError;
 }
