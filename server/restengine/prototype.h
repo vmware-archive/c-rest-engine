@@ -89,6 +89,20 @@ VmRESTAddAllHeaderInResponse(
     uint32_t                      *bytes
     );
 
+uint32_t
+VMRESTWriteStatusLineInResponse(
+    PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
+    char                          *buffer,
+    uint32_t                      *bytes
+);
+
+uint32_t
+VMRESTWriteMessageBodyInResponse(
+    PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
+    char                          *buffer,
+    uint32_t                      *bytes
+);
+
 
 
 /* This will be removed once cli module for modular testing is implemented */

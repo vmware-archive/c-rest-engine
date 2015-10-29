@@ -225,5 +225,31 @@ VmRESTSetHttpReasonPhrase(
     char*                           reasonPhrase
     );
 
+/*
+ * @brief Get payload from HTTP request object.
+ *
+ * @param[in]           Reference to HTTP Request object.
+ * @param[out]          Payload buffer(must be allocated by caller).
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTGetHttpPayload(
+    PVM_REST_HTTP_REQUEST_PACKET    pRequest,
+    char*                           response
+    );
+
+
+/*
+ * @brief Set payload in HTTP response object.
+ *
+ * @param[in]           Reference to HTTP Response object.
+ * @param[in]           Payload data.
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTSetHttpPayload(
+    PVM_REST_HTTP_RESPONSE_PACKET*  ppResponse,
+    char*                           buffer
+    );
 
 #endif /* __VMREST_H__ */

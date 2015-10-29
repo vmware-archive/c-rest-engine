@@ -60,7 +60,7 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 
 #define MAX_HTTP_HEADER_ATTR_LEN   32
 #define MAX_HTTP_HEADER_VAL_LEN    1024
-
+#define MAX_HTTP_PAYLOAD_LEN       2048
 
 typedef enum _HTTP_METHODS
 {

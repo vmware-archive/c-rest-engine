@@ -508,6 +508,113 @@ error:
     goto cleanup;
 }
 
+uint32_t
+VMRESTWriteMessageBodyInResponse(
+    PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
+    char                          *buffer,
+    uint32_t                      *bytes
+)
+{
+    uint32_t dwError = 0;
+    char*    curr = NULL;
+    uint32_t contentLen = 0;
+
+    if (pResPacket == NULL || buffer == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    curr = buffer;
+
+    if (strlen(pResPacket->entityHeader->contentLength) > 0)
+    {
+        contentLen = atoi(pResPacket->entityHeader->contentLength);
+        if ((contentLen > 0) && (contentLen <= MAX_HTTP_PAYLOAD_LEN))
+        {
+            memcpy(curr, pResPacket->messageBody->buffer, contentLen);
+            curr = curr + contentLen;           
+        }
+    }
+    else
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    } 
+
+    memcpy(curr,"\r\n",2);
+    curr = curr + 2;
+    
+    *bytes = (contentLen + 2);
+   
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t 
+VMRESTWriteStatusLineInResponse(
+    PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
+    char                          *buffer,
+    uint32_t                      *bytes
+)
+{
+    uint32_t dwError = 0;
+    uint32_t bytesCount = 0;
+    uint32_t len = 0;
+    char*    curr = NULL;
+ 
+    if (pResPacket == NULL || buffer == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    curr = buffer;
+    len = strlen(pResPacket->statusLine->version);
+    if (len > 0)
+    {
+        memcpy(curr, pResPacket->statusLine->version, len);
+        curr = curr + len;
+        memcpy(curr, " ", 1);
+        curr = curr + 1;
+        bytesCount = bytesCount + len + 1;
+        len = 0;
+    }
+        
+    len = strlen(pResPacket->statusLine->statusCode);
+    if (len > 0)                 
+    {
+        memcpy(curr, pResPacket->statusLine->statusCode, len);
+        curr = curr + len;
+        memcpy(curr, " ", 1);
+        curr = curr + 1;
+        bytesCount = bytesCount + len + 1;
+        len = 0;
+    }
+    
+    len = strlen(pResPacket->statusLine->reason_phrase);
+    if (len > 0)                 
+    {
+        memcpy(curr, pResPacket->statusLine->reason_phrase, len);
+        curr = curr + len;
+        bytesCount = bytesCount + len;
+        len = 0;
+    }
+
+    memcpy(curr, "\r\n", 2);
+    curr = curr + 2;
+    bytesCount = bytesCount + 2;
+ 
+    *bytes = bytesCount;
+   
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
 uint32_t 
 VmRESTAddAllHeaderInResponse(
     PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
@@ -720,6 +827,13 @@ VmRESTAddAllHeaderInResponse(
         streamBytes = streamBytes + len + 2 + 15;
         len = 0;
     }
+    
+    /* Last Header written, Write one extra CR LF */
+  
+    memcpy(curr, "\r\n", 2);
+    curr = curr + 2;
+    streamBytes = streamBytes + 2;
+
 
     *bytes = streamBytes;
 cleanup:
@@ -746,7 +860,6 @@ error:
 
 }
 
-/*****************/
 uint32_t
 VmRESTProcessIncomingData(
     char         *buffer,
@@ -832,7 +945,9 @@ VmRESTTestHTTPResponse(
     uint32_t dwError = 0;
     char header[32] = {0};
     char value[128] = {0};
+    uint32_t        totalBytes = 0;
     uint32_t        bytes = 0;
+    char*           curr = NULL;
     PVM_REST_HTTP_RESPONSE_PACKET pResPacket = NULL;
 
     /******** Allocate memory to response object */
@@ -843,6 +958,16 @@ VmRESTTestHTTPResponse(
 
     /******* set headers with exposed API */
     
+    dwError = VmRESTSetHttpStatusCode(&pResPacket,
+                     "200");
+    
+    dwError = VmRESTSetHttpStatusVersion(&pResPacket,
+                     "HTTP/1.1");
+
+    dwError = VmRESTSetHttpReasonPhrase(&pResPacket,
+                     "OK");
+                   
+
     strcpy(header,"Connection");
     strcpy(value, "close");
     dwError = VmRESTSetHttpHeader( &pResPacket,
@@ -853,30 +978,65 @@ VmRESTTestHTTPResponse(
     memset(value, '\0', 128);
 
     strcpy(header,"Content-Length");
-    strcpy(value, "20");
+    strcpy(value, "31");
     dwError = VmRESTSetHttpHeader( &pResPacket,
                   header,
                   value
     );
     memset(header, '\0', 32);
     memset(value, '\0', 128);
-   
+
+    dwError = VmRESTSetHttpPayload(&pResPacket,
+                   "Payload Response with Length 31"
+              );
     
+    curr = buffer;
+
  
     /* Use response object to write to buffer */
 
+    /* 1. Status Line */
+       
+    dwError = VMRESTWriteStatusLineInResponse(
+                       pResPacket,
+                       curr,
+                       &bytes
+              );
+   
+    curr = curr + bytes;
+    totalBytes = totalBytes + bytes;
+    bytes = 0;  
+     
+    /* 2. Response Headers */
+
     dwError = VmRESTAddAllHeaderInResponse(
                                   pResPacket,
-                                  buffer,
+                                  curr,
                                   &bytes
     );
+
+    curr = curr + bytes;
+    totalBytes = totalBytes + bytes;
+    bytes = 0;
+
+    /* 3. Message Body */
+
+    dwError = VMRESTWriteMessageBodyInResponse(
+                                  pResPacket,
+                                  curr,
+                                  &bytes    
+    );
+
+    curr = curr + bytes;
+    totalBytes = totalBytes + bytes;
+    bytes = 0;
 
     write(1, buffer, 4096);
 
     dwError = VmsockPosixWriteDataAtOnce(
                        fd,
                        buffer,
-                       bytes
+                       totalBytes
     );
   
 

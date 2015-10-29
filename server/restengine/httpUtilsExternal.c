@@ -485,6 +485,114 @@ error:
 
 }
 
+uint32_t
+VmRESTGetHttpPayload(
+    PVM_REST_HTTP_REQUEST_PACKET    pRequest,
+    char*                           response
+    )
+{
+
+    uint32_t     dwError = 0;
+    uint32_t     contentLen = 0;
+
+    if (pRequest == NULL || pRequest->entityHeader == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+   
+    if (response == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    /* Valid Content Length must be present in header for this API to success */
+
+    if (strlen(pRequest->entityHeader->contentLength) > 0)
+    {
+        contentLen = atoi(pRequest->entityHeader->contentLength); 
+        if ((contentLen > 0) && (contentLen <= MAX_HTTP_PAYLOAD_LEN))
+        {
+            memcpy(response, pRequest->messageBody->buffer, contentLen);  
+        }
+        else 
+        {
+            dwError = ERROR_NOT_SUPPORTED;
+            BAIL_ON_VMREST_ERROR(dwError);
+        }
+    }
+    else 
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    
+cleanup:
+
+    return dwError;
+
+error:
+
+    response = NULL;
+    goto cleanup;
+}
+
+uint32_t
+VmRESTSetHttpPayload(
+    PVM_REST_HTTP_RESPONSE_PACKET*  ppResponse,
+    char*                           buffer
+    )
+{
+    uint32_t                           dwError = 0;
+    uint32_t                           contentLen = 0;
+    PVM_REST_HTTP_RESPONSE_PACKET      pResponse = NULL;
+
+    if (ppResponse == NULL || *ppResponse == NULL)
+    {
+        /* Response object not allocated any memory */
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    if (buffer == NULL)
+    {
+        /* No parameters to set */
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    pResponse = *ppResponse;
+
+    /* Valid Content Length must be present in header for this API to success */
+
+    if (strlen(pResponse->entityHeader->contentLength) > 0)
+    {
+        contentLen = atoi(pResponse->entityHeader->contentLength);
+        if ((contentLen > 0) && (contentLen <= MAX_HTTP_PAYLOAD_LEN))
+        {
+            memcpy(pResponse->messageBody->buffer, buffer, contentLen);
+        }
+        else
+        {
+            dwError = ERROR_NOT_SUPPORTED;
+            BAIL_ON_VMREST_ERROR(dwError);
+        }
+    }
+    else
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
 
 uint32_t
 VmRESTSetHttpHeader(
@@ -714,8 +822,6 @@ VmRESTSetHttpReasonPhrase(
     )
 {
     uint32_t                        dwError = 0;
-    uint32_t                        status = 0;
-    char                            buffer[MAX_REA_PHRASE_LEN] = {0};                       
     PVM_REST_HTTP_RESPONSE_PACKET   pResponse = NULL;
 
 
@@ -734,14 +840,7 @@ VmRESTSetHttpReasonPhrase(
    
     pResponse = *ppResponse;
     
-    dwError = VmRESTMapStatusCodeToEnumAndReasonPhrase(
-                  reasonPhrase,
-                  &status,
-                  buffer
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    strcpy(pResponse->statusLine->reason_phrase, buffer);
+    strcpy(pResponse->statusLine->reason_phrase, reasonPhrase);
 
 cleanup:
 
