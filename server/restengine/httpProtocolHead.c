@@ -231,60 +231,14 @@ VmRESTHTTPPopulateHeader(
     *temp = '\0';
 
     strcpy(value,local);
-    
-    /* write the specific attribute header field after matching */
 
-    if ((strcmp(attribute, "Accept")) == 0)
-    {
-        strcpy(pReqPacket->requestHeader->accept, value);
-    }
-    else if ((strcmp(attribute, "Accept-Charset")) == 0)
-    {
-        strcpy(pReqPacket->requestHeader->acceptCharSet, value);
+    dwError = VmRESTSetHttpRequestHeader(
+                   pReqPacket,
+                   attribute,
+                   value
+              );
+    BAIL_ON_VMREST_ERROR(dwError);
 
-
-    }
-    else if ((strcmp(attribute, "Connection")) == 0)
-    {
-        strcpy(pReqPacket->generalHeader->connection, value); 
-    
-
-    }
-    else if ((strcmp(attribute, "Content-Length")) == 0)
-    {
-        strcpy(pReqPacket->entityHeader->contentLength, value);
-
-    }
-    else if ((strcmp(attribute, "Content-Type")) == 0)
-    {
-        strcpy(pReqPacket->entityHeader->contentType, value);
-
-
-    }
-    else if ((strcmp(attribute, "Content-Encoding")) == 0)
-    {
-        strcpy(pReqPacket->entityHeader->contentEncoding, value);
-
-
-    }
-    else if ((strcmp(attribute, "Host")) == 0)
-    {
-        strcpy(pReqPacket->requestHeader->host, value);
-
-
-    }
-    else if ((strcmp(attribute, "From")) == 0)
-    {
-        strcpy(pReqPacket->requestHeader->from, value);
-
-
-    }
-    else 
-    {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-    /* keep on adding as required */
 
 cleanup:
     return dwError;
