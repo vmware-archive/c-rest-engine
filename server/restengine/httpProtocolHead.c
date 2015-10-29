@@ -58,6 +58,22 @@ VmRESTHTTPGetmethod(
     {
         strcpy(result,"DELETE");
     }
+    else if (strcmp(local,"HEAD") == 0)
+    {
+        strcpy(result,"HEAD");
+    }
+    else if (strcmp(local,"PUT") == 0)
+    {
+        strcpy(result,"PUT");
+    }
+    else if (strcmp(local,"TRACE") == 0)
+    {
+        strcpy(result,"TRACE");
+    }
+    else if (strcmp(local,"CONNECT") == 0)
+    {
+        strcpy(result,"CONNECT");
+    }
     else 
     {
         dwError = ERROR_NOT_SUPPORTED;
