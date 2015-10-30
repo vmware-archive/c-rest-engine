@@ -615,3 +615,130 @@ error:
     goto cleanup;
 
 }
+
+uint32_t
+VmRESTSetHttpRequestHeader(
+    PVM_REST_HTTP_REQUEST_PACKET    pRequest,
+    char*                           header,
+    char*                           value
+    )
+{
+    uint32_t           dwError = 0;
+    uint32_t           headerNo = 0;
+
+    if (pRequest == NULL)
+    {
+        /* Bad request:: No memory */
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    if (header == NULL)
+    {
+        /* No header found to query */
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    if (value == NULL)
+    {
+        /* No memory for response object */
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    dwError = VmRESTMapHeaderToEnum(
+                  header,
+                  &headerNo
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_ENTITY_HEADER_CONTENT_TYPE))
+    {
+        /* Not a valid HTTP header */
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    /* No request header data is returned */ 
+    if ((headerNo >= HTTP_RESPONSE_HEADER_ACCEPT_RANGE) && (headerNo <= HTTP_RESPONSE_HEADER_SERVER))
+    {
+        /* Not a valid HTTP request packet header */
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    switch (headerNo)
+    {
+        case HTTP_REQUEST_HEADER_ACCEPT:
+                 strcpy(pRequest->requestHeader->accept, value);
+                 break;
+        case HTTP_REQUEST_HEADER_ACCEPT_CHARSET:
+                 strcpy(pRequest->requestHeader->acceptCharSet, value);
+                 break;
+        case HTTP_REQUEST_HEADER_ACCEPT_ENCODING:
+                 strcpy(pRequest->requestHeader->acceptEncoding, value);
+                 break;
+        case HTTP_REQUEST_HEADER_ACCEPT_LANGUAGE:
+                 strcpy(pRequest->requestHeader->acceptLanguage,value);
+                 break;
+        case HTTP_REQUEST_HEADER_ACCEPT_AUTHORIZATION:
+                 strcpy(pRequest->requestHeader->authorization, value);
+                 break;
+        case HTTP_REQUEST_HEADER_FROM:
+                 strcpy(pRequest->requestHeader->from, value);
+                 break;
+        case HTTP_REQUEST_HEADER_HOST:
+                 strcpy(pRequest->requestHeader->host, value);
+                 break;
+        case HTTP_REQUEST_HEADER_REFERER:
+                 strcpy(pRequest->requestHeader->referer, value);
+                 break;
+        case HTTP_GENERAL_HEADER_CACHE_CONTROL:
+                 strcpy(pRequest->generalHeader->cacheControl, value);
+                 break;
+        case HTTP_GENERAL_HEADER_CONNECTION:
+                 strcpy(pRequest->generalHeader->connection, value);
+                 break;
+        case HTTP_GENERAL_HEADER_TRAILER:
+                 strcpy(pRequest->generalHeader->trailer, value);
+                 break;
+        case HTTP_GENERAL_HEADER_TRANSFER_ENCODING:
+                 strcpy(pRequest->generalHeader->transferEncoding, value);
+                 break;
+        case HTTP_ENTITY_HEADER_ALLOW:
+                 strcpy(pRequest->entityHeader->allow, value);
+                 break;
+        case HTTP_ENTITY_HEADER_CONTENT_ENCODING:
+                 strcpy(pRequest->entityHeader->contentEncoding, value);
+                 break;
+        case HTTP_ENTITY_HEADER_CONTENT_LANGUAGE:
+                 strcpy(pRequest->entityHeader->contentLanguage, value);
+                 break;
+        case HTTP_ENTITY_HEADER_CONTENT_LENGTH:
+                 strcpy(pRequest->entityHeader->contentLength, value);
+                 break;
+        case HTTP_ENTITY_HEADER_CONTENT_LOCATION:
+                 strcpy(pRequest->entityHeader->contentLocation, value);
+                 break;
+        case HTTP_ENTITY_HEADER_CONTENT_MD5:
+                 strcpy(pRequest->entityHeader->contentMD5, value);
+                 break;
+        case HTTP_ENTITY_HEADER_CONTENT_RANGE:
+                 strcpy(pRequest->entityHeader->contentRange, value);
+                 break;
+        case HTTP_ENTITY_HEADER_CONTENT_TYPE:
+                 strcpy(pRequest->entityHeader->contentType, value);
+                 break;
+        default:
+                 dwError = ERROR_NOT_SUPPORTED;
+                 BAIL_ON_VMREST_ERROR(dwError);
+                 break;
+
+    }
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+
+}
