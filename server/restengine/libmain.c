@@ -23,6 +23,11 @@ VmRESTEngineInit(
     PVMREST_THREAD pThreadpool = NULL;
     uint32_t nThreads = 0;
 
+    /* Init Transport */
+    dwError = VmRestTransportInit("61001");
+    BAIL_ON_VMREST_ERROR(dwError);
+
+
     /*  Adding test code - will remove 
     dwError = VmRESTTestHTTPResponse();
     */

@@ -32,7 +32,7 @@ VmRestFreeThreadpool(
     );
 
 
-/* Add all Http internal exposed routines here */
+/**** httpProtocolHead.c **************/
 
 uint32_t
 VmRESTHTTPGetmethod(
@@ -103,6 +103,11 @@ VMRESTWriteMessageBodyInResponse(
     uint32_t                      *bytes
     );
 
+uint32_t
+VmRESTSendResponsePacket(
+    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    );
+
 
 /* This will be removed once cli module for modular testing is implemented */
 uint32_t
@@ -112,9 +117,10 @@ VmRESTTestHTTPParser(
 
 uint32_t
 VmRESTTestHTTPResponse(
-    int fd
+    PVM_REST_HTTP_REQUEST_PACKET pReqPacket
     );
-/**********************/
+
+/********* httpAllocStruct.c  *************/
 
 uint32_t
 VmRESTAllocateHTTPRequestPacket(
@@ -137,19 +143,7 @@ VmRESTFreeHTTPResponsePacket(
     );
 
 
-
-
-void
-VmRESTFreeHTTPRequestPacket(
-    PVM_REST_HTTP_REQUEST_PACKET*   ppReqPacket
-    );
-
-void
-VmRESTFreeHTTPResponsePacket(
-    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
-    );
-
-/* httpUtilsInternal.c */
+/********** httpUtilsInternal.c **************/
 
 uint32_t
 VmRESTMapHeaderToEnum(
@@ -183,11 +177,4 @@ VmRESTSetHttpRequestHeader(
     char*                           header,
     char*                           value
     );
-
-
-
-
-
-
-
 

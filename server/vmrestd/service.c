@@ -26,8 +26,6 @@ VmRESTSrvInitialize(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRestTransportInit("localhost", "61010");
-    BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
 

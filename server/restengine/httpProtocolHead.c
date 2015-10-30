@@ -817,11 +817,72 @@ VmRESTSendResponsePacket(
     PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
     )
 {
-    uint32_t          dwError = 0;
+    uint32_t                          dwError = 0;
+    char                              buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                          totalBytes = 0;
+    uint32_t                          bytes = 0;
+    char*                             curr = NULL;
+    PVM_REST_HTTP_RESPONSE_PACKET     pResPacket = NULL;
+    
+    if (ppResPacket == NULL || *ppResPacket == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    pResPacket = *ppResPacket;    
+    curr = buffer;
+   
+    /* Use response object to write to buffer */
+
+    /* 1. Status Line */
+
+    dwError = VMRESTWriteStatusLineInResponse(
+                       pResPacket,
+                       curr,
+                       &bytes
+              );
     BAIL_ON_VMREST_ERROR(dwError);
-        
 
+    curr = curr + bytes;
+    totalBytes = totalBytes + bytes;
+    bytes = 0;
 
+    /* 2. Response Headers */
+
+    dwError = VmRESTAddAllHeaderInResponse(
+                                  pResPacket,
+                                  curr,
+                                  &bytes
+             );
+    BAIL_ON_VMREST_ERROR(dwError);    
+
+    curr = curr + bytes;
+    totalBytes = totalBytes + bytes;
+    bytes = 0;
+
+    /* 3. Message Body */
+
+    dwError = VMRESTWriteMessageBodyInResponse(
+                                  pResPacket,
+                                  curr,
+                                  &bytes
+             );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    curr = curr + bytes;
+    totalBytes = totalBytes + bytes;
+    bytes = 0;
+
+    
+    write(1, buffer, totalBytes);
+
+    dwError = VmsockPosixWriteDataAtOnce(
+                       pResPacket->clientSocket,
+                       buffer,
+                       totalBytes
+            );
+    BAIL_ON_VMREST_ERROR(dwError);        
 
 cleanup:
     return dwError;
@@ -850,6 +911,11 @@ VmRESTProcessIncomingData(
                   byteRead,
                   pReqPacket);
 
+    pReqPacket->clientSocket = fd;
+    
+    /* Calling the test API :: Will remove */
+    dwError = VmRESTTestHTTPResponse(pReqPacket);
+
     write(1,"\n METHOD:", 9);
     write(1,pReqPacket->requestLine->method, 10);
     write(1,"\n CONNECTION:", 12);
@@ -860,7 +926,6 @@ VmRESTProcessIncomingData(
     write(1, pReqPacket->messageBody->buffer,30);
 
 
-    dwError = VmRESTTestHTTPResponse(fd);
 
 
 cleanup:
@@ -908,16 +973,12 @@ VmRESTTestHTTPParser(
 
 uint32_t
 VmRESTTestHTTPResponse(
-    int fd
+    PVM_REST_HTTP_REQUEST_PACKET pReqPacket
     )
 {
-    char buffer[4096] = {0};
     uint32_t dwError = 0;
     char header[32] = {0};
     char value[128] = {0};
-    uint32_t        totalBytes = 0;
-    uint32_t        bytes = 0;
-    char*           curr = NULL;
     PVM_REST_HTTP_RESPONSE_PACKET pResPacket = NULL;
 
     /******** Allocate memory to response object */
@@ -925,6 +986,10 @@ VmRESTTestHTTPResponse(
     dwError = VmRESTAllocateHTTPResponsePacket(
         &pResPacket
     );
+
+    /* Copy client socket information from request object to response object */
+
+    pResPacket->clientSocket = pReqPacket->clientSocket;
 
     /******* set headers with exposed API */
     
@@ -960,56 +1025,10 @@ VmRESTTestHTTPResponse(
                    "Payload Response with Length 31"
               );
     
-    curr = buffer;
 
- 
-    /* Use response object to write to buffer */
-
-    /* 1. Status Line */
-       
-    dwError = VMRESTWriteStatusLineInResponse(
-                       pResPacket,
-                       curr,
-                       &bytes
+    dwError = VmRESTSendResponsePacket(
+                     &pResPacket
               );
-   
-    curr = curr + bytes;
-    totalBytes = totalBytes + bytes;
-    bytes = 0;  
-     
-    /* 2. Response Headers */
-
-    dwError = VmRESTAddAllHeaderInResponse(
-                                  pResPacket,
-                                  curr,
-                                  &bytes
-    );
-
-    curr = curr + bytes;
-    totalBytes = totalBytes + bytes;
-    bytes = 0;
-
-    /* 3. Message Body */
-
-    dwError = VMRESTWriteMessageBodyInResponse(
-                                  pResPacket,
-                                  curr,
-                                  &bytes    
-    );
-
-    curr = curr + bytes;
-    totalBytes = totalBytes + bytes;
-    bytes = 0;
-
-    write(1, buffer, 4096);
-
-    dwError = VmsockPosixWriteDataAtOnce(
-                       fd,
-                       buffer,
-                       totalBytes
-    );
-  
-
 
     return dwError;
 }

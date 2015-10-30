@@ -77,7 +77,7 @@ VmSockPosixServerListenThread(
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    dwError = getaddrinfo(NULL, "61001", &hints, &serinfo);
+    dwError = getaddrinfo(NULL, gServerSocketInfo.port, &hints, &serinfo);
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     for (p = serinfo; p!= NULL; p = p->ai_next) 

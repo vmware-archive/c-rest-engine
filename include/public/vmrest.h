@@ -3,7 +3,6 @@
 
 uint32_t
 VmRestTransportInit(
-    char *addr,
     char *port
     );
 
