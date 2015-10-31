@@ -333,7 +333,6 @@ uint32_t VmsockPosixWriteDataAtOnce(
     uint32_t dwError = 0;
     
     write(fd, buffer,bytes); 
- 
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
 cleanup:

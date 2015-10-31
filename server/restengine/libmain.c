@@ -24,7 +24,7 @@ VmRESTEngineInit(
     uint32_t nThreads = 0;
 
     /* Init Transport */
-    dwError = VmRestTransportInit("61001");
+    dwError = VmRestTransportInit("80");
     BAIL_ON_VMREST_ERROR(dwError);
 
 
