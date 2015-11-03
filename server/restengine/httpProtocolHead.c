@@ -1028,3 +1028,115 @@ VmRESTTestHTTPResponse(
 
     return dwError;
 }
+
+uint32_t 
+VmRESTTriggerAppCb(
+    PVM_REST_HTTP_REQUEST_PACKET  pRequest,
+    PVM_REST_HTTP_RESPONSE_PACKET* ppResponse
+)
+{
+    uint32_t    dwError = 0;
+    uint32_t    methodNo = 0;
+ 
+    if (pRequest == NULL || ppResponse == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    dwError = VmRESTMapMethodToEnum(
+                  pRequest->requestLine->method,
+                  &methodNo
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+ 
+    if (gpHttpHandler == NULL)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    
+    switch(methodNo)
+    {
+        case HTTP_METHOD_GET:
+             if (gpHttpHandler->pfnHandleHTTP_GET)
+             {
+                 dwError = gpHttpHandler->pfnHandleHTTP_GET(pRequest,
+                                        ppResponse
+                                        );
+             
+                 BAIL_ON_VMREST_ERROR(dwError);
+             }
+             break;
+        case HTTP_METHOD_HEAD:
+             if (gpHttpHandler->pfnHandleHTTP_HEAD)
+             {
+                 dwError = gpHttpHandler->pfnHandleHTTP_HEAD(pRequest,
+                                        ppResponse
+                                        );
+
+                 BAIL_ON_VMREST_ERROR(dwError);
+             }
+             break;
+        case HTTP_METHOD_POST:
+             if (gpHttpHandler->pfnHandleHTTP_POST)
+             {
+                 dwError = gpHttpHandler->pfnHandleHTTP_POST(pRequest,
+                                        ppResponse
+                                        );
+
+                 BAIL_ON_VMREST_ERROR(dwError);
+             }
+             break;
+        case HTTP_METHOD_PUT:
+             if (gpHttpHandler->pfnHandleHTTP_PUT)
+             {
+                 dwError = gpHttpHandler->pfnHandleHTTP_PUT(pRequest,
+                                        ppResponse
+                                        );
+
+                 BAIL_ON_VMREST_ERROR(dwError);
+             }
+             break;
+        case HTTP_METHOD_DELETE:
+             if (gpHttpHandler->pfnHandleHTTP_DELETE)
+             {
+                 dwError = gpHttpHandler->pfnHandleHTTP_DELETE(pRequest,
+                                        ppResponse
+                                        );
+
+                 BAIL_ON_VMREST_ERROR(dwError);
+             }
+             break;
+        case HTTP_METHOD_TRACE:
+             if (gpHttpHandler->pfnHandleHTTP_TRACE)
+             {
+                 dwError = gpHttpHandler->pfnHandleHTTP_TRACE(pRequest,
+                                        ppResponse
+                                        );
+
+                 BAIL_ON_VMREST_ERROR(dwError);
+             }
+             break;
+        case HTTP_METHOD_CONNECT:
+             if (gpHttpHandler->pfnHandleHTTP_CONNECT)
+             {
+                 dwError = gpHttpHandler->pfnHandleHTTP_CONNECT(pRequest,
+                                        ppResponse
+                                        );
+
+                 BAIL_ON_VMREST_ERROR(dwError);
+             }
+             break;
+        default:
+             dwError = ERROR_NOT_SUPPORTED;
+             BAIL_ON_VMREST_ERROR(dwError);   
+             break;
+    }
+
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;    
+}

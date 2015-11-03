@@ -108,6 +108,12 @@ VmRESTSendResponsePacket(
     PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
     );
 
+uint32_t
+VmRESTTriggerAppCb(
+    PVM_REST_HTTP_REQUEST_PACKET  pRequest,
+    PVM_REST_HTTP_RESPONSE_PACKET* ppResponse
+    );
+
 
 /* This will be removed once cli module for modular testing is implemented */
 uint32_t

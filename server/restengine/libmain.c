@@ -40,7 +40,7 @@ VmRESTEngineInit(
 
     gRESTEngGlobals.pThreadpool = pThreadpool;
     gRESTEngGlobals.nThreads = nThreads;
-
+    gpHttpHandler = *pHandlers;
 
 cleanup:
 

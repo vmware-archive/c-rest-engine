@@ -17,4 +17,4 @@
 #include "includes.h"
 
 REST_ENG_GLOBALS gRESTEngGlobals = {0};
-
+PVMREST_ENGINE_METHODS   gpHttpHandler = NULL;
