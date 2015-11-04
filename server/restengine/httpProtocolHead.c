@@ -1020,8 +1020,14 @@ VmRESTTestHTTPResponse(
     dwError = VmRESTSetHttpPayload(&pResPacket,
                    "Payload Response with Length 31"
               );
-    
 
+    /* TEST : giving Callback to application */    
+    dwError = VmRESTTriggerAppCb(
+                  pReqPacket,
+                  &pResPacket
+              );
+     
+ 
     dwError = VmRESTSendResponsePacket(
                      &pResPacket
               );

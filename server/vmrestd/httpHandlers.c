@@ -23,6 +23,7 @@ VmRESTHandleHTTP_GET(
     uint32_t dwError = 0;
     BAIL_ON_VMREST_ERROR(dwError);
     
+    write(1, "\nThis is App CB for GET", 23);    
 
 
 cleanup:

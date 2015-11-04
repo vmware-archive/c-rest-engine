@@ -7,6 +7,7 @@ librestengine_la_CPPFLAGS = \
 
 librestengine_la_SOURCES = \
     globals.c \
+    httpValidate.c \
     libmain.c \
     thread.c \
     httpProtocolHead.c \
