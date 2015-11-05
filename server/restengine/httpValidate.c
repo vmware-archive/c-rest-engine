@@ -13,3 +13,234 @@
  */
 
 #include "includes.h"
+
+uint32_t
+VmRESTRemovePreSpace(
+    char*               src,
+    char*               dest
+    )
+{
+    uint32_t     dwError = 0;
+    
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTRemovePostSpace(
+    char*               src,
+    char*               dest
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTConverUpperToLower(
+    char*               src,
+    char*               dest
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTValidateHTTPMethodGET(
+    PVM_REST_HTTP_REQUEST_PACKET   Request,
+    uint32_t*                      result
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTValidateHTTPMethodHEAD(
+    PVM_REST_HTTP_REQUEST_PACKET   Request,
+    uint32_t*                      result
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTValidateHTTPMethodPOST(
+    PVM_REST_HTTP_REQUEST_PACKET   Request,
+    uint32_t*                      result
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTValidateHTTPMethodPUT(
+    PVM_REST_HTTP_REQUEST_PACKET   Request,
+    uint32_t*                      result
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTValidateHTTPMethodDELETE(
+    PVM_REST_HTTP_REQUEST_PACKET   Request,
+    uint32_t*                      result
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTValidateHTTPMethodTRACE(
+    PVM_REST_HTTP_REQUEST_PACKET   Request,
+    uint32_t*                      result
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTValidateHTTPMethodCONNECT(
+    PVM_REST_HTTP_REQUEST_PACKET   Request,
+    uint32_t*                      result
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+
+
+uint32_t
+VmRESTValidateHTTPRequest(
+    PVM_REST_HTTP_REQUEST_PACKET   Request,
+    uint32_t*                      result              
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTValidateHTTPResponse(
+    PVM_REST_HTTP_REQUEST_PACKET   Request,
+    PVM_REST_HTTP_RESPONSE_PACKET  Response,
+    uint32_t*                      result
+    )
+{
+    uint32_t     dwError = 0;
+
+
+
+    dwError = ERROR_NOT_SUPPORTED;
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
