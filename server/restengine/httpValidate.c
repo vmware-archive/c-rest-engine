@@ -77,6 +77,7 @@ VmRESTRemovePostSpace(
         {
             memcpy(dest, src, (len - skip));
             *(dest + len - skip + 1) = '\0';
+            break;
         }
     }    
 
