@@ -17,6 +17,7 @@
 typedef struct _VM_SOCKET
 {
     int fd;
+    SSL_CTX *sslContext;
     char address[MAX_ADDRESS_LEN];
     char port[MAX_PORT_LEN];
 
@@ -25,6 +26,7 @@ typedef struct _VM_SOCKET
 typedef struct _QUEUE_NODE
 {
     int fd;
+    SSL *ssl;
     uint32_t flag;
     struct _QUEUE_NODE *next;
 }EVENT_NODE;

@@ -14,6 +14,9 @@
 
 #include <config.h>
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 #include <vmrestsys.h>
 #include <vmrestdefines.h>
 #include <vmrestcommon.h>

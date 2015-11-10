@@ -874,7 +874,7 @@ VmRESTSendResponsePacket(
     bytes = 0;
     
     dwError = VmsockPosixWriteDataAtOnce(
-                       pResPacket->clientSocket,
+                       pResPacket->clientSocketSSL,
                        buffer,
                        totalBytes
             );
@@ -891,7 +891,7 @@ uint32_t
 VmRESTProcessIncomingData(
     char         *buffer,
     uint32_t     byteRead,
-    int          fd
+    SSL*         ssl
     )
 {
     uint32_t                     dwError = 0;
@@ -907,7 +907,7 @@ VmRESTProcessIncomingData(
                   byteRead,
                   pReqPacket);
 
-    pReqPacket->clientSocket  = fd;    
+    pReqPacket->clientSocketSSL  = ssl;    
 
     
 #if 1
@@ -985,7 +985,7 @@ VmRESTTestHTTPResponse(
 
     /* Copy client socket information from request object to response object */
 
-    pResPacket->clientSocket = pReqPacket->clientSocket;
+    pResPacket->clientSocketSSL = pReqPacket->clientSocketSSL;
 
     /******* set headers with exposed API */
     

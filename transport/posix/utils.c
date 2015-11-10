@@ -14,7 +14,7 @@
 
 #include "includes.h"
 
-uint32_t insert_element(int fd, uint32_t event_flag, QUEUE *q)
+uint32_t insert_element(int fd, SSL *ssl, uint32_t event_flag, QUEUE *q)
 {
     uint32_t dwError = EXIT_SUCCESS;
     EVENT_NODE *node = NULL;
@@ -24,6 +24,14 @@ uint32_t insert_element(int fd, uint32_t event_flag, QUEUE *q)
     node->fd = fd;
     node->flag = event_flag;
     node->next  = NULL;
+    if (ssl != NULL) 
+    {
+        node->ssl = ssl;
+    }
+    else
+    {
+        node->ssl = NULL;
+    }
     if (q->count == 0)
     {
         q->head = node;

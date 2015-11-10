@@ -31,6 +31,7 @@ VmSockPosixSetSocketNonBlocking(
 uint32_t 
 insert_element(
     int fd,
+    SSL* ssl,
     uint32_t flag, 
     QUEUE* q
     );
@@ -45,7 +46,7 @@ uint32_t VmsockPosixAcceptNewConnection(
     );
 
 uint32_t VmsockPosixReadDataAtOnce(
-    int fd
+    SSL *ssl
     );
 
 

@@ -7,7 +7,7 @@ VmRestTransportInit(
     );
 
 uint32_t VmsockPosixWriteDataAtOnce(
-    int      fd,
+    SSL*     ssl,
     char*    buffer,
     uint32_t bytes
     );
@@ -42,7 +42,7 @@ uint32_t
 VmRESTProcessIncomingData(
     char     *buffer,
     uint32_t byteRead,
-    int      fd
+    SSL*     ssl
     );
 
 

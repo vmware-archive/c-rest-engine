@@ -9,7 +9,7 @@ libvmsockposix_la_CPPFLAGS = \
 libvmsockposix_la_SOURCES = \
     globals.c \
     libtransport.c \
-    socket.c \
+    secureSocket.c \
     utils.c
 
 libvmsockposix_la_LIBADD = \

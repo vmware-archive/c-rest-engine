@@ -114,7 +114,7 @@ typedef struct _VM_REST_HTTP_REQUEST_PACKET
     PVM_REST_HTTP_REQUEST_HEADER   requestHeader;
     PVM_REST_HTTP_ENTITY_HEADER    entityHeader;
     PVM_REST_HTTP_MESSAGE_BODY     messageBody;
-    uint32_t                       clientSocket;
+    SSL*                           clientSocketSSL;
 
 }VM_REST_HTTP_REQUEST_PACKET;
 
@@ -125,7 +125,7 @@ typedef struct _VM_REST_HTTP_RESPONSE_PACKET
     PVM_REST_HTTP_RESPONSE_HEADER  responseHeader;
     PVM_REST_HTTP_ENTITY_HEADER    entityHeader;
     PVM_REST_HTTP_MESSAGE_BODY     messageBody;
-    uint32_t                       clientSocket;
+    SSL*                           clientSocketSSL;
 
 }VM_REST_HTTP_RESPONSE_PACKET;
 
