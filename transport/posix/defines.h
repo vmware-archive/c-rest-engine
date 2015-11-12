@@ -22,6 +22,8 @@
 #define MAX_ADDRESS_LEN 128
 #define MAX_PORT_LEN 6
 
+#define MAX_CONNECTIONS 1000
+
 #define ERROR_NOT_SUPPORTED 100
 
 #define BAIL_ON_POSIX_SOCK_ERROR(dwError) \

@@ -125,10 +125,12 @@ VmSockPosixServerListenThread(
     struct addrinfo*        p = NULL;
     uint32_t                dwError = 0;
     int                     yes = 1;
-    struct epoll_event      ev = {0};
+    struct epoll_event      ev =  {0};
     struct epoll_event      events[MAX_EVENT];
     int                     i = 0;
-    
+    VM_EVENT_DATA           acceptData = {0}; 
+    VM_EVENT_DATA*          accData1 = NULL;
+
     SSL_library_init();
     dwError = VmRESTSecureSocket(
                   "/root/mycert.pem",
@@ -196,10 +198,14 @@ VmSockPosixServerListenThread(
     }
     pQueue->epoll_fd = epoll_fd;
     pQueue->server_fd = server_fd;
-    ev.data.fd = server_fd;
-//    ev.data.ptr = NULL;
-    ev.events = EPOLLIN | EPOLLET;
 
+    acceptData.fd = server_fd;
+    acceptData.clientNo = 2;
+    acceptData.ssl = NULL;
+
+    ev.data.ptr = &acceptData;
+    ev.events = EPOLLIN | EPOLLET;
+ 
     control_fd = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev);
     if (control_fd == -1) 
     {
@@ -213,13 +219,15 @@ VmSockPosixServerListenThread(
         pthread_mutex_lock(&(pQueue->lock));
         for (i= 0; i< hot_sockets;i++)
         {
-            SSL *ssl = NULL;
-            if (events[i].data.ptr != NULL)
+            accData1 = (VM_EVENT_DATA*)events[i].data.ptr;        
+            if (accData1->ssl != NULL)
             {
-                  write(1, "KK", 2);
-                   ssl = events[i].data.ptr;
+                insert_element(accData1->fd, accData1->ssl,events[i].events, pQueue);
+            } 
+            else 
+            { 
+                insert_element(accData1->fd, NULL,events[i].events, pQueue);
             }
-            insert_element(events[i].data.fd, ssl,events[i].events, pQueue);
         }
         pthread_mutex_unlock(&(pQueue->lock));
         pthread_cond_broadcast(&(pQueue->signal));        
@@ -292,22 +300,18 @@ uint32_t VmSockPosixHandleEventsFromQueue(
             BAIL_ON_POSIX_SOCK_ERROR(dwError);
         }   
         
-        write(1, "\n KK6", 5); 
         if ((temp->flag & EPOLLERR) || (temp->flag & EPOLLHUP) || (!(temp->flag & EPOLLIN)))
         {
             /* Error on this socket, hence closing */
             close(temp->fd);
-            write(1, "\n KK7", 5);
         }
         else if (temp->fd == pQueue->server_fd)
         {
             dwError = VmsockPosixAcceptNewConnection(temp->fd);
-            write(1, "\n KK8", 5);
         }
         else 
         {  
             dwError = VmsockPosixReadDataAtOnce(temp->ssl); 
-            write(1, "\n KK9", 5);
         }
     }
 cleanup:
@@ -333,9 +337,15 @@ uint32_t VmsockPosixAcceptNewConnection(
     int                     accept_fd = -1;
     int                     control_fd = -1;
     struct epoll_event      ev = {0};
-    SSL*                    ssl = NULL;    
-   
-    write(1, "\n KK-Accept", 11);
+    SSL*                    ssl = NULL;  
+    uint32_t                try = 5000;
+    uint32_t                cntRty = 0;
+    VM_EVENT_DATA*          acceptData = NULL;
+
+    acceptData = (VM_EVENT_DATA*)malloc(sizeof(VM_EVENT_DATA));
+    memset(acceptData, '\0', sizeof(VM_EVENT_DATA));             
+    
+
     sin_size  = sizeof(client_addr);
     accept_fd = accept(server_fd, (struct sockaddr *)&client_addr, &sin_size);
     if (accept_fd == -1)
@@ -344,7 +354,6 @@ uint32_t VmsockPosixAcceptNewConnection(
         dwError = ERROR_NOT_SUPPORTED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    write(1, "\n KK-Acc-1", 10);
     dwError = VmSockPosixSetSocketNonBlocking(accept_fd);
     if (dwError == ERROR_NOT_SUPPORTED)
     {
@@ -352,20 +361,31 @@ uint32_t VmsockPosixAcceptNewConnection(
         dwError = ERROR_NOT_SUPPORTED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    write(1, "\n KK-Acc-1", 10);
+
     ssl = SSL_new(gServerSocketInfo.sslContext);
     SSL_set_fd(ssl,accept_fd);
+
+retry:
        
     if (SSL_accept(ssl) == -1)
-    {
-        write(1, "\n KK-Acc-FAILED", 16);
-        dwError = ERROR_NOT_SUPPORTED;
-      //  BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    {    
+         if (cntRty <= try )
+         {   
+             cntRty++;
+             goto retry;
+         } 
+         else 
+         {
+             dwError = ERROR_NOT_SUPPORTED;
+             BAIL_ON_POSIX_SOCK_ERROR(dwError);
+         }
     }
 
-    write(1, "\n KK-Acc-1", 10);
-    ev.data.ptr = ssl;
-    ev.data.fd = accept_fd;
+    acceptData->fd = accept_fd;
+    acceptData->clientNo = 25;
+    acceptData->ssl = ssl;   
+ 
+    ev.data.ptr = (void *)acceptData;
     ev.events = EPOLLIN | EPOLLET;
 
     control_fd = epoll_ctl(pQueue->epoll_fd, EPOLL_CTL_ADD, accept_fd, &ev);
@@ -375,7 +395,7 @@ uint32_t VmsockPosixAcceptNewConnection(
         dwError = ERROR_NOT_SUPPORTED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    write(1, "\n KK-Acc-1", 10); 
+    
 cleanup:
     return dwError;
 
@@ -385,20 +405,20 @@ error:
 
 
 uint32_t VmsockPosixReadDataAtOnce(
-    SSL*   ssl 
+    SSL*  ssl
     )
 {
     uint32_t      dwError = 0;
     int           read_cnt = 0;
     char          buffer[4096];
-               
-  //  while(1)
-  //  {
+
+    while(1)
+    {
         memset(buffer,'\0',4096);
         read_cnt = SSL_read(ssl, buffer, (sizeof(buffer)));
         if (read_cnt == -1 || read_cnt == 0)
         {
-    //        break;
+            break;
         }
         dwError =  VmRESTProcessIncomingData(
                        buffer,
@@ -407,7 +427,7 @@ uint32_t VmsockPosixReadDataAtOnce(
                     );
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
-  //  }
+    }
 cleanup:
     return dwError;
 

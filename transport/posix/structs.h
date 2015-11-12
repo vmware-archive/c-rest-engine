@@ -14,31 +14,46 @@
 
 #include "defines.h"
 
+typedef struct _CONNECTION
+{
+    int                 fd;
+    SSL*                ssl;
+} VM_CONNECTION; 
+
 typedef struct _VM_SOCKET
 {
-    int fd;
-    SSL_CTX *sslContext;
-    char address[MAX_ADDRESS_LEN];
-    char port[MAX_PORT_LEN];
-
+    int                 fd;
+    SSL_CTX*            sslContext;
+    VM_CONNECTION       clients[MAX_CONNECTIONS];
+    uint32_t            clientCount;
+    pthread_mutex_t     lock;
+    char                address[MAX_ADDRESS_LEN];
+    char                port[MAX_PORT_LEN];
 } VM_SOCKET;
 
 typedef struct _QUEUE_NODE
 {
-    int fd;
-    SSL *ssl;
-    uint32_t flag;
-    struct _QUEUE_NODE *next;
+    int                 fd;
+    SSL*                ssl;
+    uint32_t            flag;
+    struct _QUEUE_NODE* next;
 }EVENT_NODE;
 
 typedef struct _VM_EVENT_QUEUE
 {
-    EVENT_NODE *head;
-    EVENT_NODE *tail;
-    uint32_t count;
-    pthread_mutex_t lock;
-    pthread_cond_t  signal;
-    int epoll_fd;
-    int server_fd;
-    pthread_t *server_thread;
+    EVENT_NODE*         head;
+    EVENT_NODE*         tail;
+    uint32_t            count;
+    pthread_mutex_t     lock;
+    pthread_cond_t      signal;
+    int                 epoll_fd;
+    int                 server_fd;
+    pthread_t*          server_thread;
 }QUEUE;
+
+typedef struct _EVENT_DATA
+{
+    int                 fd;
+    SSL*                ssl;
+    int                 clientNo;
+} VM_EVENT_DATA;

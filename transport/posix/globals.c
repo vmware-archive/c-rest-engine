@@ -17,3 +17,39 @@
 VM_SOCKET gServerSocketInfo = {0};
 
 QUEUE *pQueue = NULL;
+
+
+uint32_t 
+VmInitGlobalServerSocket(
+    char* port 
+    )
+{
+    uint32_t         dwError = 0;
+    uint32_t         len = 0;
+
+    gServerSocketInfo.clientCount = 0;
+
+    len = strlen(port);
+    if ( len > MAX_PORT_LEN)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    }
+
+    strcpy(gServerSocketInfo.port, port);
+
+    if (pthread_mutex_init(&(gServerSocketInfo.lock), NULL) != 0)
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    }
+    
+
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup; 
+
+}

@@ -49,5 +49,11 @@ uint32_t VmsockPosixReadDataAtOnce(
     SSL *ssl
     );
 
+/****** globals.c **********/
+
+uint32_t
+VmInitGlobalServerSocket(
+    char* port 
+    );
 
 

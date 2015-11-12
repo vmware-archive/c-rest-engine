@@ -20,28 +20,24 @@ VmRestTransportInit(
     )
 {
     uint32_t dwError = 0;
-    uint32_t len = 0;   
     if (port == NULL)
     {
         dwError = ERROR_NOT_SUPPORTED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     }
-    len = strlen(port);
-    if ( len > MAX_PORT_LEN)
-    {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(dwError);
-    }
-   
-    strcpy(gServerSocketInfo.port, port); 
-
-    dwError = VmSockPosixCreateServerSocket();
+  
+    dwError = VmInitGlobalServerSocket(
+                  port
+              );
+    BAIL_ON_POSIX_SOCK_ERROR(dwError); 
+ 
+    dwError = VmSockPosixCreateServerSocket(
+              );
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
 cleanup:
     return dwError;
-
 
 error:
     goto cleanup;
