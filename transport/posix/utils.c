@@ -139,17 +139,20 @@ VmRESTUtilsDestroyQueue(
     )
 {
     EVENT_NODE*    temp = NULL;
+    EVENT_NODE*    old = NULL;
 
     pthread_mutex_lock(&(queue->lock));    
     temp = queue->head;
     
     while(temp != NULL)
     {
+        old = temp;
+        temp = temp->next;
+
         VmRESTFreeMemory(
-        temp
+        old
         );
         
-        temp = temp->next;
     }
     queue->count = 0;
     queue->head = NULL;
