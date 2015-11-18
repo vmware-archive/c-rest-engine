@@ -28,19 +28,6 @@ VmSockPosixSetSocketNonBlocking(
     int server_fd
     );
 
-uint32_t 
-insert_element(
-    int fd,
-    SSL* ssl,
-    uint32_t flag, 
-    QUEUE* q
-    );
-
-EVENT_NODE* remove_element(QUEUE *q);
-
-uint32_t init_queue(QUEUE *q);
-
-
 uint32_t VmsockPosixAcceptNewConnection(
     int server_fd
     );
@@ -49,11 +36,42 @@ uint32_t VmsockPosixReadDataAtOnce(
     SSL *ssl
     );
 
+/****** utils.c **********/
+
+uint32_t
+VmRESTInsertElement(
+    int         fd,
+    SSL*        ssl,
+    uint32_t    event_flag,
+    QUEUE*      queue
+    );
+
+EVENT_NODE*
+VmRESTUtilsRemoveElement(
+    QUEUE*        queue
+    );
+
+uint32_t
+VmRestUtilsInitQueue(
+    QUEUE*       queue
+    );
+
+void
+VmRESTUtilsDestroyQueue(
+    QUEUE*         queue
+    );
+
+
 /****** globals.c **********/
 
 uint32_t
 VmInitGlobalServerSocket(
     char* port 
+    );
+
+void
+VmShutdownGlobalServerSocket(
+    void
     );
 
 

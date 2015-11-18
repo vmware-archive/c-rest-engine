@@ -17,8 +17,8 @@
 
 uint32_t
 VmRESTSecureSocket(
-    char*              certificate,
-    char*              key
+    char*                certificate,
+    char*                key
     )
 {
     uint32_t             dwError = 0;
@@ -77,14 +77,14 @@ VmSockPosixCreateServerSocket(
     void
     )
 {   
-    uint32_t dwError = 0;
-    pthread_t *thr = NULL;
-    QUEUE *myQueue = NULL;
+    uint32_t        dwError = 0;
+    pthread_t*      thr = NULL;
+    QUEUE*          myQueue = NULL;
     
     dwError = VmRESTAllocateMemory(sizeof(QUEUE), (void *)&(myQueue));
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
-    dwError = init_queue(myQueue);
+    dwError = VmRestUtilsInitQueue(myQueue);
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
     
     pQueue = myQueue;
@@ -110,12 +110,21 @@ error:
     goto cleanup;
 }
 
-void * 
-VmSockPosixServerListenThread(
-    void * Args
-    )
+void 
+VmSockPosixDestroyServerSocket(
+   )
 {
 
+
+
+
+}
+
+void * 
+VmSockPosixServerListenThread(
+    void*                   Args
+    )
+{
     int                     server_fd = -1;
     int                     epoll_fd = -1;
     int                     control_fd = -1;
@@ -222,11 +231,11 @@ VmSockPosixServerListenThread(
             accData1 = (VM_EVENT_DATA*)events[i].data.ptr;        
             if (accData1->ssl != NULL)
             {
-                insert_element(accData1->fd, accData1->ssl,events[i].events, pQueue);
+                VmRESTInsertElement(accData1->fd, accData1->ssl,events[i].events, pQueue);
             } 
             else 
             { 
-                insert_element(accData1->fd, NULL,events[i].events, pQueue);
+                VmRESTInsertElement(accData1->fd, NULL,events[i].events, pQueue);
             }
         }
         pthread_mutex_unlock(&(pQueue->lock));
@@ -246,12 +255,12 @@ error:
 
 
 uint32_t VmSockPosixSetSocketNonBlocking(
-    int server_fd
+    int             server_fd
     )
 {
-    int            cur_flags = 0;
-    int            set_flags = 0;
-    uint32_t       dwError = 0;
+    int             cur_flags = 0;
+    int             set_flags = 0;
+    uint32_t        dwError = 0;
 
     cur_flags = fcntl(server_fd, F_GETFL, 0);
     if (cur_flags == -1)
@@ -292,7 +301,7 @@ uint32_t VmSockPosixHandleEventsFromQueue(
         {
             pthread_cond_wait(&(pQueue->signal), &(pQueue->lock));
         }
-        temp = remove_element(pQueue);
+        temp = VmRESTUtilsRemoveElement(pQueue);
         pthread_mutex_unlock(&(pQueue->lock));
         if (!temp)
         {
@@ -328,7 +337,7 @@ error:
 
 
 uint32_t VmsockPosixAcceptNewConnection(
-    int server_fd
+    int                     server_fd
     )
 {   
     socklen_t               sin_size = 0;
@@ -405,7 +414,7 @@ error:
 
 
 uint32_t VmsockPosixReadDataAtOnce(
-    SSL*  ssl
+    SSL*          ssl
     )
 {
     uint32_t      dwError = 0;
@@ -436,12 +445,12 @@ error:
 }
 
 uint32_t VmsockPosixWriteDataAtOnce(
-    SSL*     ssl,
-    char*    buffer,
-    uint32_t bytes
+    SSL*            ssl,
+    char*           buffer,
+    uint32_t        bytes
     )
 {
-    uint32_t dwError = 0;
+    uint32_t        dwError = 0;
     
     SSL_write(ssl, buffer,bytes); 
     BAIL_ON_POSIX_SOCK_ERROR(dwError);

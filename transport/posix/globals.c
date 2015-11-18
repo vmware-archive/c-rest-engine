@@ -53,3 +53,16 @@ error:
     goto cleanup; 
 
 }
+
+void
+VmShutdownGlobalServerSocket(
+    void
+    )
+{
+    gServerSocketInfo.clientCount = 0;
+    memset(gServerSocketInfo.port, '\0', MAX_PORT_LEN);
+    gServerSocketInfo.fd = -1;
+    pthread_mutex_destroy(&(gServerSocketInfo.lock));
+
+}
+

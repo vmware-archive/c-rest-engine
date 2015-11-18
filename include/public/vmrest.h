@@ -6,6 +6,11 @@ VmRestTransportInit(
     char *port
     );
 
+uint32_t
+VmRESTTransportShutdown(
+    void
+    );
+
 uint32_t VmsockPosixWriteDataAtOnce(
     SSL*     ssl,
     char*    buffer,

@@ -14,16 +14,27 @@
 
 #include "includes.h"
 
-uint32_t insert_element(int fd, SSL *ssl, uint32_t event_flag, QUEUE *q)
+uint32_t 
+VmRESTInsertElement(
+    int         fd,
+    SSL*        ssl,
+    uint32_t    event_flag,
+    QUEUE*      queue
+    )
 {
-    uint32_t dwError = EXIT_SUCCESS;
-    EVENT_NODE *node = NULL;
-    dwError = VmRESTAllocateMemory(sizeof(EVENT_NODE), (void*)&node);
+    uint32_t    dwError = EXIT_SUCCESS;
+    EVENT_NODE* node = NULL;
+    
+    dwError = VmRESTAllocateMemory(
+              sizeof(EVENT_NODE),
+              (void*)&node
+              );
     BAIL_ON_POSIX_SOCK_ERROR(dwError);       
  
     node->fd = fd;
     node->flag = event_flag;
     node->next  = NULL;
+
     if (ssl != NULL) 
     {
         node->ssl = ssl;
@@ -32,17 +43,18 @@ uint32_t insert_element(int fd, SSL *ssl, uint32_t event_flag, QUEUE *q)
     {
         node->ssl = NULL;
     }
-    if (q->count == 0)
+
+    if (queue->count == 0)
     {
-        q->head = node;
-        q->tail = node;
+        queue->head = node;
+        queue->tail = node;
  
     } else 
     {
-        q->tail->next = node;
-        q->tail = node;
+        queue->tail->next = node;
+        queue->tail = node;
     }
-    q->count++;
+    queue->count++;
 
 cleanup: 
     return dwError;
@@ -51,27 +63,31 @@ error:
 }
 
 
-EVENT_NODE* remove_element(QUEUE *q) 
+EVENT_NODE* 
+VmRESTUtilsRemoveElement(
+    QUEUE*        queue
+    ) 
 {
-    EVENT_NODE *temp = NULL;
-    uint32_t dwError = EXIT_SUCCESS; 
-    if (q->count == 0)
+    EVENT_NODE*   temp = NULL;
+    uint32_t      dwError = EXIT_SUCCESS; 
+    
+    if (queue->count == 0)
     {
         dwError = ERROR_NOT_SUPPORTED; 
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    else if (q->count == 1)
+    else if (queue->count == 1)
     {
-        temp = q->head;
-        q->head = NULL;
-        q->tail = NULL;
+        temp = queue->head;
+        queue->head = NULL;
+        queue->tail = NULL;
 
     } else 
     {
-        temp = q->head;
-        q->head = q->head->next;
+        temp = queue->head;
+        queue->head = queue->head->next;
     }
-    q->count--;
+    queue->count--;
 
 cleanup:
     return temp;
@@ -79,14 +95,67 @@ error:
     goto cleanup;
 }
 
-uint32_t init_queue(QUEUE *q)
+uint32_t 
+VmRestUtilsInitQueue(
+    QUEUE*       queue
+    )
 {
-    uint32_t dwError= EXIT_SUCCESS;
-    q->count = 0;
-    q->head = NULL;
-    q->tail = NULL;
-    pthread_mutex_init(&(q->lock),NULL);
-    pthread_cond_init(&(q->signal),NULL);
+    uint32_t     dwError = EXIT_SUCCESS;
+    uint32_t     mutexInited = 0;  
+    
+    queue->count = 0;
+    queue->head = NULL;
+    queue->tail = NULL;
+    
+    dwError = pthread_mutex_init(
+              &(queue->lock),
+              NULL
+              );
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+    mutexInited = 1;
+
+    dwError = pthread_cond_init(
+              &(queue->signal),
+              NULL
+              );
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+cleanup:
     return dwError;
+error:
+    if (mutexInited)
+    {
+        pthread_mutex_destroy(
+        &(queue->lock)
+        );
+    }
+    goto cleanup;
 }
 
+void 
+VmRESTUtilsDestroyQueue(
+    QUEUE*         queue
+    )
+{
+    EVENT_NODE*    temp = NULL;
+
+    pthread_mutex_lock(&(queue->lock));    
+    temp = queue->head;
+    
+    while(temp != NULL)
+    {
+        VmRESTFreeMemory(
+        temp
+        );
+        
+        temp = temp->next;
+    }
+    queue->count = 0;
+    queue->head = NULL;
+    queue->tail = NULL;
+    
+    pthread_mutex_destroy(&(queue->lock));
+    pthread_cond_destroy(&(queue->signal)); 
+
+}
