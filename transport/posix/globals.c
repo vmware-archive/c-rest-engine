@@ -43,8 +43,7 @@ VmInitGlobalServerSocket(
         dwError = ERROR_NOT_SUPPORTED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    
-
+    gServerSocketInfo.keepOpen = 1;
 
 cleanup:
     return dwError;

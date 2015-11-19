@@ -27,6 +27,7 @@ typedef struct _VM_SOCKET
     VM_CONNECTION       clients[MAX_CONNECTIONS];
     uint32_t            clientCount;
     pthread_mutex_t     lock;
+    uint32_t            keepOpen;
     char                address[MAX_ADDRESS_LEN];
     char                port[MAX_PORT_LEN];
 } VM_SOCKET;

@@ -114,9 +114,19 @@ void
 VmSockPosixDestroyServerSocket(
    )
 {
+    /* Exit the infinite loop of server thread */
+    gServerSocketInfo.keepOpen = 0;
 
+    /* join the server thread */
+    pthread_join(*(pQueue->server_thread), NULL);
 
+    VmRESTFreeMemory(pQueue->server_thread);
 
+    VmRESTUtilsDestroyQueue(pQueue);
+
+    VmRESTFreeMemory(pQueue);
+
+    pQueue = NULL;
 
 }
 
@@ -222,7 +232,7 @@ VmSockPosixServerListenThread(
         dwError = ERROR_NOT_SUPPORTED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    while (1) 
+    while (gServerSocketInfo.keepOpen) 
     {
         hot_sockets = epoll_wait(epoll_fd, events, MAX_EVENT, -1);
         pthread_mutex_lock(&(pQueue->lock));
