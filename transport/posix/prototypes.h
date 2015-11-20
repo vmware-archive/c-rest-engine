@@ -40,10 +40,9 @@ uint32_t VmsockPosixReadDataAtOnce(
 
 uint32_t
 VmRESTInsertElement(
-    int         fd,
-    SSL*        ssl,
-    uint32_t    event_flag,
-    QUEUE*      queue
+    PVM_EVENT_DATA       data,
+    uint32_t             flag,
+    QUEUE*               queue
     );
 
 EVENT_NODE*
@@ -74,4 +73,15 @@ VmShutdownGlobalServerSocket(
     void
     );
 
+uint32_t
+VmRESTInsertClientFromGlobal(
+    SSL*              ssl,
+    int               fd,
+    uint32_t*         index
+    );
+
+uint32_t
+VmRESTRemoveClientFromGlobal(
+    uint32_t          index
+    );
 

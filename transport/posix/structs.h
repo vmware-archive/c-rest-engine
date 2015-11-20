@@ -17,8 +17,16 @@
 typedef struct _CONNECTION
 {
     int                 fd;
+    int                 notStale;
     SSL*                ssl;
 } VM_CONNECTION; 
+
+typedef struct _EVENT_DATA
+{
+    int                 fd;
+    SSL*                ssl;
+    int                 index;
+} VM_EVENT_DATA, *PVM_EVENT_DATA;
 
 typedef struct _VM_SOCKET
 {
@@ -26,6 +34,7 @@ typedef struct _VM_SOCKET
     SSL_CTX*            sslContext;
     VM_CONNECTION       clients[MAX_CONNECTIONS];
     uint32_t            clientCount;
+    uint32_t            emptyIndex;
     pthread_mutex_t     lock;
     uint32_t            keepOpen;
     char                address[MAX_ADDRESS_LEN];
@@ -34,8 +43,7 @@ typedef struct _VM_SOCKET
 
 typedef struct _QUEUE_NODE
 {
-    int                 fd;
-    SSL*                ssl;
+    VM_EVENT_DATA       data;
     uint32_t            flag;
     struct _QUEUE_NODE* next;
 }EVENT_NODE;
@@ -52,9 +60,3 @@ typedef struct _VM_EVENT_QUEUE
     pthread_t*          server_thread;
 }QUEUE;
 
-typedef struct _EVENT_DATA
-{
-    int                 fd;
-    SSL*                ssl;
-    int                 clientNo;
-} VM_EVENT_DATA;

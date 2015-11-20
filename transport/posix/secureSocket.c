@@ -219,7 +219,7 @@ VmSockPosixServerListenThread(
     pQueue->server_fd = server_fd;
 
     acceptData.fd = server_fd;
-    acceptData.clientNo = 2;
+    acceptData.index = -1;
     acceptData.ssl = NULL;
 
     ev.data.ptr = &acceptData;
@@ -234,24 +234,27 @@ VmSockPosixServerListenThread(
     }
     while (gServerSocketInfo.keepOpen) 
     {
+        /* TODO:: We need to provide timeout else during the cleanup, 
+        listnerer thread will keep on waiting unless epoll_wait returns */
+        
         hot_sockets = epoll_wait(epoll_fd, events, MAX_EVENT, -1);
         pthread_mutex_lock(&(pQueue->lock));
         for (i= 0; i< hot_sockets;i++)
         {
             accData1 = (VM_EVENT_DATA*)events[i].data.ptr;        
-            if (accData1->ssl != NULL)
-            {
-                VmRESTInsertElement(accData1->fd, accData1->ssl,events[i].events, pQueue);
-            } 
-            else 
-            { 
-                VmRESTInsertElement(accData1->fd, NULL,events[i].events, pQueue);
-            }
+            
+            dwError = VmRESTInsertElement(
+                      accData1,
+                      events[i].events,
+                      pQueue
+                      );
+
         }
         pthread_mutex_unlock(&(pQueue->lock));
         pthread_cond_broadcast(&(pQueue->signal));        
         
     }
+    close(server_fd);
 cleanup:
     return NULL;
 
@@ -302,6 +305,7 @@ uint32_t VmSockPosixHandleEventsFromQueue(
 {
     EVENT_NODE*         temp = NULL;
     uint32_t            dwError = 0;
+    PVM_EVENT_DATA      acceptData = NULL;
     
     while (1) 
     { 
@@ -317,20 +321,26 @@ uint32_t VmSockPosixHandleEventsFromQueue(
         {
             dwError = ERROR_NOT_SUPPORTED;
             BAIL_ON_POSIX_SOCK_ERROR(dwError);
-        }   
+        }
+        acceptData = &(temp->data);
         
         if ((temp->flag & EPOLLERR) || (temp->flag & EPOLLHUP) || (!(temp->flag & EPOLLIN)))
         {
             /* Error on this socket, hence closing */
-            close(temp->fd);
+            dwError = VmRESTRemoveClientFromGlobal(
+                      acceptData->index
+                      );
+            BAIL_ON_POSIX_SOCK_ERROR(dwError);
+          
+            close(acceptData->fd);
         }
-        else if (temp->fd == pQueue->server_fd)
+        else if (acceptData->fd == pQueue->server_fd)
         {
-            dwError = VmsockPosixAcceptNewConnection(temp->fd);
+            dwError = VmsockPosixAcceptNewConnection(acceptData->fd);
         }
         else 
         {  
-            dwError = VmsockPosixReadDataAtOnce(temp->ssl); 
+            dwError = VmsockPosixReadDataAtOnce(acceptData->ssl); 
         }
     }
 cleanup:
@@ -359,6 +369,7 @@ uint32_t VmsockPosixAcceptNewConnection(
     SSL*                    ssl = NULL;  
     uint32_t                try = 5000;
     uint32_t                cntRty = 0;
+    uint32_t                globalIndex = 0;
     VM_EVENT_DATA*          acceptData = NULL;
 
     acceptData = (VM_EVENT_DATA*)malloc(sizeof(VM_EVENT_DATA));
@@ -400,8 +411,15 @@ retry:
          }
     }
 
+    dwError = VmRESTInsertClientFromGlobal(
+              ssl,
+              accept_fd,
+              &globalIndex
+              );
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
     acceptData->fd = accept_fd;
-    acceptData->clientNo = 25;
+    acceptData->index = globalIndex;
     acceptData->ssl = ssl;   
  
     ev.data.ptr = (void *)acceptData;

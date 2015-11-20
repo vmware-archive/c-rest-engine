@@ -16,10 +16,9 @@
 
 uint32_t 
 VmRESTInsertElement(
-    int         fd,
-    SSL*        ssl,
-    uint32_t    event_flag,
-    QUEUE*      queue
+    PVM_EVENT_DATA       data,
+    uint32_t             flag,
+    QUEUE*               queue
     )
 {
     uint32_t    dwError = EXIT_SUCCESS;
@@ -30,20 +29,11 @@ VmRESTInsertElement(
               (void*)&node
               );
     BAIL_ON_POSIX_SOCK_ERROR(dwError);       
- 
-    node->fd = fd;
-    node->flag = event_flag;
+  
+    memcpy(&(node->data), data, sizeof(VM_EVENT_DATA)); 
+    node->flag  = flag;
     node->next  = NULL;
-
-    if (ssl != NULL) 
-    {
-        node->ssl = ssl;
-    }
-    else
-    {
-        node->ssl = NULL;
-    }
-
+    
     if (queue->count == 0)
     {
         queue->head = node;
