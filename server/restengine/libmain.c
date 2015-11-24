@@ -13,6 +13,7 @@
  */
 
 #include "includes.h"
+int  vmrest_syslog_level;
 
 uint32_t
 VmRESTEngineInit(
@@ -22,6 +23,11 @@ VmRESTEngineInit(
     uint32_t dwError = 0;
     PVMREST_THREAD pThreadpool = NULL;
     uint32_t nThreads = 0;
+    vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;    
+
+    dwError = VmRESTLogInitialize(
+              "/tmp/restServer.log"
+              );
 
     /* Init Transport */
     dwError = VmRestTransportInit("80");

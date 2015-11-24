@@ -48,10 +48,10 @@ extern "C" {
         }                                 \
     } while(0)
 
-#define BAIL_ON_VMREST_ERROR(dwError) \
-    if (dwError)                                                            \
-    {                                                                       \
-        goto error;                                                         \
+#define BAIL_ON_VMREST_ERROR(dwError)     \
+    if (dwError)                          \
+    {                                     \
+        goto error;                       \
     }
 
 #define BAIL_ON_VMREST_INVALID_POINTER(p, errCode)     \
@@ -59,35 +59,6 @@ extern "C" {
             errCode = ERROR_INVALID_PARAMETER;    \
             BAIL_ON_VMREST_ERROR(errCode);          \
         }
-
-#define VMREST_LOG( Level, Mask, Format, ... ) \
-    do                                             \
-    {                                              \
-        VmRESTLog1( Level,                          \
-               G    Mask,                           \
-                   Format,                         \
-                   ##__VA_ARGS__);                 \
-    } while (0)
-
-#define VMREST_LOG_GENERAL( Level, Mask, Format, ... ) \
-                VMREST_LOG( Level, Mask, Format, ##__VA_ARGS__ )
-
-#define VMREST_LOG_ERROR( Mask, Format, ... )   \
-                VMREST_LOG_GENERAL( VMREST_LOG_ERROR, Mask, Format, ##__VA_ARGS__ )
-
-#define VMREST_LOG_WARNING( Mask, Format, ... ) \
-                VMREST_LOG_GENERAL( VMREST_LOG_WARNING, Mask, Format, ##__VA_ARGS__ )
-
-#define VMREST_LOG_INFO( Mask, Format, ... )    \
-                VMREST_LOG_GENERAL( VMREST_LOG_INFO, Mask, Format, ##__VA_ARGS__ )
-
-#define VMREST_LOG_VERBOSE( Mask, Format, ... ) \
-                VMREST_LOG_GENERAL( VMREST_LOG_VERBOSE, Mask, Format, ##__VA_ARGS__ )
-
-#define VMREST_LOG_DEBUG( Mask, Format, ... )   \
-                VMREST_LOG_GENERAL( VMREST_LOG_DEBUG,                     \
-                                   Mask, "[file: %s][line: %d] " Format,\
-                                   __FILE__, __LINE__, ##__VA_ARGS__ )
 
 #ifndef IsNullOrEmptyString
 #define IsNullOrEmptyString(str) (!(str) || !*(str))

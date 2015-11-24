@@ -13,11 +13,13 @@
  */
 
 #include "includes.h"
+int vmrest_syslog_level;
 
 uint32_t
 VmRESTClientInit(
     VOID
     )
 {
+    vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;
     return 0;
 }

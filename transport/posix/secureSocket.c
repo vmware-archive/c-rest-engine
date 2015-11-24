@@ -205,9 +205,9 @@ VmSockPosixServerListenThread(
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
     
+    VMREST_LOG_DEBUG("SERVER LISTENING on %d", server_fd); 
     /* This is for debugging purpose, will remove once proper debug framework is put inplace */
-    write(1,"Listening", 10);
-
+    
     epoll_fd = epoll_create1(0);
     if (epoll_fd == -1) 
     {
@@ -375,7 +375,6 @@ uint32_t VmsockPosixAcceptNewConnection(
     acceptData = (VM_EVENT_DATA*)malloc(sizeof(VM_EVENT_DATA));
     memset(acceptData, '\0', sizeof(VM_EVENT_DATA));             
     
-
     sin_size  = sizeof(client_addr);
     accept_fd = accept(server_fd, (struct sockaddr *)&client_addr, &sin_size);
     if (accept_fd == -1)
