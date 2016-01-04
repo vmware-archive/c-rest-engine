@@ -24,7 +24,7 @@ VmInitGlobalServerSocket(
     char* port 
     )
 {
-    uint32_t         dwError = 0;
+    uint32_t         dwError = VMREST_TRANSPORT_NO_ERROR;
     uint32_t         len = 0;
 
     gServerSocketInfo.clientCount = 0;
@@ -35,7 +35,7 @@ VmInitGlobalServerSocket(
     len = strlen(port);
     if ( len > MAX_PORT_LEN)
     {
-        dwError = ERROR_NOT_SUPPORTED;
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
@@ -43,7 +43,7 @@ VmInitGlobalServerSocket(
 
     if (pthread_mutex_init(&(gServerSocketInfo.lock), NULL) != 0)
     {
-        dwError = ERROR_NOT_SUPPORTED;
+        dwError = VMREST_TRANSPORT_MUTEX_INIT_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
     gServerSocketInfo.keepOpen = 1;
@@ -75,7 +75,7 @@ VmRESTInsertClientFromGlobal(
     uint32_t*         index
     )
 {
-    uint32_t          dwError = 0;
+    uint32_t          dwError = VMREST_TRANSPORT_NO_ERROR;
     uint32_t          count   = 0;
     uint32_t          temp    = 0;
     uint32_t          success = 0;
@@ -110,7 +110,7 @@ VmRESTInsertClientFromGlobal(
     } 
     else 
     {
-        dwError = ERROR_NOT_SUPPORTED;
+        dwError = VMREST_TRANSPORT_INSERT_CLIENT_INGLOBAL_ERROR;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
     pthread_mutex_unlock(&(gServerSocketInfo.lock));
@@ -129,11 +129,11 @@ VmRESTRemoveClientFromGlobal(
     uint32_t          index
     )
 {
-    uint32_t          dwError = 0;
+    uint32_t          dwError = VMREST_TRANSPORT_NO_ERROR;
 
     if (index >= MAX_CONNECTIONS)
     {
-        dwError = ERROR_NOT_SUPPORTED;
+        dwError = VMREST_TRANSPORT_MAX_CONN_REACHED_ERROR;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 

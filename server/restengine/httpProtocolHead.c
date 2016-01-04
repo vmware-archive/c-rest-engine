@@ -458,11 +458,12 @@ error:
 
 uint32_t
 VmRESTCreateHTTPResponseMessage(
-    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    PVM_REST_HTTP_RESPONSE_PACKET*  ppResPacket
     )
 {
-    uint32_t dwError = 0;
+    uint32_t                        dwError = 0;
     PVM_REST_HTTP_RESPONSE_PACKET   pResPacket = NULL;
+
     dwError = VmRESTAllocateHTTPResponsePacket(
         &pResPacket
     );
@@ -484,9 +485,9 @@ VMRESTWriteMessageBodyInResponse(
     uint32_t                      *bytes
 )
 {
-    uint32_t dwError = 0;
-    char*    curr = NULL;
-    uint32_t contentLen = 0;
+    uint32_t                      dwError = 0;
+    char*                         curr = NULL;
+    uint32_t                      contentLen = 0;
 
     if (pResPacket == NULL || buffer == NULL)
     {
@@ -525,14 +526,14 @@ error:
 uint32_t 
 VMRESTWriteStatusLineInResponse(
     PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
-    char                          *buffer,
-    uint32_t                      *bytes
+    char*                         buffer,
+    uint32_t*                     bytes
 )
 {
-    uint32_t dwError = 0;
-    uint32_t bytesCount = 0;
-    uint32_t len = 0;
-    char*    curr = NULL;
+    uint32_t                      dwError = 0;
+    uint32_t                      bytesCount = 0;
+    uint32_t                      len = 0;
+    char*                         curr = NULL;
  
     if (pResPacket == NULL || buffer == NULL)
     {
@@ -588,13 +589,13 @@ uint32_t
 VmRESTAddAllHeaderInResponse(
     PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
     char*                         buffer,
-    uint32_t                      *bytes
+    uint32_t*                     bytes
     )
 {
-    uint32_t            dwError = 0;
-    uint32_t            len = 0;
-    uint32_t            streamBytes = 0;
-    char*               curr = NULL;
+    uint32_t                      dwError = 0;
+    uint32_t                      len = 0;
+    uint32_t                      streamBytes = 0;
+    char*                         curr = NULL;
   
     if (buffer == NULL || pResPacket == NULL)
     {
@@ -813,7 +814,7 @@ error:
 
 uint32_t 
 VmRESTSendResponsePacket(
-    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    PVM_REST_HTTP_RESPONSE_PACKET*    ppResPacket
     )
 {
     uint32_t                          dwError = 0;
@@ -889,9 +890,9 @@ error:
 
 uint32_t
 VmRESTProcessIncomingData(
-    char         *buffer,
-    uint32_t     byteRead,
-    SSL*         ssl
+    char*                        buffer,
+    uint32_t                     byteRead,
+    SSL*                         ssl
     )
 {
     uint32_t                     dwError = 0;
@@ -938,8 +939,8 @@ VmRESTTestHTTPParser(
     void
     )
 {
-    uint32_t dwError = 0;
-    char input[4096] = {0};
+    uint32_t                 dwError = 0;
+    char                     input[4096] = {0};
     memcpy(input, "POST http://SITE/foobar.html HTTP/1.1\r\nHost: SITE\r\nConnection: Keep-Alive\r\nContent-Length: 17\r\n\0\r\nThis is payload\r\n",129);
     PVM_REST_HTTP_REQUEST_PACKET pReqPacket = NULL;
 
@@ -969,12 +970,12 @@ VmRESTTestHTTPParser(
 
 uint32_t
 VmRESTTestHTTPResponse(
-    PVM_REST_HTTP_REQUEST_PACKET pReqPacket
+    PVM_REST_HTTP_REQUEST_PACKET  pReqPacket
     )
 {
-    uint32_t dwError = 0;
-    char header[32] = {0};
-    char value[128] = {0};
+    uint32_t                      dwError = 0;
+    char                          header[32] = {0};
+    char                          value[128] = {0};
     PVM_REST_HTTP_RESPONSE_PACKET pResPacket = NULL;
 
     /******** Allocate memory to response object */
@@ -1037,12 +1038,12 @@ VmRESTTestHTTPResponse(
 
 uint32_t 
 VmRESTTriggerAppCb(
-    PVM_REST_HTTP_REQUEST_PACKET  pRequest,
+    PVM_REST_HTTP_REQUEST_PACKET   pRequest,
     PVM_REST_HTTP_RESPONSE_PACKET* ppResponse
 )
 {
-    uint32_t    dwError = 0;
-    uint32_t    methodNo = 0;
+    uint32_t                       dwError = 0;
+    uint32_t                       methodNo = 0;
  
     if (pRequest == NULL || ppResponse == NULL)
     {

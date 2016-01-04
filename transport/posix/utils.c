@@ -63,7 +63,7 @@ VmRESTUtilsRemoveElement(
     
     if (queue->count == 0)
     {
-        dwError = ERROR_NOT_SUPPORTED; 
+        dwError = VMREST_TRANSPORT_QUEUE_EMPTY; 
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
     else if (queue->count == 1)
@@ -120,6 +120,7 @@ error:
         &(queue->lock)
         );
     }
+    dwError = VMREST_TRANSPORT_QUEUE_INIT_FAILED;
     goto cleanup;
 }
 
