@@ -20,9 +20,9 @@ int main(int argc, char *argv[])
 
     VmRESTSrvBlockSignals();
 
-    dwError = VmRESTSrvInitialize();
+    dwError = VmRESTSrvInitialize(argv[1]);
     BAIL_ON_VMREST_ERROR(dwError);
-    
+
     dwError = VmRESTSrvHandleSignals();
     BAIL_ON_VMREST_ERROR(dwError);
 

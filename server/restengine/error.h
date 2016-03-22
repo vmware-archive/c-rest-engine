@@ -1,3 +1,4 @@
+
 /*
  * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
  *
@@ -12,41 +13,17 @@
  * under the License.
  */
 
-#include "includes.h"
 
-uint32_t
-VmRESTSrvInitialize(
-    char *configFile
-    )
-{
-    uint32_t dwError = ERROR_VMREST_SUCCESS;
-    if (configFile == NULL)
-    {
-        dwError = ERROR_NOT_SUPPORTED;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
+/****************** librest engine internal error codes ****************/
 
-    dwError = VmRESTEngineInit(
-                  &gpVmRestHandlers,
-                  configFile
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
+#define REST_ENGINE_INIT_SUCCESS                0
+#define REST_ENGINE_INIT_FAIL                   1
+
+#define REST_ENGINE_MISSING_CONFIG              100
+#define REST_ENGINE_INVALID_CONFIG              101
+#define REST_ENGINE_NO_MEMORY                   102
 
 
-cleanup:
-    return dwError;
-error:
+/***********************************************************************/
 
-    goto cleanup;
 
-}
-
-uint32_t
-VmRESTSrvShutdown(
-    void
-    )
-{
-    uint32_t dwError = ERROR_VMREST_SUCCESS;
-
-    return dwError;
-}
