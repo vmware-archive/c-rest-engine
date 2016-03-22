@@ -16,24 +16,29 @@
 
 uint32_t
 VmRestTransportInit(
-    char *port
+    char*    port,
+    char*    sslCertificate,
+    char*    sslKey
     )
 {
     uint32_t dwError = 0;
-    if (port == NULL)
+    if (port == NULL || sslCertificate == NULL || sslKey == NULL)
     {
         dwError = ERROR_NOT_SUPPORTED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     }
-  
+
     dwError = VmInitGlobalServerSocket(
                   port
-              );
-    BAIL_ON_POSIX_SOCK_ERROR(dwError); 
- 
+                  );
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
     dwError = VmSockPosixCreateServerSocket(
-              );
+                  sslCertificate,
+                  sslKey,
+                  port
+                  );
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
 cleanup:
@@ -43,29 +48,15 @@ error:
     goto cleanup;
 }
 
-uint32_t 
+void
 VmRESTTransportShutdown(
     void
     )
 {
-    uint32_t   dwError = 0;
-    BAIL_ON_POSIX_SOCK_ERROR(dwError);    
-    
-
-
-
-
+    VmSockPosixDestroyServerSocket(
+        );
 
     VmShutdownGlobalServerSocket(
         );
-
-    
-    
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-
 }
 
