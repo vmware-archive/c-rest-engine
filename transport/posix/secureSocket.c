@@ -14,7 +14,6 @@
 
 #include "includes.h"
 
-
 uint32_t
 VmRESTSecureSocket(
     char*                certificate,
@@ -25,14 +24,13 @@ VmRESTSecureSocket(
     int                  ret = 0;
     const SSL_METHOD*    method = NULL;
     SSL_CTX*             context = NULL;
-  
 
     if (key == NULL || certificate == NULL)
     {
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
-        BAIL_ON_POSIX_SOCK_ERROR(dwError);     
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    
+
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
     method = SSLv3_server_method();
@@ -42,28 +40,28 @@ VmRESTSecureSocket(
         dwError = VMREST_TRANSPORT_SSL_CONFIG_ERROR;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    
+
     ret = SSL_CTX_use_certificate_file(context, certificate, SSL_FILETYPE_PEM);
-    if (ret <= 0) 
+    if (ret <= 0)
     {
         dwError = VMREST_TRANSPORT_SSL_CERTIFICATE_ERROR;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
-    } 
+    }
 
-    ret = SSL_CTX_use_PrivateKey_file(context, key, SSL_FILETYPE_PEM);  
+    ret = SSL_CTX_use_PrivateKey_file(context, key, SSL_FILETYPE_PEM);
     if (ret <= 0)
     {
         dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_ERROR;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
-    } 
+    }
     if (!SSL_CTX_check_private_key(context))
     {
         dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_CHECK_ERROR;
         BAIL_ON_POSIX_SOCK_ERROR(dwError)
-    } 
+    }
 
     gServerSocketInfo.sslContext = context;
-    
+
 cleanup:
     return dwError;
 
@@ -75,34 +73,79 @@ error:
 
 uint32_t
 VmSockPosixCreateServerSocket(
-    void
+    char*                   sslCertificate,
+    char*                   sslKey,
+    char*                   port
     )
-{   
-    uint32_t        dwError = 0;
-    pthread_t*      thr = NULL;
-    QUEUE*          myQueue = NULL;
-    
-    dwError = VmRESTAllocateMemory(sizeof(QUEUE), (void *)&(myQueue));
+{
+    uint32_t                dwError = 0;
+    pthread_t*              thr = NULL;
+    QUEUE*                  myQueue = NULL;
+    PVM_SERVER_THR_PARAMS   thrParams = NULL;
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VM_SERVER_THR_PARAMS),
+                  (void *)&(thrParams)
+                  );
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
-    dwError = VmRestUtilsInitQueue(myQueue);
+    if ( sslCertificate == NULL || sslKey == NULL || port == NULL)
+    {
+        dwError = REST_ENGINE_NO_MEMORY;
+    }
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+    strcpy(thrParams->sslCert, sslCertificate);
+    strcpy(thrParams->sslKey, sslKey);
+    strcpy(thrParams->serverPort, port);
     
+    dwError = VmRESTAllocateMemory(
+                  sizeof(QUEUE),
+                  (void *)&(myQueue)
+                  );
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+    dwError = VmRestUtilsInitQueue(
+                  myQueue
+                  );
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
     pQueue = myQueue;
-    
-    dwError = VmRESTAllocateMemory(sizeof(pthread_t), (void *)&(thr));
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(pthread_t),
+                  (void *)&(thr)
+                  );
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
-      
-    dwError = pthread_create(thr,NULL,&(VmSockPosixServerListenThread),NULL);
+
+    dwError = pthread_create(
+                  thr,
+                  NULL,
+                  &(VmSockPosixServerListenThread),
+                  thrParams
+                  );
     pQueue->server_thread = thr;
-    
+
 cleanup:
     return dwError;
 
 error:
-    if (myQueue) 
+    if (thrParams)
     {
-       VmRESTFreeMemory(myQueue);
+        VmRESTFreeMemory(
+            thrParams
+            );
+    }
+    if (myQueue)
+    {
+        if (pQueue == myQueue)
+        {
+            VmRESTUtilsDestroyQueue(
+                pQueue
+                );
+            pQueue = NULL;
+        }
+        VmRESTFreeMemory(myQueue);
     }
     if (thr)
     {
@@ -112,7 +155,7 @@ error:
     goto cleanup;
 }
 
-void 
+void
 VmSockPosixDestroyServerSocket(
    )
 {
@@ -120,19 +163,24 @@ VmSockPosixDestroyServerSocket(
     gServerSocketInfo.keepOpen = 0;
 
     /* join the server thread */
-    pthread_join(*(pQueue->server_thread), NULL);
+    if ( pQueue  && pQueue->server_thread )
+    {
+        pthread_join(*(pQueue->server_thread), 
+                        NULL
+                        );
+        VmRESTFreeMemory(pQueue->server_thread
+                        );
+        pQueue->server_thread = NULL;
 
-    VmRESTFreeMemory(pQueue->server_thread);
-
-    VmRESTUtilsDestroyQueue(pQueue);
-
-    VmRESTFreeMemory(pQueue);
-
-    pQueue = NULL;
-
+        VmRESTUtilsDestroyQueue(pQueue
+                        );
+        VmRESTFreeMemory(pQueue
+                        );
+        pQueue = NULL;
+    }
 }
 
-void * 
+void *
 VmSockPosixServerListenThread(
     void*                   Args
     )
@@ -149,17 +197,19 @@ VmSockPosixServerListenThread(
     struct epoll_event      ev =  {0};
     struct epoll_event      events[MAX_EVENT];
     int                     i = 0;
-    VM_EVENT_DATA           acceptData = {0}; 
+    VM_EVENT_DATA           acceptData = {0};
     VM_EVENT_DATA*          accData1 = NULL;
+    PVM_SERVER_THR_PARAMS   thrArgs = NULL;
 
     SSL_library_init();
 
+    thrArgs = Args;
     /* TODO:: Must be configured from config module (to be added) */
-    dwError = VmRESTSecureSocket(
-                  "/root/mycert.pem",
-                  "/root/mycert.pem"
-              );
 
+    dwError = VmRESTSecureSocket(
+                  thrArgs->sslCert,
+                  thrArgs->sslKey
+              );
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     memset(&hints, 0, sizeof(hints));
@@ -168,26 +218,32 @@ VmSockPosixServerListenThread(
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    dwError = getaddrinfo(NULL, gServerSocketInfo.port, &hints, &serinfo);
-    if (dwError != 0) 
-    {   
+    dwError = getaddrinfo(NULL, thrArgs->serverPort, &hints, &serinfo);
+    if (dwError != 0)
+    {
         dwError = VMREST_TRANSPORT_SOCKET_GET_ADDRINFO_ERROR;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    for (p = serinfo; p!= NULL; p = p->ai_next) 
+    if ( thrArgs )
     {
-        if((server_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) 
+        VmRESTFreeMemory(
+            thrArgs
+            );
+    }
+    for (p = serinfo; p!= NULL; p = p->ai_next)
+    {
+        if((server_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
         {
             VMREST_LOG_DEBUG("Server Socket creation failed.. Will make more attempts..");
             continue;
         }
-        if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) 
+        if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
         {
             VMREST_LOG_DEBUG("Setsockopt failed");
             dwError = VMREST_TRANSPORT_SOCKET_SETSOCKOPT_ERROR;
             BAIL_ON_POSIX_SOCK_ERROR(dwError);
         }
-        if(bind(server_fd, p->ai_addr,p->ai_addrlen) == -1) 
+        if(bind(server_fd, p->ai_addr,p->ai_addrlen) == -1)
         {
             VMREST_LOG_DEBUG("Socket bind at Server failed...will make more attempts");
             continue;
@@ -205,18 +261,18 @@ VmSockPosixServerListenThread(
     dwError = VmSockPosixSetSocketNonBlocking(server_fd);
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
-    if (listen(server_fd, 10) == -1) 
+    if (listen(server_fd, 10) == -1)
     {
         VMREST_LOG_DEBUG("Listen failed on server socket %d", server_fd);
         dwError = VMREST_TRANSPORT_SOCKET_LISTEN_ERROR;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    
-    VMREST_LOG_DEBUG("SERVER LISTENING on %d .....", server_fd); 
+
+    VMREST_LOG_DEBUG("SERVER LISTENING on %d .....", server_fd);
     /* This is for debugging purpose, will remove once proper debug framework is put inplace */
-    
+
     epoll_fd = epoll_create1(0);
-    if (epoll_fd == -1) 
+    if (epoll_fd == -1)
     {
         VMREST_LOG_DEBUG("Epoll Create Error");
         dwError = VMREST_TRANSPORT_EPOLL_CREATE_ERROR;
@@ -231,25 +287,25 @@ VmSockPosixServerListenThread(
 
     ev.data.ptr = &acceptData;
     ev.events = EPOLLIN | EPOLLET;
- 
+
     control_fd = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &ev);
-    if (control_fd == -1) 
+    if (control_fd == -1)
     {
         VMREST_LOG_DEBUG("epoll_ctl command failed");
         dwError = VMREST_TRANSPORT_EPOLL_CTL_ERROR;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    while (gServerSocketInfo.keepOpen) 
+    while (gServerSocketInfo.keepOpen)
     {
-        /* TODO:: We need to provide timeout else during the cleanup, 
+        /* TODO:: We need to provide timeout else during the cleanup,
         listnerer thread will keep on waiting unless epoll_wait returns */
-        
+
         hot_sockets = epoll_wait(epoll_fd, events, MAX_EVENT, -1);
         pthread_mutex_lock(&(pQueue->lock));
         for (i= 0; i< hot_sockets;i++)
         {
-            accData1 = (VM_EVENT_DATA*)events[i].data.ptr;        
-            
+            accData1 = (VM_EVENT_DATA*)events[i].data.ptr;
+
             dwError = VmRESTInsertElement(
                       accData1,
                       events[i].events,
@@ -258,8 +314,7 @@ VmSockPosixServerListenThread(
 
         }
         pthread_mutex_unlock(&(pQueue->lock));
-        pthread_cond_broadcast(&(pQueue->signal));        
-        
+        pthread_cond_broadcast(&(pQueue->signal));
     }
     close(server_fd);
 cleanup:
@@ -313,9 +368,9 @@ uint32_t VmSockPosixHandleEventsFromQueue(
     EVENT_NODE*         temp = NULL;
     uint32_t            dwError = 0;
     PVM_EVENT_DATA      acceptData = NULL;
-    
-    while (1) 
-    { 
+
+    while (1)
+    {
         /* get an element from queue */
         pthread_mutex_lock(&(pQueue->lock));
         if (pQueue->count == 0)
@@ -330,7 +385,7 @@ uint32_t VmSockPosixHandleEventsFromQueue(
             BAIL_ON_POSIX_SOCK_ERROR(dwError);
         }
         acceptData = &(temp->data);
-        
+
         if ((temp->flag & EPOLLERR) || (temp->flag & EPOLLHUP) || (!(temp->flag & EPOLLIN)))
         {
             /* Error on this socket, hence closing */
@@ -338,7 +393,6 @@ uint32_t VmSockPosixHandleEventsFromQueue(
                       acceptData->index
                       );
             BAIL_ON_POSIX_SOCK_ERROR(dwError);
-          
             close(acceptData->fd);
         }
         else if (acceptData->fd == pQueue->server_fd)
@@ -346,9 +400,9 @@ uint32_t VmSockPosixHandleEventsFromQueue(
             VMREST_LOG_DEBUG("Accepting new connection with fd %d", acceptData->fd);
             dwError = VmsockPosixAcceptNewConnection(acceptData->fd);
         }
-        else 
-        {  
-            dwError = VmsockPosixReadDataAtOnce(acceptData->ssl); 
+        else
+        {
+            dwError = VmsockPosixReadDataAtOnce(acceptData->ssl);
         }
     }
 cleanup:
@@ -367,22 +421,22 @@ error:
 uint32_t VmsockPosixAcceptNewConnection(
     int                     server_fd
     )
-{   
+{
     socklen_t               sin_size = 0;
     struct sockaddr_storage client_addr = {0};
     uint32_t                dwError = 0;
     int                     accept_fd = -1;
     int                     control_fd = -1;
     struct epoll_event      ev = {0};
-    SSL*                    ssl = NULL;  
+    SSL*                    ssl = NULL;
     uint32_t                try = 5000;
     uint32_t                cntRty = 0;
     uint32_t                globalIndex = 0;
     VM_EVENT_DATA*          acceptData = NULL;
 
     acceptData = (VM_EVENT_DATA*)malloc(sizeof(VM_EVENT_DATA));
-    memset(acceptData, '\0', sizeof(VM_EVENT_DATA));             
-    
+    memset(acceptData, '\0', sizeof(VM_EVENT_DATA));
+
     sin_size  = sizeof(client_addr);
     accept_fd = accept(server_fd, (struct sockaddr *)&client_addr, &sin_size);
     if (accept_fd == -1)
@@ -398,15 +452,14 @@ uint32_t VmsockPosixAcceptNewConnection(
     SSL_set_fd(ssl,accept_fd);
 
 retry:
-       
     if (SSL_accept(ssl) == -1)
-    {    
+    {
          if (cntRty <= try )
-         {   
+         {
              cntRty++;
              goto retry;
-         } 
-         else 
+         }
+         else
          {
              dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
              BAIL_ON_POSIX_SOCK_ERROR(dwError);
@@ -422,8 +475,8 @@ retry:
 
     acceptData->fd = accept_fd;
     acceptData->index = globalIndex;
-    acceptData->ssl = ssl;   
- 
+    acceptData->ssl = ssl;
+
     ev.data.ptr = (void *)acceptData;
     ev.events = EPOLLIN | EPOLLET;
 
@@ -434,7 +487,7 @@ retry:
         dwError = VMREST_TRANSPORT_EPOLL_CTL_ERROR;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    
+
 cleanup:
     return dwError;
 
@@ -471,7 +524,7 @@ cleanup:
     return dwError;
 
 error:
-    goto cleanup;    
+    goto cleanup;
 }
 
 uint32_t VmsockPosixWriteDataAtOnce(
@@ -481,8 +534,8 @@ uint32_t VmsockPosixWriteDataAtOnce(
     )
 {
     uint32_t        dwError = VMREST_TRANSPORT_NO_ERROR;
-    
-    SSL_write(ssl, buffer,bytes); 
+
+    SSL_write(ssl, buffer,bytes);
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
 cleanup:

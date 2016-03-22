@@ -60,3 +60,10 @@ typedef struct _VM_EVENT_QUEUE
     pthread_t*          server_thread;
 }QUEUE;
 
+typedef struct _VM_SERVER_THR_PARAMS
+{
+    char                sslCert[MAX_PATH_LEN];
+    char                sslKey[MAX_PATH_LEN];
+    char                serverPort[MAX_SERVER_PORT_LEN];
+} VM_SERVER_THR_PARAMS, *PVM_SERVER_THR_PARAMS;
+
