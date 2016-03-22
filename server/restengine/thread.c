@@ -29,27 +29,29 @@ uint32_t
 VmRestSpawnThreads(
     PFN_VMREST_THR_ROUTINE pThrRoutine,
     PVMREST_THREAD*        ppThreadpool,
-    uint32_t*              pThrCount
+    uint32_t               maxWorkerThread
     )
 {
-    uint32_t  dwError = 0;
-    uint32_t  thrcount = VMREST_WORKER_THREAD_COUNT;
-    PVMREST_THREAD  pThreadpool = NULL;
-    uint32_t  iThr = 0;
+    uint32_t               dwError = 0;
+    uint32_t               thrcount = maxWorkerThread;
+    PVMREST_THREAD         pThreadpool = NULL;
+    uint32_t               iThr = 0;
 
     dwError = VmRESTAllocateMemory(
                    sizeof(VMREST_THREAD) * thrcount,
                    (void**)&pThreadpool);
     BAIL_ON_VMREST_ERROR(dwError);
- 
+
     for (; iThr < thrcount; iThr++)
-    { 
+    {
         PVMREST_THREAD pThread = &pThreadpool[iThr];
         PVMREST_THREAD_DATA pThrData = NULL;
 
-        dwError = VmRESTAllocateMemory(sizeof(VMREST_THREAD_DATA), (void**)&pThrData);
+        dwError = VmRESTAllocateMemory(
+                      sizeof(VMREST_THREAD_DATA), 
+                      (void**)&pThrData
+                      );
         BAIL_ON_VMREST_ERROR(dwError);
- 
 
         dwError = pthread_mutex_init(
                       &(pThrData->mutex),
@@ -60,14 +62,14 @@ VmRestSpawnThreads(
 
         dwError = pthread_cond_init(
                       &(pThrData->cond),
-                      NULL);
-
+                      NULL
+                      );
         BAIL_ON_POSIX_THREAD_ERROR(dwError);
 
         pThrData->pCond = &pThrData->cond;
 
         dwError = pthread_create(
-                      &pThread->thr, 
+                      &pThread->thr,
                       NULL,
                       pThrRoutine,
                       pThrData
@@ -79,7 +81,6 @@ VmRestSpawnThreads(
     }
 
     *ppThreadpool = pThreadpool;
-    *pThrCount = thrcount;
 
 cleanup:
 
@@ -88,13 +89,10 @@ cleanup:
 error:
 
     *ppThreadpool = NULL;
-    *pThrCount = 0;
-
     if (pThreadpool)
     {
         VmRestFreeThreadpool(pThreadpool, thrcount);
     }
-
     goto cleanup;
 }
 
