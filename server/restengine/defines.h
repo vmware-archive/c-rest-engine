@@ -21,10 +21,6 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
         if (dwError) \
             goto error;
 
-#define PASS                   1
-#define FAIL                   0
-
-#define ERROR_NOT_SUPPORTED 100
 /* HTTP protocol header defines */
 
 #define MAX_METHOD_LEN             32
