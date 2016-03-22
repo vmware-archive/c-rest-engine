@@ -22,3 +22,4 @@
 #include "structs.h"
 #include "externs.h"
 #include "prototype.h"
+#include "error.h"
