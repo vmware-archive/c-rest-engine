@@ -1,12 +1,26 @@
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the ~@~\License~@~]); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an ~@~\AS IS~@~] BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
 #ifndef __VMREST_H__
 #define __VMREST_H__
+
 
 uint32_t
 VmRestTransportInit(
     char *port
     );
 
-uint32_t
+void
 VmRESTTransportShutdown(
     void
     );
@@ -22,26 +36,6 @@ uint32_t VmSockPosixHandleEventsFromQueue(
     void
     );
 
-
-/*
- * @brief Rest engine shutdown
- *
- * @param[in]           void
- * @param[out]          void
- * @return Returns 0 for success
- */
-void
-VmRESTEngineShutdown(
-    void
-    );
-
-/*
- * @brief Rest engine exposed API to handle data from raw socket
- *
- * @param[in]           char*
- * @param[in]           byteRead
- * @return Returns 0 for success
- */
 
 uint32_t
 VmRESTProcessIncomingData(
@@ -106,15 +100,41 @@ PFN_PROCESS_HTTP_CONNECT       pfnHandleHTTP_CONNECT;
  * @brief Rest engine initialization
  *
  * @param[in]           Handler callbacks
+ * @param[in]           Restengine config file path
  * @param[out]          void
  * @return Returns 0 for success
  */
 uint32_t
 VmRESTEngineInit(
-    PVMREST_ENGINE_METHODS *pHandlers
+    PVMREST_ENGINE_METHODS* pHandlers,
+    char*                   configFile
     );
 
+/*
+ * @brief Rest engine exposed API to handle data from raw socket
+ *
+ * @param[in]           char*
+ * @param[in]           byteRead
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTProcessIncomingData(
+    char     *buffer,
+    uint32_t byteRead,
+    SSL*     ssl
+    );
 
+/*
+ * @brief Rest engine shutdown
+ *
+ * @param[in]           void
+ * @param[out]          void
+ * @return Returns 0 for success
+ */
+void
+VmRESTEngineShutdown(
+    void
+    );
 
 /* Exposed Rest engine API's */
 
