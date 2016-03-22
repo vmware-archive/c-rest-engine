@@ -13,6 +13,19 @@
  */
 
 
+/*********** REST engine Configuration struct *************/
+typedef struct _REST_CONFIG
+{
+    char    ssl_certificate[MAX_PATH_LEN];
+    char    ssl_key[MAX_PATH_LEN];
+    char    server_port[MAX_SERVER_PORT_LEN];
+    char    debug_log_file[MAX_PATH_LEN];
+    char    client_count[MAX_CLIENT_ALLOWED_LEN];
+    char    worker_thread_count[MAX_WORKER_COUNT_LEN];
+} VM_REST_CONFIG;
+    
+
+
 typedef struct _REST_ENG_THREAD_DATA
 {
     pthread_mutex_t  mutex;

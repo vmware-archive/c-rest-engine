@@ -17,6 +17,10 @@ VmSockPosixCreateServerSocket(
     void
     );
 
+void
+VmSockPosixDestroyServerSocket(
+   );
+
 void *
 VmSockPosixServerListenThread(
     void *

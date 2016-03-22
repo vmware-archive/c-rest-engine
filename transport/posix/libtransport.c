@@ -51,15 +51,11 @@ VmRESTTransportShutdown(
     uint32_t   dwError = 0;
     BAIL_ON_POSIX_SOCK_ERROR(dwError);    
     
-
-
-
-
+    VmSockPosixDestroyServerSocket(
+        );
 
     VmShutdownGlobalServerSocket(
         );
-
-    
     
 cleanup:
     return dwError;

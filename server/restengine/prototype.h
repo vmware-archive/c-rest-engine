@@ -184,3 +184,9 @@ VmRESTSetHttpRequestHeader(
     char*                           value
     );
 
+uint32_t
+VmRESTParseConfigFile(
+    char*            configFile,
+    VM_REST_CONFIG** ppRESTConfig
+    );
+

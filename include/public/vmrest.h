@@ -1,6 +1,10 @@
 #ifndef __VMREST_H__
 #define __VMREST_H__
 
+
+
+/************** libtransport exposed API's  *****/
+
 uint32_t
 VmRestTransportInit(
     char *port
@@ -22,26 +26,6 @@ uint32_t VmSockPosixHandleEventsFromQueue(
     void
     );
 
-
-/*
- * @brief Rest engine shutdown
- *
- * @param[in]           void
- * @param[out]          void
- * @return Returns 0 for success
- */
-void
-VmRESTEngineShutdown(
-    void
-    );
-
-/*
- * @brief Rest engine exposed API to handle data from raw socket
- *
- * @param[in]           char*
- * @param[in]           byteRead
- * @return Returns 0 for success
- */
 
 uint32_t
 VmRESTProcessIncomingData(
@@ -114,7 +98,32 @@ VmRESTEngineInit(
     PVMREST_ENGINE_METHODS *pHandlers
     );
 
+/*
+ * @brief Rest engine shutdown
+ *
+ * @param[in]           void
+ * @param[out]          void
+ * @return Returns 0 for success
+ */
+void
+VmRESTEngineShutdown(
+    void
+    );
 
+/*
+ * @brief Rest engine exposed API to handle data from raw socket
+ *
+ * @param[in]           char*
+ * @param[in]           byteRead
+ * @return Returns 0 for success
+ */
+
+uint32_t
+VmRESTProcessIncomingData(
+    char     *buffer,
+    uint32_t byteRead,
+    SSL*     ssl
+    );
 
 /* Exposed Rest engine API's */
 

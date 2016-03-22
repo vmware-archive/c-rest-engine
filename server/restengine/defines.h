@@ -24,6 +24,13 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define PASS                   1
 #define FAIL                   0
 
+/***** config.c *********************/
+#define MAX_PATH_LEN            128
+#define MAX_SERVER_PORT_LEN       6
+#define MAX_CLIENT_ALLOWED_LEN    6     
+#define MAX_WORKER_COUNT_LEN      6
+#define MAX_LINE_LEN            256
+
 #define ERROR_NOT_SUPPORTED 100
 /* HTTP protocol header defines */
 

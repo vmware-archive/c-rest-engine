@@ -742,3 +742,92 @@ error:
     goto cleanup;
 
 }
+
+uint32_t
+VmRESTParseConfigFile(
+    char*            configFile,
+    VM_REST_CONFIG** ppRESTConfig
+    )
+{
+    uint32_t            dwError = REST_ENGINE_INIT_SUCCESS;
+    FILE*               fp = NULL;
+    char                word[MAX_LINE_LEN];
+    char*               result = NULL;
+    VM_REST_CONFIG*     pRESTConfig;
+    uint32_t            resultLen = 0;
+
+    if (configFile == NULL)
+    {
+        VMREST_LOG_DEBUG("Missing rest engine configuration");
+        BAIL_ON_VMREST_ERROR(REST_ENGINE_MISSING_CONFIG);
+    }
+    dwError = VmRESTAllocateMemory(
+              sizeof(VM_REST_CONFIG),
+              (void**)&pRESTConfig
+              );
+    BAIL_ON_VMREST_ERROR(REST_ENGINE_NO_MEMORY);
+
+    fp = fopen(
+             configFile,
+             "r"
+         );
+    if (fp == NULL)
+    {
+        VMREST_LOG_DEBUG("Unable to open rest engine config file");
+        BAIL_ON_VMREST_ERROR(REST_ENGINE_INVALID_CONFIG);
+    }
+    memset(word,'\0', MAX_LINE_LEN);
+    while (fscanf(fp, "%s", word) != EOF)
+    {
+        if (resultLen != 0 && result != NULL)
+        {
+            strncpy(result, word, resultLen);
+            resultLen = 0;
+            result = NULL;
+        }
+        if (strcmp (word, "SSL-Certificate") == 0)
+        {
+            result = pRESTConfig->ssl_certificate;
+            resultLen = MAX_PATH_LEN;
+        }
+        else if (strcmp(word, "SSL-Key") == 0)
+        {
+            result = pRESTConfig->ssl_key;
+            resultLen = MAX_PATH_LEN;
+        }
+        else if (strcmp(word, "Port") == 0)
+        {
+            result = pRESTConfig->server_port;
+            resultLen = MAX_SERVER_PORT_LEN;
+        }
+        else if (strcmp(word, "Log-File") == 0)
+        {
+            result = pRESTConfig->debug_log_file;
+            resultLen = MAX_PATH_LEN;
+        }
+        else if (strcmp(word, "Client-Count") == 0)
+        {
+            result = pRESTConfig->client_count;
+            resultLen = MAX_CLIENT_ALLOWED_LEN;
+        }
+        else if (strcmp(word, "Worker-Thread-Count") == 0)
+        {
+            result = pRESTConfig->worker_thread_count;
+            resultLen = MAX_WORKER_COUNT_LEN;
+        }
+    }
+    *ppRESTConfig = pRESTConfig;
+
+cleanup:
+    fclose(fp);
+    return dwError;
+error:
+    if (pRESTConfig)
+    {
+        VmRESTFreeMemory(
+            pRESTConfig
+            );
+    }
+    *ppRESTConfig = NULL;
+    goto cleanup;
+}

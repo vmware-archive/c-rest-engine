@@ -101,8 +101,15 @@ cleanup:
 
 error:
     if (myQueue) 
-    {
-       VmRESTFreeMemory(myQueue);
+    {  
+        if (pQueue == myQueue)
+        {
+            VmRESTUtilsDestroyQueue(
+                pQueue
+                );
+            pQueue = NULL;
+        }
+        VmRESTFreeMemory(myQueue);
     }
     if (thr)
     {
@@ -123,6 +130,7 @@ VmSockPosixDestroyServerSocket(
     pthread_join(*(pQueue->server_thread), NULL);
 
     VmRESTFreeMemory(pQueue->server_thread);
+    pQueue->server_thread = NULL;
 
     VmRESTUtilsDestroyQueue(pQueue);
 

@@ -1,3 +1,4 @@
+
 /*
  * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
  *
@@ -12,14 +13,17 @@
  * under the License.
  */
 
-#include <config.h>
 
-#include <vmrestsys.h>
-#include <vmrestdefines.h>
-#include <vmrest.h>
-#include <vmrestcommon.h>
-#include "defines.h"
-#include "structs.h"
-#include "externs.h"
-#include "prototype.h"
-#include "error.h"
+/****************** librest engine internal error codes ****************/
+
+#define REST_ENGINE_INIT_SUCCESS                0
+#define REST_ENGINE_INIT_FAIL                   1
+
+#define REST_ENGINE_MISSING_CONFIG              100
+#define REST_ENGINE_INVALID_CONFIG              101
+#define REST_ENGINE_NO_MEMORY                   102
+
+
+/***********************************************************************/          
+
+
