@@ -17,35 +17,62 @@ int  vmrest_syslog_level;
 
 uint32_t
 VmRESTEngineInit(
-    PVMREST_ENGINE_METHODS*     pHandlers
-    ) 
-{   
-    uint32_t dwError = 0;
-    PVMREST_THREAD pThreadpool = NULL;
-    uint32_t nThreads = 0;
-    vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;    
+    PVMREST_ENGINE_METHODS*    pHandlers,
+    char*                      configFile
+    )
+{
+    uint32_t                   dwError = 0;
+    uint32_t                   isTransportInit = 0;
+    PVMREST_THREAD             pThreadpool = NULL;
+    PVM_REST_CONFIG            restConfig = NULL;
 
-    dwError = VmRESTLogInitialize(
-              "/tmp/restServer.log"
-              );
+    vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;
 
-    /* Init Transport */
-    dwError = VmRestTransportInit("80");
+    /**** Parse the rest engine configuration ****/
+    dwError = VmRESTParseAndPopulateConfigFile(
+                  configFile,
+                  &restConfig
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
+    /**** Init the debug log ****/
+    dwError = VmRESTLogInitialize(
+                  restConfig->debug_log_file
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
 
-    /*  Adding test code - will remove 
-    dwError = VmRESTTestHTTPResponse();
-    */
-    
+    /**** Validate the config param ****/
+    dwError= VmRESTValidateConfig(
+                        restConfig
+                        );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** Init Transport ****/
+    dwError = VmRestTransportInit(
+                  restConfig->server_port,
+                  restConfig->ssl_certificate,
+                  restConfig->ssl_key
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    isTransportInit = 1;
+
+    /*************************************
+    *  Adding test code - will remove
+    *  dwError = VmRESTTestHTTPResponse();
+    *************************************/
+
+    /**** Create the thread pool of worker threads ****/
     dwError = VmRestSpawnThreads(
                     &VmRestWorkerThread,
                     &pThreadpool,
-                    &nThreads);
+                    atoi(restConfig->worker_thread_count)
+                    );
     BAIL_ON_VMREST_ERROR(dwError);
 
+    /**** Update the global context for this lib instance ****/
     gRESTEngGlobals.pThreadpool = pThreadpool;
-    gRESTEngGlobals.nThreads = nThreads;
+    gRESTEngGlobals.nThreads = atoi(restConfig->worker_thread_count);
+    gRESTEngGlobals.config = restConfig;
     gpHttpHandler = *pHandlers;
 
 cleanup:
@@ -53,7 +80,19 @@ cleanup:
     return dwError;
 
 error:
-
+    if (restConfig)
+    {
+        VmRESTFreeConfigFileStruct(
+                restConfig
+                );
+        gRESTEngGlobals.config = NULL;
+    }
+    if (isTransportInit == 1)
+    {
+        VmRESTTransportShutdown(
+            );
+        isTransportInit = 0;  
+    }
     goto cleanup;
 }
 
@@ -62,12 +101,25 @@ VmRESTEngineShutdown(
     void
     )
 {
+    /**** Shutdown transport ****/
+    VmRESTTransportShutdown(
+        );
+
+    /**** Stop and free the thread pool of worker thread ****/
     if (gRESTEngGlobals.nThreads)
     {
-        VmRestFreeThreadpool(gRESTEngGlobals.pThreadpool, gRESTEngGlobals.nThreads);
-
+        VmRestFreeThreadpool(
+            gRESTEngGlobals.pThreadpool,
+            gRESTEngGlobals.nThreads
+            );
         gRESTEngGlobals.pThreadpool = NULL;
         gRESTEngGlobals.nThreads = 0;
+    }
+    if (gRESTEngGlobals.config)
+    {
+        VmRESTFreeConfigFileStruct(
+            gRESTEngGlobals.config
+            );
     }
 }
 

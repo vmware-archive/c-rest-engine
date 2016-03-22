@@ -16,7 +16,7 @@
 
 uint32_t
 VmRESTSrvInitialize(
-    void
+    char *configFile
     );
 
 uint32_t

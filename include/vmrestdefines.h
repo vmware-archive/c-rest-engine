@@ -17,6 +17,23 @@
 #ifndef __VREST_DEFINE_H__
 #define __VREST_DEFINE_H__
 
+/***** global macros **************/
+#define REST_ENGINE_SUCCESS       0
+#define REST_ENGINE_FAILURE       1
+
+#define MAX_PATH_LEN            128
+#define MAX_SERVER_PORT_LEN       6
+#define MAX_CLIENT_ALLOWED_LEN    6
+#define MAX_WORKER_COUNT_LEN      6
+#define MAX_LINE_LEN            256
+
+#define PASS                      1
+#define FAIL                      0
+
+#define ERROR_NOT_SUPPORTED     100
+#define ERROR_VMREST_SUCCESS      0
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
