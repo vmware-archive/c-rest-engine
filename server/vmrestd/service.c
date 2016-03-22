@@ -16,13 +16,19 @@
 
 uint32_t
 VmRESTSrvInitialize(
-    void
+    char *configFile
     )
 {
     uint32_t dwError = 0;
-    
+    if (configFile == NULL)
+    {
+        dwError = 1;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     dwError = VmRESTEngineInit(
-                  &gpVmRestHandlers
+                  &gpVmRestHandlers,
+                  configFile
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
