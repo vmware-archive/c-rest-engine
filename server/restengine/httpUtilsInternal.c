@@ -742,3 +742,136 @@ error:
     goto cleanup;
 
 }
+
+uint32_t
+VmRESTParseAndPopulateConfigFile(
+    char*            configFile,
+    VM_REST_CONFIG** ppRESTConfig
+    )
+{
+    uint32_t            dwError = REST_ENGINE_INIT_SUCCESS;
+    FILE*               fp = NULL;
+    char                word[MAX_LINE_LEN];
+    char*               result = NULL;
+    VM_REST_CONFIG*     pRESTConfig = NULL;
+    uint32_t            resultLen = 0;
+
+    if (configFile == NULL)
+    {
+        dwError = REST_ENGINE_MISSING_CONFIG;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    dwError = VmRESTAllocateMemory(
+              sizeof(VM_REST_CONFIG),
+              (void**)&pRESTConfig
+              );
+    BAIL_ON_VMREST_ERROR(dwError);
+    fp = fopen(
+             configFile,
+             "r"
+         );
+    if (fp == NULL)
+    {
+        dwError = REST_ENGINE_INVALID_CONFIG;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    memset(word,'\0', MAX_LINE_LEN);
+    while (fscanf(fp, "%s", word) != EOF)
+    {
+        if (resultLen != 0 && result != NULL)
+        {
+            strncpy(result, word, resultLen);
+            resultLen = 0;
+            result = NULL;
+        }
+        if (strcmp (word, "SSL-Certificate") == 0)
+        {
+            result = pRESTConfig->ssl_certificate;
+            resultLen = MAX_PATH_LEN;
+        }
+        else if (strcmp(word, "SSL-Key") == 0)
+        {
+            result = pRESTConfig->ssl_key;
+            resultLen = MAX_PATH_LEN;
+        }
+        else if (strcmp(word, "Port") == 0)
+        {
+            result = pRESTConfig->server_port;
+            resultLen = MAX_SERVER_PORT_LEN;
+        }
+        else if (strcmp(word, "Log-File") == 0)
+        {
+            result = pRESTConfig->debug_log_file;
+            resultLen = MAX_PATH_LEN;
+        }
+        else if (strcmp(word, "Client-Count") == 0)
+        {
+            result = pRESTConfig->client_count;
+            resultLen = MAX_CLIENT_ALLOWED_LEN;
+        }
+        else if (strcmp(word, "Worker-Thread-Count") == 0)
+        {
+            result = pRESTConfig->worker_thread_count;
+            resultLen = MAX_WORKER_COUNT_LEN;
+        }
+    }
+    *ppRESTConfig = pRESTConfig;
+
+cleanup:
+    if (fp)
+    {
+        fclose(fp);
+        fp = NULL;
+    }
+    return dwError;
+error:
+    if (pRESTConfig)
+    {
+        VmRESTFreeMemory(
+            pRESTConfig
+            );
+    }
+    *ppRESTConfig = NULL;
+    goto cleanup;
+}
+
+void
+VmRESTFreeConfigFileStruct(
+    PVM_REST_CONFIG     pRESTConfig
+    )
+{
+    if (pRESTConfig)
+    {
+        VmRESTFreeMemory(
+            pRESTConfig
+            );
+    }
+}
+
+uint32_t
+VmRESTValidateConfig(
+    PVM_REST_CONFIG    pRESTConfig
+    )
+{
+    uint32_t ret = PASS;
+    if (pRESTConfig == NULL)
+    {
+        ret = FAIL;
+    }
+
+    if ((pRESTConfig->server_port == NULL) || (pRESTConfig->worker_thread_count == NULL) || (pRESTConfig->client_count == NULL))
+    {
+        ret = FAIL;
+    }
+
+    /**** Port 80 will be replaced with HTTPS port 443 ****/
+    if (strcmp(pRESTConfig->server_port, "80") == 0)
+    {
+        if (pRESTConfig->ssl_certificate == NULL || pRESTConfig->ssl_key == NULL)
+        {
+            ret = FAIL;
+        }
+    }
+    return ret;
+}

@@ -43,29 +43,15 @@ error:
     goto cleanup;
 }
 
-uint32_t 
+void
 VmRESTTransportShutdown(
     void
     )
 {
-    uint32_t   dwError = 0;
-    BAIL_ON_POSIX_SOCK_ERROR(dwError);    
-    
-
-
-
-
+    VmSockPosixDestroyServerSocket(
+        );
 
     VmShutdownGlobalServerSocket(
         );
-
-    
-    
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-
 }
 
