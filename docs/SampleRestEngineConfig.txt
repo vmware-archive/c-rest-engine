@@ -1,0 +1,6 @@
+SSL-Certificate /root/mycert.pem
+SSL-Key /root/mycert.pem
+Port 80
+Log-File /tmp/restServer.log
+Client-Count 5
+Worker-Thread-Count 5

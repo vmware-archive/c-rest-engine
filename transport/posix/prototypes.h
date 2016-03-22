@@ -14,16 +14,21 @@
 
 uint32_t
 VmSockPosixCreateServerSocket(
-    void
+    char*                   sslCertificate,
+    char*                   sslKey,
+    char*                   port
     );
+
+void
+VmSockPosixDestroyServerSocket(
+   );
 
 void *
 VmSockPosixServerListenThread(
     void *
     );
 
-
-uint32_t 
+uint32_t
 VmSockPosixSetSocketNonBlocking(
     int server_fd
     );

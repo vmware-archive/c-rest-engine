@@ -17,7 +17,7 @@ uint32_t
 VmRestSpawnThreads(
     PFN_VMREST_THR_ROUTINE pThrRoutine,
     PVMREST_THREAD*        ppThreadpool,
-    uint32_t*              pThrCount
+    uint32_t               maxWorkerThread
     );
 
 void *
@@ -184,3 +184,18 @@ VmRESTSetHttpRequestHeader(
     char*                           value
     );
 
+uint32_t
+VmRESTParseAndPopulateConfigFile(
+    char*            configFile,
+    VM_REST_CONFIG** ppRESTConfig
+    );
+
+void
+VmRESTFreeConfigFileStruct(
+    VM_REST_CONFIG*     pRESTConfig
+    );
+
+uint32_t
+VmRESTValidateConfig(
+    PVM_REST_CONFIG    pRESTConfig
+    );
