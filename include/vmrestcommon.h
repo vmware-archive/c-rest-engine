@@ -121,6 +121,20 @@ VmRESTFreeMemory(
     void*  pMemory
     );
 
+/*
+ * @brief Rest engine implementation of itoa function.
+ * @param[in]           integer number
+ * @param[in]           pointer to hold result
+ * @return Returns 1 for failure, 0 for success, 
+ */
+
+uint32_t
+my_itoa(
+    int    num, 
+    char*  str
+    );
+
+
 #ifdef __cplusplus
 }
 #endif

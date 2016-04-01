@@ -16,18 +16,20 @@
 
 uint32_t
 VmRESTRemovePreSpace(
-    char*               src,
-    char*               dest
+    char*                            src,
+    char*                            dest
     )
 {
-    uint32_t     dwError = 0;
-    char*        temp = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    char*                            temp = NULL;
     
     if (src == NULL || dest == NULL)
     {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMREST_ERROR(dwError);
+        VMREST_LOG_DEBUG("VmRESTRemovePreSpace(): Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     temp = src;
     while (temp != NULL)
     {
@@ -50,20 +52,22 @@ error:
 
 uint32_t
 VmRESTRemovePostSpace(
-    char*               src,
-    char*               dest
+    char*                            src,
+    char*                            dest
     )
 {
-    uint32_t     dwError = 0;
-    char*        temp = NULL;
-    uint32_t     len = 0;
-    uint32_t     skip = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    char*                            temp = NULL;
+    uint32_t                         len = 0;
+    uint32_t                         skip = 0;
     
     if (src == NULL || dest == NULL)
     {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMREST_ERROR(dwError);
+        VMREST_LOG_DEBUG("VmRESTRemovePostSpace(): Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     len = strlen(src);
     temp = (src+ len - 1);
     while (temp != src)
@@ -89,19 +93,21 @@ error:
 
 uint32_t
 VmRESTConverUpperToLower(
-    char*               src,
-    char*               dest
+    char*                            src,
+    char*                            dest
     )
 {
-    uint32_t     dwError = 0;
-    char*        temp = NULL;
-    char*        tempDes = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    char*                            temp = NULL;
+    char*                            tempDes = NULL;
 
     if (src == NULL || dest == NULL)
     {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMREST_ERROR(dwError);
+        VMREST_LOG_DEBUG("VmRESTConverUpperToLower(): Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     temp = src;
     tempDes = dest;
 
@@ -128,15 +134,14 @@ error:
 
 uint32_t
 VmRESTValidateHTTPMethodGET(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result
     )
 {
-    uint32_t     dwError = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
     
+    /* TODO*/
 
-
-    dwError = ERROR_NOT_SUPPORTED;
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -147,15 +152,14 @@ error:
 
 uint32_t
 VmRESTValidateHTTPMethodHEAD(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result
     )
 {
-    uint32_t     dwError = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
 
+    /* TODO*/
 
-
-    dwError = ERROR_NOT_SUPPORTED;
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -166,15 +170,14 @@ error:
 
 uint32_t
 VmRESTValidateHTTPMethodPOST(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result
     )
 {
-    uint32_t     dwError = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
 
+    /* TODO*/
 
-
-    dwError = ERROR_NOT_SUPPORTED;
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -185,15 +188,14 @@ error:
 
 uint32_t
 VmRESTValidateHTTPMethodPUT(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result
     )
 {
-    uint32_t     dwError = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
 
+    /* TODO*/
 
-
-    dwError = ERROR_NOT_SUPPORTED;
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -204,15 +206,14 @@ error:
 
 uint32_t
 VmRESTValidateHTTPMethodDELETE(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result
     )
 {
-    uint32_t     dwError = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
 
+    /* TODO*/
 
-
-    dwError = ERROR_NOT_SUPPORTED;
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -223,15 +224,14 @@ error:
 
 uint32_t
 VmRESTValidateHTTPMethodTRACE(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result
     )
 {
-    uint32_t     dwError = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
 
+    /* TODO*/
 
-
-    dwError = ERROR_NOT_SUPPORTED;
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -242,15 +242,14 @@ error:
 
 uint32_t
 VmRESTValidateHTTPMethodCONNECT(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result
     )
 {
-    uint32_t     dwError = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
 
+    /* TODO*/
 
-
-    dwError = ERROR_NOT_SUPPORTED;
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -261,27 +260,28 @@ error:
 
 uint32_t
 VmRESTValidateHTTPVersion(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result,
-    uint32_t*                      err
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result,
+    uint32_t*                        err
     )
 {
-    uint32_t     dwError = 0;
-    uint32_t     len = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         len = 0;
     
-    if ( Request == NULL || result == NULL || err == NULL )
+    if ( pRequest == NULL || result == NULL || err == NULL )
     {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMREST_ERROR(dwError);
+        VMREST_LOG_DEBUG("VmRESTValidateHTTPVersion(): Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     *err = HTTP_VERSION_NOT_SUPPORTED;
     *result = FAIL;
 
-    len = strlen(Request->requestLine->version);
+    len = strlen(pRequest->requestLine->version);
     if (len > 0)
     {
-        if (strcmp(Request->requestLine->version, "HTTP/1.1") == 0)
+        if (strcmp(pRequest->requestLine->version, "HTTP/1.1") == 0)
         {
             *err = 0;
             *result = PASS;
@@ -297,20 +297,21 @@ error:
 
 uint32_t
 VmRESTValidateHTTPRequestURI(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result,
-    uint32_t*                      err
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result,
+    uint32_t*                        err
     )
 {
-    uint32_t     dwError = 0;  
-    uint32_t     len = 0;
-    char*        temp = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;  
+    uint32_t                         len = 0;
+    char*                            temp = NULL;
   
-    if ( Request == NULL || result == NULL || err == NULL )
+    if ( pRequest == NULL || result == NULL || err == NULL )
     {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMREST_ERROR(dwError);
+        VMREST_LOG_DEBUG("VmRESTValidateHTTPRequestURI(): Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
     
     *result = FAIL;
 
@@ -326,18 +327,18 @@ VmRESTValidateHTTPRequestURI(
  
     */
 
-    len = strlen(Request->requestLine->uri);
+    len = strlen(pRequest->requestLine->uri);
     if (len > MAX_URI_LEN)
     {
         *err = REQUEST_URI_TOO_LARGE;
         goto cleanup; 
     }
  
-    temp = Request->requestLine->uri;
+    temp = pRequest->requestLine->uri;
   
     if ((memcmp((void*)temp, "http", 4) != 0))
     {
-        len = strlen(Request->requestHeader->host);
+        len = strlen(pRequest->requestHeader->host);
         if (len == 0)
         {
             /* No host name found on request */
@@ -363,27 +364,30 @@ error:
 
 uint32_t
 VmRESTValidateHTTPContentType(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result,
-    uint32_t*                      err
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result,
+    uint32_t*                        err
     )
 {
-    uint32_t     dwError = 0;
-    uint32_t     len = 0;
-    char*        temp = NULL;
-    if ( Request == NULL || result == NULL || err == NULL )
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         len = 0;
+    char*                            temp = NULL;
+
+    if ( pRequest == NULL || result == NULL || err == NULL )
     {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMREST_ERROR(dwError);
+        VMREST_LOG_DEBUG("VmRESTValidateHTTPContentType(): Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     *result = PASS;
     *err = 0;
    
-    len = strlen(Request->entityHeader->contentType);
+    len = strlen(pRequest->entityHeader->contentType);
 
     if (len > 0)
     {
-        temp = strtok(strdup(Request->entityHeader->contentType), ",");
+        temp = strtok(strdup(pRequest->entityHeader->contentType), ",");
         while (temp != NULL)
         {
             if(strcmp(temp, "application/json") == 0)
@@ -410,28 +414,30 @@ error:
 
 uint32_t
 VmRESTValidateAccept(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result,
-    uint32_t*                      err
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result,
+    uint32_t*                        err
     )
 {
-    uint32_t     dwError = 0;
-    uint32_t     len = 0;
-    char*        temp = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         len = 0;
+    char*                            temp = NULL;
 
-    if ( Request == NULL || result == NULL || err == NULL )
+    if ( pRequest == NULL || result == NULL || err == NULL )
     {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMREST_ERROR(dwError);
+        VMREST_LOG_DEBUG("VmRESTValidateAccept(): Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     *result = PASS;
     *err = 0;
 
-    len = strlen(Request->requestHeader->accept);
+    len = strlen(pRequest->requestHeader->accept);
 
     if (len > 0)
     {
-        temp = strtok(strdup(Request->requestHeader->accept), ",");
+        temp = strtok(strdup(pRequest->requestHeader->accept), ",");
         while (temp != NULL)
         {
             if(strcmp(temp, "application/json") == 0)
@@ -459,27 +465,29 @@ error:
 
 uint32_t
 VmRESTValidateAcceptCharSet(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result,
-    uint32_t*                      err
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result,
+    uint32_t*                        err
     )
 {
-    uint32_t     dwError = 0;
-    uint32_t     len = 0;
-    char*        temp = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         len = 0;
+    char*                            temp = NULL;
 
-    if ( Request == NULL || result == NULL || err == NULL )
+    if ( pRequest == NULL || result == NULL || err == NULL )
     {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMREST_ERROR(dwError);
+        VMREST_LOG_DEBUG("VmRESTValidateAcceptCharSet(): Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     *result = PASS;
     *err = 0;
 
-    len = strlen(Request->requestHeader->acceptCharSet);
+    len = strlen(pRequest->requestHeader->acceptCharSet);
     if (len > 0)
     {
-        temp = strtok(strdup(Request->requestHeader->acceptCharSet), ",");
+        temp = strtok(strdup(pRequest->requestHeader->acceptCharSet), ",");
         while (temp != NULL)
         {
             if(strcmp(temp, "utf-8") == 0)
@@ -507,17 +515,16 @@ error:
 
 uint32_t
 VmRESTValidateHTTPRequest(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    uint32_t*                      result              
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result              
     )
 {
-    uint32_t     dwError = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
 
     
+    /* TODO*/
 
 
-
-    dwError = ERROR_NOT_SUPPORTED;
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -528,16 +535,15 @@ error:
 
 uint32_t
 VmRESTValidateHTTPResponse(
-    PVM_REST_HTTP_REQUEST_PACKET   Request,
-    PVM_REST_HTTP_RESPONSE_PACKET  Response,
-    uint32_t*                      result
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    PVM_REST_HTTP_RESPONSE_PACKET    pResponse,
+    uint32_t*                        result
     )
 {
-    uint32_t     dwError = 0;
+    uint32_t     dwError = ERROR_VMREST_SUCCESS;
 
+    /* TODO*/
 
-
-    dwError = ERROR_NOT_SUPPORTED;
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -545,6 +551,4 @@ cleanup:
 error:
     goto cleanup;
 }
-
-
 
