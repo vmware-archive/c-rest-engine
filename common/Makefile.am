@@ -3,6 +3,7 @@ noinst_LTLIBRARIES = libcommon.la
 libcommon_la_SOURCES = \
     libmain.c \
     memory.c \
+    utils.c \
     logging.c
 
 libcommon_la_CPPFLAGS = \

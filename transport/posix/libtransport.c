@@ -16,34 +16,36 @@
 
 uint32_t
 VmRestTransportInit(
-    char*    port,
-    char*    sslCertificate,
-    char*    sslKey
+    char*                            port,
+    char*                            sslCertificate,
+    char*                            sslKey,
+    uint32_t                         clientCount
     )
 {
-    uint32_t dwError = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+
     if (port == NULL || sslCertificate == NULL || sslKey == NULL)
     {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_POSIX_SOCK_ERROR(dwError);
-
+        VMREST_LOG_DEBUG("VmRESTHTTPGetReqMethod(): Invalid params");
+        dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmInitGlobalServerSocket(
                   port
                   );
-    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmSockPosixCreateServerSocket(
                   sslCertificate,
                   sslKey,
-                  port
+                  port,
+                  clientCount
                   );
-    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     return dwError;
-
 error:
     goto cleanup;
 }

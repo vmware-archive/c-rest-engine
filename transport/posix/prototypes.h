@@ -14,9 +14,10 @@
 
 uint32_t
 VmSockPosixCreateServerSocket(
-    char*                   sslCertificate,
-    char*                   sslKey,
-    char*                   port
+    char*                            sslCertificate,
+    char*                            sslKey,
+    char*                            port,
+    uint32_t                         clientCount
     );
 
 void
@@ -25,44 +26,44 @@ VmSockPosixDestroyServerSocket(
 
 void *
 VmSockPosixServerListenThread(
-    void *
+    void*
     );
 
 uint32_t
 VmSockPosixSetSocketNonBlocking(
-    int server_fd
+    int                              server_fd
     );
 
 uint32_t VmsockPosixAcceptNewConnection(
-    int server_fd
+    int                              server_fd
     );
 
 uint32_t VmsockPosixReadDataAtOnce(
-    SSL *ssl
+    SSL*                             ssl
     );
 
 /****** utils.c **********/
 
 uint32_t
 VmRESTInsertElement(
-    PVM_EVENT_DATA       data,
-    uint32_t             flag,
-    QUEUE*               queue
+    PVM_EVENT_DATA                   data,
+    uint32_t                         flag,
+    QUEUE*                           queue
     );
 
 EVENT_NODE*
 VmRESTUtilsRemoveElement(
-    QUEUE*        queue
+    QUEUE*                           queue
     );
 
 uint32_t
 VmRestUtilsInitQueue(
-    QUEUE*       queue
+    QUEUE*                           queue
     );
 
 void
 VmRESTUtilsDestroyQueue(
-    QUEUE*         queue
+    QUEUE*                           queue
     );
 
 
@@ -70,7 +71,7 @@ VmRESTUtilsDestroyQueue(
 
 uint32_t
 VmInitGlobalServerSocket(
-    char* port 
+    char*                            port
     );
 
 void
@@ -80,13 +81,13 @@ VmShutdownGlobalServerSocket(
 
 uint32_t
 VmRESTInsertClientFromGlobal(
-    SSL*              ssl,
-    int               fd,
-    uint32_t*         index
+    SSL*                             ssl,
+    int                              fd,
+    uint32_t*                        index
     );
 
 uint32_t
 VmRESTRemoveClientFromGlobal(
-    uint32_t          index
+    uint32_t                         index
     );
 
