@@ -20,7 +20,7 @@ VmRESTSecureSocket(
     char*                key
     )
 {
-    uint32_t             dwError = VMREST_TRANSPORT_NO_ERROR;
+    uint32_t             dwError = ERROR_VMREST_SUCCESS;
     int                  ret = 0;
     const SSL_METHOD*    method = NULL;
     SSL_CTX*             context = NULL;
@@ -192,7 +192,7 @@ VmSockPosixServerListenThread(
     struct addrinfo         hints = {0};
     struct addrinfo*        serinfo = NULL;
     struct addrinfo*        p = NULL;
-    uint32_t                dwError = VMREST_TRANSPORT_NO_ERROR;
+    uint32_t                dwError = ERROR_VMREST_SUCCESS;
     int                     yes = 1;
     struct epoll_event      ev =  {0};
     struct epoll_event      events[MAX_EVENT];
@@ -500,7 +500,7 @@ uint32_t VmsockPosixReadDataAtOnce(
     SSL*          ssl
     )
 {
-    uint32_t      dwError = VMREST_TRANSPORT_NO_ERROR;
+    uint32_t      dwError = ERROR_VMREST_SUCCESS;
     int           read_cnt = 0;
     char          buffer[4096];
 
@@ -533,7 +533,7 @@ uint32_t VmsockPosixWriteDataAtOnce(
     uint32_t        bytes
     )
 {
-    uint32_t        dwError = VMREST_TRANSPORT_NO_ERROR;
+    uint32_t        dwError = ERROR_VMREST_SUCCESS;
 
     SSL_write(ssl, buffer,bytes);
     BAIL_ON_POSIX_SOCK_ERROR(dwError);

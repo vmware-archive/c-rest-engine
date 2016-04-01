@@ -16,136 +16,141 @@
 #include <includes.h>
 
 static
-uint32_t 
+uint32_t
 VmRESTAllocateRequestLine(
-    PVM_REST_HTTP_REQUEST_LINE* ppReqLine
+    PVM_REST_HTTP_REQUEST_LINE*      ppReqLine
     );
 
 static
 void
 VmRESTFreeRequestLine(
-    PVM_REST_HTTP_REQUEST_LINE   pReqLine
+    PVM_REST_HTTP_REQUEST_LINE       pReqLine
     );
 
 static
 uint32_t
 VmRESTAllocateStatusLine(
-    PVM_REST_HTTP_STATUS_LINE* ppStatusLine
+    PVM_REST_HTTP_STATUS_LINE*       ppStatusLine
     );
 
 static
 void
 VmRESTFreeStatusLine(
-    PVM_REST_HTTP_STATUS_LINE   pStatusLine
+    PVM_REST_HTTP_STATUS_LINE        pStatusLine
     );
 
 static
 uint32_t
 VmRESTAllocateGeneralHeader(
-    PVM_REST_HTTP_GENERAL_HEADER* ppGenHeader
+    PVM_REST_HTTP_GENERAL_HEADER*    ppGenHeader
     );
 
 static
 void
 VmRESTFreeGeneralHeader(
-    PVM_REST_HTTP_GENERAL_HEADER   pGenHeader
+    PVM_REST_HTTP_GENERAL_HEADER     pGenHeader
     );
 
 static
 uint32_t
 VmRESTAllocateRequestHeader(
-    PVM_REST_HTTP_REQUEST_HEADER* ppReqHeader
+    PVM_REST_HTTP_REQUEST_HEADER*    ppReqHeader
     );
 
 static
 void
 VmRESTFreeRequestHeader(
-    PVM_REST_HTTP_REQUEST_HEADER   pReqHeader
+    PVM_REST_HTTP_REQUEST_HEADER     pReqHeader
     );
 
 static
 uint32_t
 VmRESTAllocateResponseHeader(
-    PVM_REST_HTTP_RESPONSE_HEADER* ppResHeader
+    PVM_REST_HTTP_RESPONSE_HEADER*   ppResHeader
     );
 
 static
 void
 VmRESTFreeResponseHeader(
-    PVM_REST_HTTP_RESPONSE_HEADER   pResHeader
+    PVM_REST_HTTP_RESPONSE_HEADER    pResHeader
     );
 
 static
 uint32_t
 VmRESTAllocateEntityHeader(
-    PVM_REST_HTTP_ENTITY_HEADER* ppEntityHeader
+    PVM_REST_HTTP_ENTITY_HEADER*     ppEntityHeader
     );
 
 static
 void
 VmRESTFreeEntityHeader(
-    PVM_REST_HTTP_ENTITY_HEADER   pEntityHeader
+    PVM_REST_HTTP_ENTITY_HEADER      pEntityHeader
     );
 
 
 static
 uint32_t
 VmRESTAllocateMessageBody(
-    PVM_REST_HTTP_MESSAGE_BODY* ppMsgBody
+    PVM_REST_HTTP_MESSAGE_BODY*      ppMsgBody
     );
 
 static
 void
 VmRESTFreeMessageBody(
-    PVM_REST_HTTP_MESSAGE_BODY   pMsgBody
+    PVM_REST_HTTP_MESSAGE_BODY       pMsgBody
     );
 
 
-uint32_t 
+uint32_t
 VmRESTAllocateHTTPRequestPacket(
-    PVM_REST_HTTP_REQUEST_PACKET* ppReqPacket
+    PVM_REST_HTTP_REQUEST_PACKET*    ppReqPacket
     )
 {
-    uint32_t dwError = 0;
-    PVM_REST_HTTP_REQUEST_PACKET   pReqPacket = NULL;
-    PVM_REST_HTTP_REQUEST_LINE     pReqLine = NULL;
-    PVM_REST_HTTP_GENERAL_HEADER   pGenHeader = NULL;
-    PVM_REST_HTTP_REQUEST_HEADER   pReqHeader = NULL;
-    PVM_REST_HTTP_ENTITY_HEADER    pEntityHeader= NULL;
-    PVM_REST_HTTP_MESSAGE_BODY     pMessageBody = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket = NULL;
+    PVM_REST_HTTP_REQUEST_LINE       pReqLine = NULL;
+    PVM_REST_HTTP_GENERAL_HEADER     pGenHeader = NULL;
+    PVM_REST_HTTP_REQUEST_HEADER     pReqHeader = NULL;
+    PVM_REST_HTTP_ENTITY_HEADER      pEntityHeader= NULL;
+    PVM_REST_HTTP_MESSAGE_BODY       pMessageBody = NULL;
 
     dwError = VmRESTAllocateMemory(
-                   sizeof(VM_REST_HTTP_REQUEST_PACKET),
-                   (void**)&pReqPacket);
+                  sizeof(VM_REST_HTTP_REQUEST_PACKET),
+                  (void**)&pReqPacket
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTAllocateRequestLine(
-              &pReqLine);
+                  &pReqLine
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
-    pReqPacket->requestLine = pReqLine;    
+    pReqPacket->requestLine = pReqLine;
 
     dwError = VmRESTAllocateGeneralHeader(
-              &pGenHeader);
+                  &pGenHeader
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
-    pReqPacket->generalHeader = pGenHeader;    
+    pReqPacket->generalHeader = pGenHeader;
 
     dwError = VmRESTAllocateRequestHeader(
-              &pReqHeader);
+                  &pReqHeader
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
     pReqPacket->requestHeader = pReqHeader;
 
     dwError = VmRESTAllocateEntityHeader(
-              &pEntityHeader);
+                  &pEntityHeader
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
     pReqPacket->entityHeader = pEntityHeader;
 
     dwError = VmRESTAllocateMessageBody(
-              &pMessageBody);
-    BAIL_ON_VMREST_ERROR(dwError);   
+                  &pMessageBody
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
     pReqPacket->messageBody = pMessageBody;
-
     *ppReqPacket = pReqPacket;
-    
+
 cleanup:
     return dwError;
 error:
@@ -158,13 +163,13 @@ error:
 
 void
 VmRESTFreeHTTPRequestPacket(
-    PVM_REST_HTTP_REQUEST_PACKET*   ppReqPacket
+    PVM_REST_HTTP_REQUEST_PACKET*    ppReqPacket
     )
-{    
-    PVM_REST_HTTP_REQUEST_PACKET    pReqPacket = NULL;
+{
+    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket = NULL;
     pReqPacket = *ppReqPacket;
-    if (!pReqPacket) 
-    {    
+    if (!pReqPacket)
+    {
         if (pReqPacket->requestLine)
         {
             VmRESTFreeRequestLine(pReqPacket->requestLine);
@@ -184,57 +189,61 @@ VmRESTFreeHTTPRequestPacket(
         if (pReqPacket->messageBody)
         {
             VmRESTFreeMessageBody(pReqPacket->messageBody);
-        }    
+        }
         pReqPacket->requestLine = NULL;
         pReqPacket->generalHeader = NULL;
         pReqPacket->requestHeader = NULL;
         pReqPacket->entityHeader = NULL;
         pReqPacket->messageBody = NULL;
-       
+
         VmRESTFreeMemory(pReqPacket);
 
         *ppReqPacket = NULL;
     }
 }
 
-
 uint32_t
 VmRESTAllocateHTTPResponsePacket(
-    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     )
 {
-    uint32_t dwError = 0;
-    PVM_REST_HTTP_RESPONSE_PACKET pResPacket = NULL;
-
-    PVM_REST_HTTP_STATUS_LINE      pStatusLine = NULL;
-    PVM_REST_HTTP_GENERAL_HEADER   pGenHeader = NULL;
-    PVM_REST_HTTP_RESPONSE_HEADER  pResHeader = NULL;
-    PVM_REST_HTTP_ENTITY_HEADER    pEntityHeader= NULL;
-    PVM_REST_HTTP_MESSAGE_BODY     pMessageBody = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket = NULL;
+    PVM_REST_HTTP_STATUS_LINE        pStatusLine = NULL;
+    PVM_REST_HTTP_GENERAL_HEADER     pGenHeader = NULL;
+    PVM_REST_HTTP_RESPONSE_HEADER    pResHeader = NULL;
+    PVM_REST_HTTP_ENTITY_HEADER      pEntityHeader= NULL;
+    PVM_REST_HTTP_MESSAGE_BODY       pMessageBody = NULL;
 
     dwError = VmRESTAllocateStatusLine(
-              &pStatusLine);
+                  &pStatusLine
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTAllocateGeneralHeader(
-              &pGenHeader);
+                  &pGenHeader
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTAllocateResponseHeader(
-              &pResHeader);
+                  &pResHeader
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTAllocateEntityHeader(
-              &pEntityHeader);
+                  &pEntityHeader
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTAllocateMessageBody(
-              &pMessageBody);
+                  &pMessageBody
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTAllocateMemory(
-                   sizeof(VM_REST_HTTP_RESPONSE_PACKET),
-                   (void**)&pResPacket);
+                  sizeof(VM_REST_HTTP_RESPONSE_PACKET),
+                  (void**)&pResPacket
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     pResPacket->statusLine = pStatusLine;
@@ -257,10 +266,11 @@ error:
 
 void
 VmRESTFreeHTTPResponsePacket(
-    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     )
 {
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket = NULL;
+
     pResPacket = *ppResPacket;
     if (!pResPacket)
     {
@@ -284,18 +294,17 @@ VmRESTFreeHTTPResponsePacket(
         {
             VmRESTFreeMessageBody(pResPacket->messageBody);
         }
- 
+
         pResPacket->statusLine = NULL;
         pResPacket->generalHeader = NULL;
         pResPacket->responseHeader = NULL;
         pResPacket->entityHeader = NULL;
         pResPacket->messageBody = NULL;
 
-
         VmRESTFreeMemory(pResPacket);
 
         *ppResPacket = NULL;
-    }    
+    }
 }
 
 static
@@ -304,12 +313,13 @@ VmRESTAllocateRequestLine(
     PVM_REST_HTTP_REQUEST_LINE* ppReqLine
     )
 {
-    uint32_t                   dwError = 0;
-    PVM_REST_HTTP_REQUEST_LINE pReqLine = NULL;
-    
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    PVM_REST_HTTP_REQUEST_LINE       pReqLine = NULL;
+
     dwError = VmRESTAllocateMemory(
                   sizeof(VM_REST_HTTP_REQUEST_LINE),
-                  (void**)&pReqLine);
+                  (void**)&pReqLine
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     *ppReqLine = pReqLine;
@@ -323,7 +333,7 @@ error:
 static
 void
 VmRESTFreeRequestLine(
-    PVM_REST_HTTP_REQUEST_LINE  pReqLine
+    PVM_REST_HTTP_REQUEST_LINE       pReqLine
     )
 {
     if (pReqLine)
@@ -335,15 +345,16 @@ VmRESTFreeRequestLine(
 static
 uint32_t
 VmRESTAllocateStatusLine(
-    PVM_REST_HTTP_STATUS_LINE *ppStatusLine
+    PVM_REST_HTTP_STATUS_LINE*       ppStatusLine
     )
 {
-    uint32_t                  dwError = 0;
-    PVM_REST_HTTP_STATUS_LINE pStatusLine = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    PVM_REST_HTTP_STATUS_LINE        pStatusLine = NULL;
 
     dwError = VmRESTAllocateMemory(
                   sizeof(VM_REST_HTTP_STATUS_LINE),
-                  (void**)&pStatusLine);
+                  (void**)&pStatusLine
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     *ppStatusLine = pStatusLine;
@@ -357,27 +368,29 @@ error:
 static
 void
 VmRESTFreeStatusLine(
-    PVM_REST_HTTP_STATUS_LINE   pStatusLine
+    PVM_REST_HTTP_STATUS_LINE        pStatusLine
     )
 {
     if (pStatusLine)
     {
-        VmRESTFreeMemory(pStatusLine);
+        VmRESTFreeMemory(pStatusLine
+            );
     }
 }
 
 static
 uint32_t
 VmRESTAllocateGeneralHeader(
-    PVM_REST_HTTP_GENERAL_HEADER* ppGenHeader
+    PVM_REST_HTTP_GENERAL_HEADER*    ppGenHeader
     )
 {
-    uint32_t                     dwError = 0;
-    PVM_REST_HTTP_GENERAL_HEADER pGenHeader = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    PVM_REST_HTTP_GENERAL_HEADER     pGenHeader = NULL;
 
     dwError = VmRESTAllocateMemory(
                   sizeof(VM_REST_HTTP_GENERAL_HEADER),
-                  (void**)&pGenHeader);
+                  (void**)&pGenHeader
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     *ppGenHeader = pGenHeader;
@@ -391,27 +404,29 @@ error:
 static
 void
 VmRESTFreeGeneralHeader(
-    PVM_REST_HTTP_GENERAL_HEADER  pGenHeader
+    PVM_REST_HTTP_GENERAL_HEADER     pGenHeader
     )
 {
     if( pGenHeader)
     {
-        VmRESTFreeMemory(pGenHeader);
+        VmRESTFreeMemory(pGenHeader
+            );
     }
 }
 
 static
 uint32_t
 VmRESTAllocateRequestHeader(
-    PVM_REST_HTTP_REQUEST_HEADER* ppReqHeader
+    PVM_REST_HTTP_REQUEST_HEADER*    ppReqHeader
     )
 {
-    uint32_t                     dwError = 0;
-    PVM_REST_HTTP_REQUEST_HEADER pReqHeader = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    PVM_REST_HTTP_REQUEST_HEADER     pReqHeader = NULL;
 
     dwError = VmRESTAllocateMemory(
                   sizeof(VM_REST_HTTP_REQUEST_HEADER),
-                  (void**)&pReqHeader);
+                  (void**)&pReqHeader
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     *ppReqHeader = pReqHeader;
@@ -425,27 +440,29 @@ error:
 static
 void
 VmRESTFreeRequestHeader(
-    PVM_REST_HTTP_REQUEST_HEADER  pReqHeader
+    PVM_REST_HTTP_REQUEST_HEADER     pReqHeader
     )
 {
     if (pReqHeader)
     {
-        VmRESTFreeMemory(pReqHeader);
+        VmRESTFreeMemory(pReqHeader
+            );
     }
 }
 
 static
 uint32_t
 VmRESTAllocateResponseHeader(
-    PVM_REST_HTTP_RESPONSE_HEADER* ppResHeader
+    PVM_REST_HTTP_RESPONSE_HEADER*   ppResHeader
     )
 {
-    uint32_t                      dwError = 0;
-    PVM_REST_HTTP_RESPONSE_HEADER pResHeader = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    PVM_REST_HTTP_RESPONSE_HEADER    pResHeader = NULL;
 
     dwError = VmRESTAllocateMemory(
                   sizeof(VM_REST_HTTP_RESPONSE_HEADER),
-                  (void**)&pResHeader);
+                  (void**)&pResHeader
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     *ppResHeader = pResHeader;
@@ -459,27 +476,29 @@ error:
 static
 void
 VmRESTFreeResponseHeader(
-    PVM_REST_HTTP_RESPONSE_HEADER   pResHeader
+    PVM_REST_HTTP_RESPONSE_HEADER    pResHeader
     )
 {
     if (pResHeader)
     {
-        VmRESTFreeMemory(pResHeader);
+        VmRESTFreeMemory(pResHeader
+            );
     }
 }
 
 static
 uint32_t
 VmRESTAllocateEntityHeader(
-    PVM_REST_HTTP_ENTITY_HEADER  *ppEntityHeader
+    PVM_REST_HTTP_ENTITY_HEADER*     ppEntityHeader
     )
 {
-    uint32_t                    dwError = 0;
-    PVM_REST_HTTP_ENTITY_HEADER pEntityHeader = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    PVM_REST_HTTP_ENTITY_HEADER      pEntityHeader = NULL;
 
     dwError = VmRESTAllocateMemory(
                   sizeof(VM_REST_HTTP_ENTITY_HEADER),
-                  (void**)&pEntityHeader);
+                  (void**)&pEntityHeader
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     *ppEntityHeader = pEntityHeader;
@@ -493,27 +512,29 @@ error:
 static
 void
 VmRESTFreeEntityHeader(
-    PVM_REST_HTTP_ENTITY_HEADER    pEntityHeader
+    PVM_REST_HTTP_ENTITY_HEADER      pEntityHeader
     )
 {
     if (pEntityHeader)
     {
-        VmRESTFreeMemory(pEntityHeader);
+        VmRESTFreeMemory(pEntityHeader
+            );
     }
 }
 
 static
 uint32_t
 VmRESTAllocateMessageBody(
-    PVM_REST_HTTP_MESSAGE_BODY  *ppMsgBody
+    PVM_REST_HTTP_MESSAGE_BODY*      ppMsgBody
     )
 {
-    uint32_t                   dwError = 0;
-    PVM_REST_HTTP_MESSAGE_BODY pMsgBody = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    PVM_REST_HTTP_MESSAGE_BODY       pMsgBody = NULL;
 
     dwError = VmRESTAllocateMemory(
                   sizeof(VM_REST_HTTP_MESSAGE_BODY),
-                  (void**)&pMsgBody);
+                  (void**)&pMsgBody
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     *ppMsgBody = pMsgBody;
@@ -527,11 +548,12 @@ error:
 static
 void
 VmRESTFreeMessageBody(
-    PVM_REST_HTTP_MESSAGE_BODY   pMsgBody
+    PVM_REST_HTTP_MESSAGE_BODY       pMsgBody
     )
 {
     if (pMsgBody)
     {
-        VmRESTFreeMemory(pMsgBody);
+        VmRESTFreeMemory(pMsgBody
+            );
     }
 }

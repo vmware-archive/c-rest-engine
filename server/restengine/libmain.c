@@ -17,14 +17,14 @@ int  vmrest_syslog_level;
 
 uint32_t
 VmRESTEngineInit(
-    PVMREST_ENGINE_METHODS*    pHandlers,
-    char*                      configFile
+    PVMREST_ENGINE_METHODS*          pHandlers,
+    char*                            configFile
     )
 {
-    uint32_t                   dwError = 0;
-    uint32_t                   isTransportInit = 0;
-    PVMREST_THREAD             pThreadpool = NULL;
-    PVM_REST_CONFIG            restConfig = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         isTransportInit = 0;
+    PVMREST_THREAD                   pThreadpool = NULL;
+    PVM_REST_CONFIG                  restConfig = NULL;
 
     vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;
 
@@ -76,9 +76,7 @@ VmRESTEngineInit(
     gpHttpHandler = *pHandlers;
 
 cleanup:
-
     return dwError;
-
 error:
     if (restConfig)
     {
@@ -91,7 +89,7 @@ error:
     {
         VmRESTTransportShutdown(
             );
-        isTransportInit = 0;  
+        isTransportInit = 0;
     }
     goto cleanup;
 }

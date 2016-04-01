@@ -16,30 +16,31 @@
 static
 void
 VmRestJoinThread(
-    PVMREST_THREAD pThread
+    PVMREST_THREAD                   pThread
     );
 
 static
 void
 VmRestFreeThreadContents(
-    PVMREST_THREAD pThread
+    PVMREST_THREAD                   pThread
     );
 
 uint32_t
 VmRestSpawnThreads(
-    PFN_VMREST_THR_ROUTINE pThrRoutine,
-    PVMREST_THREAD*        ppThreadpool,
-    uint32_t               maxWorkerThread
+    PFN_VMREST_THR_ROUTINE           pThrRoutine,
+    PVMREST_THREAD*                  ppThreadpool,
+    uint32_t                         maxWorkerThread
     )
 {
-    uint32_t               dwError = 0;
-    uint32_t               thrcount = maxWorkerThread;
-    PVMREST_THREAD         pThreadpool = NULL;
-    uint32_t               iThr = 0;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         thrcount = maxWorkerThread;
+    PVMREST_THREAD                   pThreadpool = NULL;
+    uint32_t                         iThr = 0;
 
     dwError = VmRESTAllocateMemory(
                    sizeof(VMREST_THREAD) * thrcount,
-                   (void**)&pThreadpool);
+                   (void**)&pThreadpool
+                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
     for (; iThr < thrcount; iThr++)
@@ -48,15 +49,16 @@ VmRestSpawnThreads(
         PVMREST_THREAD_DATA pThrData = NULL;
 
         dwError = VmRESTAllocateMemory(
-                      sizeof(VMREST_THREAD_DATA), 
+                      sizeof(VMREST_THREAD_DATA),
                       (void**)&pThrData
                       );
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = pthread_mutex_init(
                       &(pThrData->mutex),
-                      NULL);
-        BAIL_ON_POSIX_THREAD_ERROR(dwError);
+                      NULL
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
 
         pThrData->pMutex = &pThrData->mutex;
 
@@ -64,7 +66,7 @@ VmRestSpawnThreads(
                       &(pThrData->cond),
                       NULL
                       );
-        BAIL_ON_POSIX_THREAD_ERROR(dwError);
+        BAIL_ON_VMREST_ERROR(dwError);
 
         pThrData->pCond = &pThrData->cond;
 
@@ -74,7 +76,7 @@ VmRestSpawnThreads(
                       pThrRoutine,
                       pThrData
                       );
-        BAIL_ON_POSIX_THREAD_ERROR(dwError);
+        BAIL_ON_VMREST_ERROR(dwError);
 
         pThread->pThread = &pThread->thr;
         pThread->data = pThrData;
@@ -98,7 +100,7 @@ error:
 
 void*
 VmRestWorkerThread(
-    void * pArgs
+    void*                            pArgs
     )
 {
     /* TODO ::  Pass thread data to socket handler
@@ -106,16 +108,17 @@ VmRestWorkerThread(
 
     VmSockPosixHandleEventsFromQueue();
 
-    return NULL;   
+    return NULL;
 }
 
 void
 VmRestFreeThreadpool(
-    PVMREST_THREAD pThreadpool,
-    uint32_t       threadcount
+    PVMREST_THREAD                   pThreadpool,
+    uint32_t                         threadcount
     )
 {
-    uint32_t iThr = 0;
+    uint32_t                         iThr = 0;
+
     if (pThreadpool)
     {
         for (iThr = 0; iThr < threadcount; iThr++)
@@ -136,7 +139,7 @@ VmRestFreeThreadpool(
 static
 void
 VmRestJoinThread(
-    PVMREST_THREAD pThread
+    PVMREST_THREAD                   pThread
     )
 {
     if (pThread && pThread->thr)
@@ -148,7 +151,7 @@ VmRestJoinThread(
 static
 void
 VmRestFreeThreadContents(
-    PVMREST_THREAD pThread
+    PVMREST_THREAD                   pThread
     )
 {
     PVMREST_THREAD_DATA pThrData = pThread->data;
@@ -164,8 +167,8 @@ VmRestFreeThreadContents(
         pthread_mutex_destroy(&pThrData->mutex);
         pThrData->pMutex = NULL;
     }
-    if (pThrData) 
+    if (pThrData)
     {
         VmRESTFreeMemory(pThrData);
-    } 
+    }
 }
