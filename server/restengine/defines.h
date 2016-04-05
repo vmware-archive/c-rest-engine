@@ -17,10 +17,6 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 
 #define VMREST_WORKER_THREAD_COUNT 5
 
-#define BAIL_ON_POSIX_THREAD_ERROR(dwError) \
-        if (dwError) \
-            goto error;
-
 /* HTTP protocol header defines */
 
 #define MAX_METHOD_LEN             32
@@ -45,10 +41,10 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define MAX_TRAILER_LEN            32
 #define MAX_TRANSFER_ENCODING_LEN  32
 #define MAX_ALLOW_LEN              32
-#define MAX_CONTENT_ENCODING_LEN   32 
+#define MAX_CONTENT_ENCODING_LEN   32
 #define MAX_CONTENT_LANGUAGE_LEN   32
 #define MAX_CONTENT_LENGTH_LEN     32
-#define MAX_CONTENT_LOCATION_LEN   32 
+#define MAX_CONTENT_LOCATION_LEN   32
 #define MAX_CONTENT_MD5_LEN        32
 #define MAX_CONTENT_RANGE_LEN      32
 #define MAX_CONTENT_TYPE_LEN       32
@@ -71,18 +67,18 @@ typedef enum _HTTP_METHODS
     HTTP_METHOD_CONNECT
 }HTTP_METHODS;
 
-/* 
-*  Please DO NOT change first and last header of any 
+/*
+*  Please DO NOT change first and last header of any
 *  category.
 *  If new header has to be added, then it should be
 *  added INBETWEEN first and last header of the same category
 *  excluding first and last.
 *  Various category are:
-*  
+*
 *  HTTP_REQUEST_HEADER
 *  HTTP_RESPONSE_HEADER
 *  HTTP_GENERAL_HEADER
-*  HTTP_ENTITY_HEADER 
+*  HTTP_ENTITY_HEADER
 */
 
 typedef enum _HTTP_HEADERS
@@ -118,7 +114,7 @@ typedef enum _HTTP_STATUS_CODE
     CONTINUE                            = 100,
     SWITCHING_PROTOCOL,
     OK                                  = 200,
-    CREATED,                            
+    CREATED,
     ACCEPTED,
     NON_AUTH_INFO,
     NO_CONTENT,
@@ -156,6 +152,4 @@ typedef enum _HTTP_STATUS_CODE
     GATEWAY_TIMEOUT,
     HTTP_VERSION_NOT_SUPPORTED
 }HTTP_STATUS_CODE;
-
-
 

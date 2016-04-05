@@ -26,7 +26,8 @@ uint32_t
 VmRestTransportInit(
     char*    port,
     char*    sslCertificate,
-    char*    sslKey
+    char*    sslKey,
+    uint32_t clientCount
     );
 
 void

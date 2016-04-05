@@ -16,19 +16,26 @@
 
 uint32_t 
 VmRESTInsertElement(
-    PVM_EVENT_DATA       data,
-    uint32_t             flag,
-    QUEUE*               queue
+    PVM_EVENT_DATA                   data,
+    uint32_t                         flag,
+    QUEUE*                           queue
     )
 {
-    uint32_t    dwError = EXIT_SUCCESS;
-    EVENT_NODE* node = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    EVENT_NODE*                      node = NULL;
+
+    if (queue == NULL)
+    {
+        VMREST_LOG_DEBUG("VmRESTInsertElement(): Invalid params");
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
     
     dwError = VmRESTAllocateMemory(
-              sizeof(EVENT_NODE),
-              (void*)&node
-              );
-    BAIL_ON_POSIX_SOCK_ERROR(dwError);       
+                  sizeof(EVENT_NODE),
+                  (void*)&node
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);       
   
     memcpy(&(node->data), data, sizeof(VM_EVENT_DATA)); 
     node->flag  = flag;
@@ -55,16 +62,22 @@ error:
 
 EVENT_NODE* 
 VmRESTUtilsRemoveElement(
-    QUEUE*        queue
+    QUEUE*                           queue
     ) 
 {
-    EVENT_NODE*   temp = NULL;
-    uint32_t      dwError = EXIT_SUCCESS; 
+    EVENT_NODE*                      temp = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS; 
+
+    if (queue == NULL)
+    {
+        VMREST_LOG_DEBUG("VmRESTUtilsRemoveElement(): Invalid params");
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
     
     if (queue->count == 0)
     {
         dwError = VMREST_TRANSPORT_QUEUE_EMPTY; 
-        BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
     else if (queue->count == 1)
     {
@@ -77,6 +90,7 @@ VmRESTUtilsRemoveElement(
         temp = queue->head;
         queue->head = queue->head->next;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
     queue->count--;
 
 cleanup:
@@ -87,29 +101,36 @@ error:
 
 uint32_t 
 VmRestUtilsInitQueue(
-    QUEUE*       queue
+    QUEUE*                           queue
     )
 {
-    uint32_t     dwError = EXIT_SUCCESS;
-    uint32_t     mutexInited = 0;  
-    
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         mutexInited = 0;  
+     
+    if (queue == NULL)
+    {
+        VMREST_LOG_DEBUG("VmRestUtilsInitQueue(): Invalid params");
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     queue->count = 0;
     queue->head = NULL;
     queue->tail = NULL;
     
     dwError = pthread_mutex_init(
-              &(queue->lock),
-              NULL
-              );
-    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+                  &(queue->lock),
+                  NULL
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
 
     mutexInited = 1;
 
     dwError = pthread_cond_init(
-              &(queue->signal),
-              NULL
-              );
-    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+                  &(queue->signal),
+                  NULL
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     return dwError;
@@ -117,8 +138,8 @@ error:
     if (mutexInited)
     {
         pthread_mutex_destroy(
-        &(queue->lock)
-        );
+            &(queue->lock)
+            );
     }
     dwError = VMREST_TRANSPORT_QUEUE_INIT_FAILED;
     goto cleanup;
@@ -126,11 +147,17 @@ error:
 
 void 
 VmRESTUtilsDestroyQueue(
-    QUEUE*         queue
+    QUEUE*                           queue
     )
 {
-    EVENT_NODE*    temp = NULL;
-    EVENT_NODE*    old = NULL;
+    EVENT_NODE*                      temp = NULL;
+    EVENT_NODE*                      old = NULL;
+
+    if (queue == NULL)
+    {
+        VMREST_LOG_DEBUG("VmRESTUtilsDestroyQueue(): Invalid params");
+        return;
+    }
 
     pthread_mutex_lock(&(queue->lock));    
     temp = queue->head;
@@ -151,5 +178,4 @@ VmRESTUtilsDestroyQueue(
     
     pthread_mutex_destroy(&(queue->lock));
     pthread_cond_destroy(&(queue->signal)); 
-
 }

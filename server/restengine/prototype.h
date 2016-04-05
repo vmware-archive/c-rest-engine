@@ -13,189 +13,193 @@
  * under the License.
  */
 
+/***************** Thread.c ***********************/
 uint32_t
 VmRestSpawnThreads(
-    PFN_VMREST_THR_ROUTINE pThrRoutine,
-    PVMREST_THREAD*        ppThreadpool,
-    uint32_t               maxWorkerThread
+    PFN_VMREST_THR_ROUTINE           pThrRoutine,
+    PVMREST_THREAD*                  ppThreadpool,
+    uint32_t                         maxWorkerThread
     );
 
 void *
 VmRestWorkerThread(
-    void* pArgs
+    void*                            pArgs
     );
 
 void
 VmRestFreeThreadpool(
-    PVMREST_THREAD pThreadpool,
-    uint32_t       threadcount
+    PVMREST_THREAD                   pThreadpool,
+    uint32_t                         threadcount
     );
 
 
-/**** httpProtocolHead.c **************/
+/***************** httpProtocolHead.c *************/
 
 uint32_t
-VmRESTHTTPGetmethod(
-    char*    line,
-    uint32_t lineLen,
-    char*    result
+VmRESTHTTPGetReqMethod(
+    char*                            line,
+    uint32_t                         lineLen,
+    char*                            result,
+    uint32_t*                        resStatus
     );
 
 uint32_t
 VmRESTHTTPGetReqURI(
-    char*    line,
-    uint32_t lineLen,
-    char*    result
+    char*                            line,
+    uint32_t                         lineLen,
+    char*                            result,
+    uint32_t*                        resStatus
     );
 
 uint32_t
 VmRESTHTTPGetReqVersion(
-    char*    line,
-    uint32_t lineLen,
-    char*    result
+    char*                            line,
+    uint32_t                         lineLen,
+    char*                            result,
+    uint32_t*                        resStatus
     );
 
 uint32_t
 VmRESTHTTPPopulateHeader(
-    char*                        line,
-    uint32_t                     lineLen,
-    PVM_REST_HTTP_REQUEST_PACKET pReqPacket
+    char*                            line,
+    uint32_t                         lineLen,
+    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
+    uint32_t*                        resStatus
     );
 
 uint32_t
 VmRESTParseHTTPReqLine(
-    uint32_t                      lineNo,
-    char*                         line,
-    uint32_t                      lineLen,
-    PVM_REST_HTTP_REQUEST_PACKET  pReqPacket
+    uint32_t                         lineNo,
+    char*                            line,
+    uint32_t                         lineLen,
+    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
+    uint32_t*                        resStatus
     );
 
 uint32_t
 VmRESTParseAndPopulateRawHTTPMessage(
-    char*                        buffer,
-    uint32_t                     packetLen,
-    PVM_REST_HTTP_REQUEST_PACKET pReqPacket
+    char*                            buffer,
+    uint32_t                         packetLen,
+    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
+    uint32_t*                        resStatus
     );
 
 uint32_t
-VmRESTCreateHTTPResponseMessage(
-    PVM_REST_HTTP_RESPONSE_PACKET* pResPacket
+VmRESTAddAllHeaderInResponseStream(
+    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket,
+    char*                            buffer,
+    uint32_t*                        bytes
     );
 
 uint32_t
-VmRESTAddAllHeaderInResponse(
-    PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
-    char*                         buffer,
-    uint32_t                      *bytes
+VMRESTWriteStatusLineInResponseStream(
+    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket,
+    char*                            buffer,
+    uint32_t*                        bytes
     );
 
 uint32_t
-VMRESTWriteStatusLineInResponse(
-    PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
-    char                          *buffer,
-    uint32_t                      *bytes
-    );
-
-uint32_t
-VMRESTWriteMessageBodyInResponse(
-    PVM_REST_HTTP_RESPONSE_PACKET pResPacket,
-    char                          *buffer,
-    uint32_t                      *bytes
+VMRESTWriteMessageBodyInResponseStream(
+    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket,
+    char*                            buffer,
+    uint32_t*                        bytes
     );
 
 uint32_t
 VmRESTSendResponsePacket(
-    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
 uint32_t
 VmRESTTriggerAppCb(
-    PVM_REST_HTTP_REQUEST_PACKET  pRequest,
-    PVM_REST_HTTP_RESPONSE_PACKET* ppResponse
-    );
-
-
-/* This will be removed once cli module for modular testing is implemented */
-uint32_t
-VmRESTTestHTTPParser(
-    void
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
     );
 
 uint32_t
 VmRESTTestHTTPResponse(
-    PVM_REST_HTTP_REQUEST_PACKET pReqPacket
+    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
+    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
     );
 
-/********* httpAllocStruct.c  *************/
+/***************** httpAllocStruct.c  *************/
 
 uint32_t
 VmRESTAllocateHTTPRequestPacket(
-    PVM_REST_HTTP_REQUEST_PACKET* ppReqPacket
+    PVM_REST_HTTP_REQUEST_PACKET*    ppReqPacket
     );
 
 void
 VmRESTFreeHTTPRequestPacket(
-    PVM_REST_HTTP_REQUEST_PACKET*   ppReqPacket
+    PVM_REST_HTTP_REQUEST_PACKET*    ppReqPacket
     );
 
 uint32_t
 VmRESTAllocateHTTPResponsePacket(
-    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
 void
 VmRESTFreeHTTPResponsePacket(
-    PVM_REST_HTTP_RESPONSE_PACKET* ppResPacket
+    PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
 
-/********** httpUtilsInternal.c **************/
+/***************** httpUtilsInternal.c ************/
 
 uint32_t
 VmRESTMapHeaderToEnum(
-    char*             header,
-    uint32_t*         result
+    char*                            header,
+    uint32_t*                        result,
+    uint32_t*                        resStatus
     );
 
 uint32_t
 VmRESTMapMethodToEnum(
-    char*             method,
-    uint32_t*         result
+    char*                            method,
+    uint32_t*                        result
     );
 
 uint32_t
 VmRESTMapStatusCodeToEnumAndReasonPhrase(
-    char*             statusCode,
-    uint32_t*         result,
-    char*             reasonPhrase
+    char*                            statusCode,
+    uint32_t*                        result,
+    char*                            reasonPhrase
     );
 
 uint32_t
 VmRESTGetHttpResponseHeader(
     PVM_REST_HTTP_RESPONSE_PACKET    pResponse,
-    char*                           header,
-    char*                           response
+    char*                            header,
+    char*                            response
     );
 
 uint32_t
 VmRESTSetHttpRequestHeader(
-    PVM_REST_HTTP_REQUEST_PACKET    pRequest,
-    char*                           header,
-    char*                           value
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    char*                            header,
+    char*                            value,
+    uint32_t*                        resStatus
     );
 
 uint32_t
 VmRESTParseAndPopulateConfigFile(
-    char*            configFile,
-    VM_REST_CONFIG** ppRESTConfig
+    char*                            configFile,
+    VM_REST_CONFIG**                 ppRESTConfig
     );
 
 void
 VmRESTFreeConfigFileStruct(
-    VM_REST_CONFIG*     pRESTConfig
+    VM_REST_CONFIG*                  pRESTConfig
     );
 
 uint32_t
 VmRESTValidateConfig(
-    PVM_REST_CONFIG    pRESTConfig
+    PVM_REST_CONFIG                  pRESTConfig
+    );
+
+uint32_t
+VmRESTCopyString(
+    char*                            src,
+    char*                            des
     );

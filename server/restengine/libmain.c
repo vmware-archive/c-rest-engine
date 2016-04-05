@@ -17,14 +17,14 @@ int  vmrest_syslog_level;
 
 uint32_t
 VmRESTEngineInit(
-    PVMREST_ENGINE_METHODS*    pHandlers,
-    char*                      configFile
+    PVMREST_ENGINE_METHODS*          pHandlers,
+    char*                            configFile
     )
 {
-    uint32_t                   dwError = 0;
-    uint32_t                   isTransportInit = 0;
-    PVMREST_THREAD             pThreadpool = NULL;
-    PVM_REST_CONFIG            restConfig = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         isTransportInit = 0;
+    PVMREST_THREAD                   pThreadpool = NULL;
+    PVM_REST_CONFIG                  restConfig = NULL;
 
     vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;
 
@@ -51,7 +51,8 @@ VmRESTEngineInit(
     dwError = VmRestTransportInit(
                   restConfig->server_port,
                   restConfig->ssl_certificate,
-                  restConfig->ssl_key
+                  restConfig->ssl_key,
+                  atoi(restConfig->client_count)
                   );
     BAIL_ON_VMREST_ERROR(dwError);
     isTransportInit = 1;
@@ -76,9 +77,7 @@ VmRESTEngineInit(
     gpHttpHandler = *pHandlers;
 
 cleanup:
-
     return dwError;
-
 error:
     if (restConfig)
     {
@@ -91,7 +90,7 @@ error:
     {
         VmRESTTransportShutdown(
             );
-        isTransportInit = 0;  
+        isTransportInit = 0;
     }
     goto cleanup;
 }
