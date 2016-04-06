@@ -65,10 +65,33 @@ error:
 }
 
 void
+VmRemoveAllClientsFromGlobal(
+    void
+    )
+{
+    uint32_t                         index = 0;
+
+    pthread_mutex_lock(&(gServerSocketInfo.lock));
+    for (index = 0; index <= MAX_CONNECTIONS; index++)
+    {
+        if (gServerSocketInfo.clients[index].notStale == 1)
+        {
+            close(gServerSocketInfo.clients[index].fd);
+        }
+        gServerSocketInfo.clients[index].fd = -1;
+        gServerSocketInfo.clients[index].notStale = 0;
+        gServerSocketInfo.clients[index].ssl = NULL;
+        gServerSocketInfo.clientCount--;
+    }
+    pthread_mutex_unlock(&(gServerSocketInfo.lock));
+}
+
+void
 VmShutdownGlobalServerSocket(
     void
     )
 {
+    VmRemoveAllClientsFromGlobal();
     gServerSocketInfo.clientCount = 0;
     memset(gServerSocketInfo.port, '\0', MAX_PORT_LEN);
     gServerSocketInfo.fd = -1;

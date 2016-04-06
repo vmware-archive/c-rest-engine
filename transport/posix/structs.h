@@ -37,6 +37,7 @@ typedef struct _VM_SOCKET
     uint32_t                         emptyIndex;
     pthread_mutex_t                  lock;
     uint32_t                         keepOpen;
+    uint32_t                         ServerAlive;
     char                             address[MAX_ADDRESS_LEN];
     char                             port[MAX_PORT_LEN];
 } VM_SOCKET;

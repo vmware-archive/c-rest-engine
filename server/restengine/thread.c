@@ -104,7 +104,7 @@ VmRestWorkerThread(
     )
 {
     /* TODO ::  Pass thread data to socket handler
-    PVMREST_THREAD_DATA pThrData = (PVMREST_THREAD_DATA)pArgs; */
+    PVMREST_THREAD_DATA pThrData = (PVMREST_THREAD_DATA)pArgs;*/
 
     VmSockPosixHandleEventsFromQueue();
 
@@ -122,16 +122,14 @@ VmRestFreeThreadpool(
     if (pThreadpool)
     {
         for (iThr = 0; iThr < threadcount; iThr++)
-        {
+        {   
             PVMREST_THREAD pThread = &pThreadpool[iThr];
             if (pThread->pThread)
             {
                 VmRestJoinThread(pThread);
             }
-
             VmRestFreeThreadContents(pThread);
         }
-
         VmRESTFreeMemory(pThreadpool);
     }
 }
