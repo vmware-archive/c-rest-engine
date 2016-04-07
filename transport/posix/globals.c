@@ -111,7 +111,7 @@ VmRESTInsertClientFromGlobal(
     uint32_t                         temp = 0;
     uint32_t                         success = 0;
 
-    if (ssl == NULL || fd < 0 || index == NULL)
+    if ((ssl == NULL && fd < 0) || (index == NULL))
     {
         VMREST_LOG_DEBUG("VmRESTInsertClientFromGlobal(): Invalid params");
         dwError =  ERROR_TRANSPORT_INVALID_PARAMS;

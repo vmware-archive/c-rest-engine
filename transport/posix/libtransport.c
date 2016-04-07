@@ -24,9 +24,31 @@ VmRestTransportInit(
 {
     uint32_t                         dwError = ERROR_VMREST_SUCCESS;
 
-    if (port == NULL || sslCertificate == NULL || sslKey == NULL)
+    if (port == NULL)
     {
         VMREST_LOG_DEBUG("VmRESTHTTPGetReqMethod(): Invalid params");
+        dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (strcmp(port, "80") == 0)
+    {
+        gServerSocketInfo.isSecure = 0;
+        sslCertificate = NULL;
+        sslKey = NULL;
+    }
+    else if(strcmp(port, "443") == 0)
+    {
+        if (sslCertificate == NULL || sslKey == NULL)
+        {
+            VMREST_LOG_DEBUG("VmRESTHTTPGetReqMethod(): Invalid SSL params");
+            dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
+        }
+        gServerSocketInfo.isSecure = 1;
+    }
+    else
+    {
+        VMREST_LOG_DEBUG("VmRESTHTTPGetReqMethod(): Invalid port number");
         dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -35,8 +57,8 @@ VmRestTransportInit(
                   port
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-    gServerSocketInfo.ServerAlive = 1; 
-    
+    gServerSocketInfo.ServerAlive = 1;
+
     dwError = VmSockPosixCreateServerSocket(
                   sslCertificate,
                   sslKey,
@@ -55,7 +77,7 @@ void
 VmRESTTransportShutdown(
     void
     )
-{   
+{
     /**** Mark all worker thread for cleanup ****/
     gServerSocketInfo.ServerAlive = 0;
     pthread_cond_broadcast(&(pQueue->signal));

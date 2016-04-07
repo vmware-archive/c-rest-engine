@@ -40,6 +40,7 @@ typedef struct _VM_SOCKET
     uint32_t                         ServerAlive;
     char                             address[MAX_ADDRESS_LEN];
     char                             port[MAX_PORT_LEN];
+    uint32_t                         isSecure;
 } VM_SOCKET;
 
 typedef struct _QUEUE_NODE

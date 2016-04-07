@@ -89,21 +89,22 @@ VmSockPosixCreateServerSocket(
     QUEUE*                           myQueue = NULL;
     PVM_SERVER_THR_PARAMS            thrParams = NULL;
 
-    if ( sslCertificate == NULL || sslKey == NULL || port == NULL)
-    {
-        VMREST_LOG_DEBUG("VmSockPosixCreateServerSocket(): Invalid params");
-        dwError = VMREST_TRANSPORT_INVALID_PARAM;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
     dwError = VmRESTAllocateMemory(
                   sizeof(VM_SERVER_THR_PARAMS),
                   (void *)&(thrParams)
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    strcpy(thrParams->sslCert, sslCertificate);
-    strcpy(thrParams->sslKey, sslKey);
+    if (gServerSocketInfo.isSecure)
+    {
+        strcpy(thrParams->sslCert, sslCertificate);
+        strcpy(thrParams->sslKey, sslKey);
+    }
+    else
+    {
+        memset(thrParams->sslKey, '\0', MAX_PATH_LEN);
+        memset(thrParams->sslCert, '\0', MAX_PATH_LEN);
+    }
     strcpy(thrParams->serverPort, port);
     thrParams->clientCount = clientCount;
 
@@ -220,11 +221,14 @@ VmSockPosixServerListenThread(
 
     thrArgs = Args;
 
-    dwError = VmRESTSecureSocket(
-                  thrArgs->sslCert,
-                  thrArgs->sslKey
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
+    if (gServerSocketInfo.isSecure)
+    {
+        dwError = VmRESTSecureSocket(
+                      thrArgs->sslCert,
+                      thrArgs->sslKey
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
 
     memset(&hints, 0, sizeof(hints));
 
@@ -402,6 +406,8 @@ VmSockPosixHandleEventsFromQueue(
     EVENT_NODE*                      temp = NULL;
     uint32_t                         dwError = ERROR_VMREST_SUCCESS;
     PVM_EVENT_DATA                   acceptData = NULL;
+    SSL*                             sslHandler = NULL;
+    int                              fd = -1;
 
     //PVMREST_THREAD_DATA pThrData = (PVMREST_THREAD_DATA)args;
 
@@ -443,8 +449,17 @@ VmSockPosixHandleEventsFromQueue(
         }
         else
         {
+            if (gServerSocketInfo.isSecure)
+            {
+                sslHandler = acceptData->ssl;
+            }
+            else
+            {
+                fd = acceptData->fd;
+            }
             dwError = VmsockPosixReadDataAtOnce(
-                          acceptData->ssl
+                          sslHandler,
+                          fd
                           );
         }
         BAIL_ON_VMREST_ERROR(dwError);
@@ -497,22 +512,25 @@ VmsockPosixAcceptNewConnection(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    ssl = SSL_new(gServerSocketInfo.sslContext);
-    SSL_set_fd(ssl,accept_fd);
+    if (gServerSocketInfo.isSecure)
+    {
+        ssl = SSL_new(gServerSocketInfo.sslContext);
+        SSL_set_fd(ssl,accept_fd);
 
 retry:
-    if (SSL_accept(ssl) == -1)
-    {
-         if (cntRty <= try )
-         {
-             cntRty++;
-             goto retry;
-         }
-         else
-         {
-             dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
-             BAIL_ON_VMREST_ERROR(dwError);
-         }
+        if (SSL_accept(ssl) == -1)
+        {
+            if (cntRty <= try )
+            {
+                cntRty++;
+                goto retry;
+            }
+            else
+            {
+                dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
+                BAIL_ON_VMREST_ERROR(dwError);
+            }
+        }
     }
 
     dwError = VmRESTInsertClientFromGlobal(
@@ -546,14 +564,20 @@ error:
 
 uint32_t
 VmsockPosixReadDataAtOnce(
-    SSL*                             ssl
+    SSL*                             ssl,
+    int                              fd
     )
 {
     uint32_t                         dwError = ERROR_VMREST_SUCCESS;
     int                              read_cnt = 0;
     char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
 
-    if (ssl == NULL)
+    if ((gServerSocketInfo.isSecure == 1) && (ssl == NULL))
+    {
+        VMREST_LOG_DEBUG("VmsockPosixReadDataAtOnce(): Invalid ssl params");
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    else if ((gServerSocketInfo.isSecure == 0) && (fd <= 0))
     {
         VMREST_LOG_DEBUG("VmsockPosixReadDataAtOnce(): Invalid params");
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
@@ -563,7 +587,15 @@ VmsockPosixReadDataAtOnce(
     while(1)
     {
         memset(buffer,'\0',MAX_DATA_BUFFER_LEN);
-        read_cnt = SSL_read(ssl, buffer, (sizeof(buffer)));
+        if (gServerSocketInfo.isSecure)
+        {
+            read_cnt = SSL_read(ssl, buffer, (sizeof(buffer)));
+        }
+        else
+        {
+            read_cnt = read(fd, buffer, (sizeof(buffer)));
+        }
+
         if (read_cnt == -1 || read_cnt == 0)
         {
             break;
@@ -571,7 +603,8 @@ VmsockPosixReadDataAtOnce(
         dwError =  VmRESTProcessIncomingData(
                        buffer,
                        (uint32_t)read_cnt,
-                       ssl
+                       ssl,
+                       fd
                        );
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -584,13 +617,21 @@ error:
 uint32_t
 VmsockPosixWriteDataAtOnce(
     SSL*                             ssl,
+    int                              fd,
     char*                            buffer,
     uint32_t                         bytes
     )
 {
     uint32_t                         dwError = ERROR_VMREST_SUCCESS;
 
-    SSL_write(ssl, buffer,bytes);
+    if (gServerSocketInfo.isSecure)
+    {
+        SSL_write(ssl, buffer,bytes);
+    }
+    else
+    {
+        write(fd, buffer,bytes);
+    }
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
