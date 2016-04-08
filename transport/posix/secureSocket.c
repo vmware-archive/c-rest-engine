@@ -84,10 +84,10 @@ VmSockPosixCreateServerSocket(
     uint32_t                         clientCount
     )
 {
-    uint32_t                dwError = ERROR_VMREST_SUCCESS;
-    pthread_t*              thr = NULL;
-    QUEUE*                  myQueue = NULL;
-    PVM_SERVER_THR_PARAMS   thrParams = NULL;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    pthread_t*                       thr = NULL;
+    QUEUE*                           myQueue = NULL;
+    PVM_SERVER_THR_PARAMS            thrParams = NULL;
 
     if ( sslCertificate == NULL || sslKey == NULL || port == NULL)
     {
@@ -331,7 +331,7 @@ VmSockPosixServerListenThread(
     {
         /* TODO:: We need to provide timeout else during the cleanup,
         listnerer thread will keep on waiting unless epoll_wait returns */
-        hot_sockets = epoll_wait(epoll_fd, events, MAX_EVENT, -1);
+        hot_sockets = epoll_wait(epoll_fd, events, MAX_EVENT, 100);
         pthread_mutex_lock(&(pQueue->lock));
         for (i= 0; i< hot_sockets;i++)
         {
@@ -343,7 +343,10 @@ VmSockPosixServerListenThread(
                           );
         }
         pthread_mutex_unlock(&(pQueue->lock));
-        pthread_cond_broadcast(&(pQueue->signal));
+        if (hot_sockets != 0)
+        {
+            pthread_cond_broadcast(&(pQueue->signal));
+        }
     }
     close(server_fd);
 
@@ -400,7 +403,9 @@ VmSockPosixHandleEventsFromQueue(
     uint32_t                         dwError = ERROR_VMREST_SUCCESS;
     PVM_EVENT_DATA                   acceptData = NULL;
 
-    while (1)
+    //PVMREST_THREAD_DATA pThrData = (PVMREST_THREAD_DATA)args;
+
+    while (gServerSocketInfo.ServerAlive)
     {
         /* get an element from queue */
         pthread_mutex_lock(&(pQueue->lock));

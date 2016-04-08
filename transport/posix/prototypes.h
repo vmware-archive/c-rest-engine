@@ -91,3 +91,8 @@ VmRESTRemoveClientFromGlobal(
     uint32_t                         index
     );
 
+void
+VmRemoveAllClientsFromGlobal(
+    void
+    );
+

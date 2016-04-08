@@ -35,7 +35,8 @@ VmRestTransportInit(
                   port
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-
+    gServerSocketInfo.ServerAlive = 1; 
+    
     dwError = VmSockPosixCreateServerSocket(
                   sslCertificate,
                   sslKey,
@@ -54,10 +55,13 @@ void
 VmRESTTransportShutdown(
     void
     )
-{
+{   
+    /**** Mark all worker thread for cleanup ****/
+    gServerSocketInfo.ServerAlive = 0;
+    pthread_cond_broadcast(&(pQueue->signal));
+
     VmSockPosixDestroyServerSocket(
         );
-
     VmShutdownGlobalServerSocket(
         );
 }

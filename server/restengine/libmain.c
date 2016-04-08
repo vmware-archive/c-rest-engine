@@ -99,7 +99,7 @@ void
 VmRESTEngineShutdown(
     void
     )
-{
+{   
     /**** Shutdown transport ****/
     VmRESTTransportShutdown(
         );

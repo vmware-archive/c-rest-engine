@@ -23,12 +23,13 @@ int main(int argc, char *argv[])
     dwError = VmRESTSrvInitialize(argv[1]);
     BAIL_ON_VMREST_ERROR(dwError);
 
+    sleep(10);
+    dwError = VmRESTSrvShutdown();
+
     dwError = VmRESTSrvHandleSignals();
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
-
-    VmRESTSrvShutdown();
 
     return dwError;
 

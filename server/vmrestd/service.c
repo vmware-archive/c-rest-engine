@@ -16,10 +16,11 @@
 
 uint32_t
 VmRESTSrvInitialize(
-    char *configFile
+    char*                            configFile
     )
 {
-    uint32_t dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+
     if (configFile == NULL)
     {
         dwError = ERROR_NOT_SUPPORTED;
@@ -32,13 +33,10 @@ VmRESTSrvInitialize(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-
 cleanup:
     return dwError;
 error:
-
     goto cleanup;
-
 }
 
 uint32_t
@@ -46,7 +44,10 @@ VmRESTSrvShutdown(
     void
     )
 {
-    uint32_t dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    
+    VmRESTEngineShutdown(
+        );
 
     return dwError;
 }
