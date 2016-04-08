@@ -38,10 +38,6 @@ uint32_t VmsockPosixAcceptNewConnection(
     int                              server_fd
     );
 
-uint32_t VmsockPosixReadDataAtOnce(
-    SSL*                             ssl
-    );
-
 /****** utils.c **********/
 
 uint32_t

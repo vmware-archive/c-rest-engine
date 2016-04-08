@@ -862,6 +862,7 @@ VmRESTSendResponsePacket(
 
     dwError = VmsockPosixWriteDataAtOnce(
                   pResPacket->clientSocketSSL,
+                  pResPacket->clientSocketFd,
                   buffer,
                   totalBytes
                   );
@@ -878,7 +879,8 @@ uint32_t
 VmRESTProcessIncomingData(
     char*                            buffer,
     uint32_t                         byteRead,
-    SSL*                             ssl
+    SSL*                             ssl,
+    int                              fd
     )
 {
     uint32_t                         dwError = ERROR_VMREST_SUCCESS;
@@ -888,6 +890,8 @@ VmRESTProcessIncomingData(
     uint32_t                         resStatus = OK;
     uint32_t                         responseSent = 0;
     char                             statusStng[MAX_STATUS_LENGTH] = {0};
+    int                              fileDes = -1;
+    SSL*                             sslDes = NULL;
 
     dwError = VmRESTAllocateHTTPRequestPacket(
                   &pReqPacket
@@ -899,8 +903,19 @@ VmRESTProcessIncomingData(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    pReqPacket->clientSocketSSL  = ssl;
+    if ((fd == -1) && (ssl != NULL))
+    {
+        sslDes = ssl;
+    }
+    else if ((ssl == NULL) && (fd >= 0))
+    {
+        fileDes = fd;
+    }
+
+    pReqPacket->clientSocketSSL = sslDes;
+    pReqPacket->clientSocketFd = fileDes;
     pResPacket->clientSocketSSL = pReqPacket->clientSocketSSL;
+    pResPacket->clientSocketFd = pReqPacket->clientSocketFd;
     memset(statusStng,'\0', MAX_STATUS_LENGTH);
 
     dwError = VmRESTParseAndPopulateRawHTTPMessage(

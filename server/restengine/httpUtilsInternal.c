@@ -819,13 +819,23 @@ VmRESTValidateConfig(
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Port 80 will be replaced with HTTPS port 443 ****/
-    if (strcmp(pRESTConfig->server_port, "80") == 0)
+    if (strcmp(pRESTConfig->server_port, "443") == 0)
     {
         if (pRESTConfig->ssl_certificate == NULL || pRESTConfig->ssl_key == NULL)
         {
             VMREST_LOG_DEBUG("VmRESTValidateConfig(): Configuration Validation failed in SSL.");
             dwError = REST_ENGINE_FAILURE;
         }
+    }
+    else if (strcmp(pRESTConfig->server_port, "80") == 0)
+    {
+        memset(pRESTConfig->ssl_certificate, '\0', MAX_PATH_LEN);
+        memset(pRESTConfig->ssl_key, '\0', MAX_PATH_LEN);
+    }
+    else
+    {
+        VMREST_LOG_DEBUG("VmRESTValidateConfig(): Invalid port number.");
+        dwError = REST_ENGINE_FAILURE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
