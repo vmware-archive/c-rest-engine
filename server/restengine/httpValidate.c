@@ -20,7 +20,7 @@ VmRESTRemovePreSpace(
     char*                            dest
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            temp = NULL;
 
     if (src == NULL || dest == NULL)
@@ -56,7 +56,7 @@ VmRESTRemovePostSpace(
     char*                            dest
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            temp = NULL;
     uint32_t                         len = 0;
     uint32_t                         skip = 0;
@@ -97,7 +97,7 @@ VmRESTConverUpperToLower(
     char*                            dest
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            temp = NULL;
     char*                            tempDes = NULL;
 
@@ -138,7 +138,7 @@ VmRESTValidateHTTPMethodGET(
     uint32_t*                        result
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     /* TODO*/
 
@@ -156,7 +156,7 @@ VmRESTValidateHTTPMethodHEAD(
     uint32_t*                        result
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     /* TODO*/
 
@@ -174,7 +174,7 @@ VmRESTValidateHTTPMethodPOST(
     uint32_t*                        result
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     /* TODO*/
 
@@ -192,7 +192,7 @@ VmRESTValidateHTTPMethodPUT(
     uint32_t*                        result
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     /* TODO*/
 
@@ -210,7 +210,7 @@ VmRESTValidateHTTPMethodDELETE(
     uint32_t*                        result
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     /* TODO*/
 
@@ -228,7 +228,7 @@ VmRESTValidateHTTPMethodTRACE(
     uint32_t*                        result
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     /* TODO*/
 
@@ -246,7 +246,7 @@ VmRESTValidateHTTPMethodCONNECT(
     uint32_t*                        result
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     /* TODO*/
 
@@ -265,7 +265,7 @@ VmRESTValidateHTTPVersion(
     uint32_t*                        err
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
 
     if ( pRequest == NULL || result == NULL || err == NULL )
@@ -302,7 +302,7 @@ VmRESTValidateHTTPRequestURI(
     uint32_t*                        err
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
     char*                            temp = NULL;
 
@@ -369,7 +369,7 @@ VmRESTValidateHTTPContentType(
     uint32_t*                        err
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
     char*                            temp = NULL;
 
@@ -419,7 +419,7 @@ VmRESTValidateAccept(
     uint32_t*                        err
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
     char*                            temp = NULL;
 
@@ -470,7 +470,7 @@ VmRESTValidateAcceptCharSet(
     uint32_t*                        err
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
     char*                            temp = NULL;
 
@@ -519,7 +519,7 @@ VmRESTValidateHTTPRequest(
     uint32_t*                        result
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
 
     /* TODO*/
@@ -540,7 +540,7 @@ VmRESTValidateHTTPResponse(
     uint32_t*                        result
     )
 {
-    uint32_t     dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     /* TODO*/
 

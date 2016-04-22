@@ -18,22 +18,25 @@
 #define __VREST_DEFINE_H__
 
 /***** global macros **************/
-#define REST_ENGINE_SUCCESS       0
-#define REST_ENGINE_FAILURE       1
+#define REST_ENGINE_SUCCESS                             0
+#define REST_ENGINE_FAILURE                             1
 
-#define MAX_PATH_LEN            128
-#define MAX_SERVER_PORT_LEN       6
-#define MAX_CLIENT_ALLOWED_LEN    6
-#define MAX_WORKER_COUNT_LEN      6
-#define MAX_LINE_LEN            256
-#define MAX_STATUS_LENGTH         6
+#define MAX_PATH_LEN                                    128
+#define MAX_SERVER_PORT_LEN                             6
+#define MAX_CLIENT_ALLOWED_LEN                          6
+#define MAX_WORKER_COUNT_LEN                            6
+#define MAX_LINE_LEN                                    256
+#define MAX_STATUS_LENGTH                               6
 
-#define PASS                      1
-#define FAIL                      0
+#define PASS                                            1
+#define FAIL                                            0
 
+#define REST_ENGINE_MISSING_CONFIG                      100
+#define REST_ENGINE_INVALID_CONFIG                      101
+#define REST_ENGINE_NO_MEMORY                           102
+#define REST_ENGINE_INVALID_REST_PROCESSER              103
 
-#define ERROR_NOT_SUPPORTED        100
-#define ERROR_VMREST_SUCCESS         0
+#define ERROR_NOT_SUPPORTED                             100
 
 #define VMREST_HTTP_INVALID_PARAMS                      61001
 #define VMREST_HTTP_VALIDATION_FAILED                   61002
@@ -73,18 +76,10 @@
 #define VMREST_TRANSPORT_MAX_CONN_REACHED_ERROR         61123
 #define VMREST_TRANSPORT_MUTEX_INIT_FAILED              61124
 #define VMREST_TRANSPORT_COND_INIT_FAILED               61125
+#define VMREST_TRANSPORT_SERVER_THREAD_START_FAILED     61126
 
-
-
-
-
-
-
-
-
-
-#define ERROR_TRANSPORT_INVALID_PARAMS          61040
-#define ERROR_TRANSPORT_VALIDATION_FAILED       61041
+#define ERROR_TRANSPORT_INVALID_PARAMS                  61040
+#define ERROR_TRANSPORT_VALIDATION_FAILED               61041
 
 
 

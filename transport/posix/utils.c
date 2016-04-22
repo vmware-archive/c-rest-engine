@@ -21,7 +21,7 @@ VmRESTInsertElement(
     QUEUE*                           queue
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     EVENT_NODE*                      node = NULL;
 
     if (queue == NULL)
@@ -66,7 +66,7 @@ VmRESTUtilsRemoveElement(
     ) 
 {
     EVENT_NODE*                      temp = NULL;
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS; 
+    uint32_t                         dwError = REST_ENGINE_SUCCESS; 
 
     if (queue == NULL)
     {
@@ -104,7 +104,7 @@ VmRestUtilsInitQueue(
     QUEUE*                           queue
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         mutexInited = 0;  
      
     if (queue == NULL)
@@ -145,8 +145,8 @@ error:
     goto cleanup;
 }
 
-void 
-VmRESTUtilsDestroyQueue(
+void
+VmRESTUtilsRemoveAllNodes(
     QUEUE*                           queue
     )
 {
@@ -159,23 +159,32 @@ VmRESTUtilsDestroyQueue(
         return;
     }
 
-    pthread_mutex_lock(&(queue->lock));    
+    pthread_mutex_lock(&(queue->lock));
     temp = queue->head;
-    
+
     while(temp != NULL)
     {
         old = temp;
         temp = temp->next;
 
         VmRESTFreeMemory(
-        old
-        );
-        
+            old
+            );
+
     }
     queue->count = 0;
     queue->head = NULL;
     queue->tail = NULL;
-    
+
+    pthread_mutex_unlock(&(queue->lock));
+}
+
+
+void 
+VmRESTUtilsDestroyQueue(
+    QUEUE*                           queue
+    )
+{
     pthread_mutex_destroy(&(queue->lock));
     pthread_cond_destroy(&(queue->signal)); 
 }

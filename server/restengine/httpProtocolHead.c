@@ -23,7 +23,7 @@ VmRESTHTTPGetReqMethod(
     uint32_t*                        resStatus
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            buffer = NULL;
     char                             local[MAX_METHOD_LEN] = {0};
     char*                            temp = NULL;
@@ -110,7 +110,7 @@ VmRESTHTTPGetReqURI(
     uint32_t* resStatus
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            buffer = NULL;
     char                             local[MAX_URI_LEN] = {0};
     char*                            temp = NULL;
@@ -183,7 +183,7 @@ VmRESTHTTPGetReqVersion(
     uint32_t*                        resStatus
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         count   = 0;
     char*                            buffer = NULL;
     char                             local[MAX_VERSION_LEN] = {0};
@@ -257,7 +257,7 @@ VmRESTHTTPPopulateHeader(
     uint32_t*                        resStatus
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            buffer = NULL;
     char                             local[MAX_REQ_LIN_LEN] = {0};
     char                             attribute[MAX_HTTP_HEADER_ATTR_LEN] = {0};
@@ -332,7 +332,7 @@ VmRESTParseHTTPReqLine(
     uint32_t*                        resStatus
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char                             method[MAX_METHOD_LEN] = {0};
     char                             URI[MAX_URI_LEN]={0};
     char                             version[MAX_VERSION_LEN] = {0};
@@ -401,7 +401,7 @@ VmRESTParseAndPopulateRawHTTPMessage(
     uint32_t*                        resStatus
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         bytesRead = 0;
     uint32_t                         lineNo = 0;
     uint32_t                         lineLen = 0;
@@ -470,7 +470,7 @@ VMRESTWriteMessageBodyInResponseStream(
     uint32_t*                        bytes
 )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            curr = NULL;
     uint32_t                         contentLen = 0;
 
@@ -517,7 +517,7 @@ VMRESTWriteStatusLineInResponseStream(
     uint32_t*                        bytes
 )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         bytesCount = 0;
     uint32_t                         len = 0;
     char*                            curr = NULL;
@@ -580,7 +580,7 @@ VmRESTAddAllHeaderInResponseStream(
     uint32_t*                        bytes
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
     uint32_t                         streamBytes = 0;
     char*                            curr = NULL;
@@ -805,7 +805,7 @@ VmRESTSendResponsePacket(
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
     uint32_t                         totalBytes = 0;
     uint32_t                         bytes = 0;
@@ -883,7 +883,7 @@ VmRESTProcessIncomingData(
     int                              fd
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         tempStatus = 0;
     PVM_REST_HTTP_REQUEST_PACKET     pReqPacket = NULL;
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket = NULL;
@@ -1025,7 +1025,7 @@ VmRESTTestHTTPResponse(
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char                             header[32] = {0};
     char                             value[128] = {0};
 
@@ -1090,7 +1090,7 @@ VmRESTTriggerAppCb(
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
 )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         methodNo = 0;
 
     if (pRequest == NULL || ppResponse == NULL)
@@ -1116,9 +1116,9 @@ VmRESTTriggerAppCb(
     switch(methodNo)
     {
         case HTTP_METHOD_GET:
-             if (gpHttpHandler->pfnHandleHTTP_GET)
+             if (gpHttpHandler->pfnHandleGET)
              {
-                 dwError = gpHttpHandler->pfnHandleHTTP_GET(pRequest,
+                 dwError = gpHttpHandler->pfnHandleGET(pRequest,
                                         ppResponse
                                         );
              }
@@ -1129,9 +1129,9 @@ VmRESTTriggerAppCb(
              }
              break;
         case HTTP_METHOD_HEAD:
-             if (gpHttpHandler->pfnHandleHTTP_HEAD)
+             if (gpHttpHandler->pfnHandleHEAD)
              {
-                 dwError = gpHttpHandler->pfnHandleHTTP_HEAD(pRequest,
+                 dwError = gpHttpHandler->pfnHandleHEAD(pRequest,
                                         ppResponse
                                         );
              }
@@ -1142,9 +1142,9 @@ VmRESTTriggerAppCb(
              }
              break;
         case HTTP_METHOD_POST:
-             if (gpHttpHandler->pfnHandleHTTP_POST)
+             if (gpHttpHandler->pfnHandlePOST)
              {
-                 dwError = gpHttpHandler->pfnHandleHTTP_POST(pRequest,
+                 dwError = gpHttpHandler->pfnHandlePOST(pRequest,
                                         ppResponse
                                         );
              }
@@ -1155,9 +1155,9 @@ VmRESTTriggerAppCb(
              }
              break;
         case HTTP_METHOD_PUT:
-             if (gpHttpHandler->pfnHandleHTTP_PUT)
+             if (gpHttpHandler->pfnHandlePUT)
              {
-                 dwError = gpHttpHandler->pfnHandleHTTP_PUT(pRequest,
+                 dwError = gpHttpHandler->pfnHandlePUT(pRequest,
                                         ppResponse
                                         );
              }
@@ -1168,9 +1168,9 @@ VmRESTTriggerAppCb(
              }
              break;
         case HTTP_METHOD_DELETE:
-             if (gpHttpHandler->pfnHandleHTTP_DELETE)
+             if (gpHttpHandler->pfnHandleDELETE)
              {
-                 dwError = gpHttpHandler->pfnHandleHTTP_DELETE(pRequest,
+                 dwError = gpHttpHandler->pfnHandleDELETE(pRequest,
                                         ppResponse
                                         );
              }
@@ -1181,9 +1181,9 @@ VmRESTTriggerAppCb(
              }
              break;
         case HTTP_METHOD_TRACE:
-             if (gpHttpHandler->pfnHandleHTTP_TRACE)
+             if (gpHttpHandler->pfnHandleTRACE)
              {
-                 dwError = gpHttpHandler->pfnHandleHTTP_TRACE(pRequest,
+                 dwError = gpHttpHandler->pfnHandleTRACE(pRequest,
                                         ppResponse
                                         );
              }
@@ -1194,9 +1194,9 @@ VmRESTTriggerAppCb(
              }
              break;
         case HTTP_METHOD_CONNECT:
-             if (gpHttpHandler->pfnHandleHTTP_CONNECT)
+             if (gpHttpHandler->pfnHandleCONNECT)
              {
-                 dwError = gpHttpHandler->pfnHandleHTTP_CONNECT(pRequest,
+                 dwError = gpHttpHandler->pfnHandleCONNECT(pRequest,
                                         ppResponse
                                         );
              }

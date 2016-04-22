@@ -4,7 +4,6 @@ vmrestd_SOURCES = \
     globals.c \
     httpHandlers.c \
     main.c \
-    service.c \
     signal.c
 
 vmrestd_CPPFLAGS = \

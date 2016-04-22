@@ -14,168 +14,176 @@
 #ifndef __VMREST_H__
 #define __VMREST_H__
 
-/**** vmrest public error codes ****/
-#define REST_ENGINE_INIT_SUCCESS     0
-#define REST_ENGINE_INIT_FAIL        1
+#ifndef REST_PCSTR_DEFINED
+typedef char const* REST_PCSTR;
+typedef char* REST_PSTR;
+#define REST_PCSTR_DEFINED 1
+#endif /* REST_PCSTR_DEFINED */
 
-#define REST_ENGINE_MISSING_CONFIG   100
-#define REST_ENGINE_INVALID_CONFIG   101
-#define REST_ENGINE_NO_MEMORY        102
+#ifndef REST_VOID_DEFINED
+typedef void REST_VOID;
+#define REST_VOID_DEFINED 1
+#endif /* REST_VOID_DEFINED */
 
-uint32_t
-VmRestTransportInit(
-    char*                            port,
-    char*                            sslCertificate,
-    char*                            sslKey,
-    uint32_t                         clientCount
-    );
 
-void
-VmRESTTransportShutdown(
-    void
-    );
+typedef REST_PCSTR PCSTR;
+typedef REST_PSTR  PSTR;
+typedef REST_VOID  VOID;
+typedef VOID*      PVOID;
 
-uint32_t
-VmSockPosixHandleEventsFromQueue(
-    void
-    );
+typedef struct _VM_REST_HTTP_REQUEST_PACKET*  PREST_REQUEST;
 
-uint32_t
-VmsockPosixReadDataAtOnce(
-    SSL*                             ssl,
-    int                              fd
-    );
-
-uint32_t
-VmsockPosixWriteDataAtOnce(
-    SSL*                             ssl,
-    int                              fd,
-    char*                            buffer,
-    uint32_t                         bytes
-    );
-
-typedef struct
-_VM_REST_HTTP_REQUEST_PACKET
-*PVM_REST_HTTP_REQUEST_PACKET;
-
-typedef struct
-_VM_REST_HTTP_RESPONSE_PACKET
-*PVM_REST_HTTP_RESPONSE_PACKET;
-
+typedef struct _VM_REST_HTTP_RESPONSE_PACKET* PREST_RESPONSE;
 
 typedef uint32_t(
 *PFN_PROCESS_HTTP_GET)(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse
     );
 
 typedef uint32_t(
 *PFN_PROCESS_HTTP_POST)(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse
     );
 
 typedef uint32_t(
 *PFN_PROCESS_HTTP_HEAD)(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse
     );
 
 typedef uint32_t(
 *PFN_PROCESS_HTTP_PUT)(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse
     );
 
 typedef uint32_t(
 *PFN_PROCESS_HTTP_DELETE)(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse
     );
 
 typedef uint32_t(
 *PFN_PROCESS_HTTP_TRACE)(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse
     );
 
 typedef uint32_t(
 *PFN_PROCESS_HTTP_CONNECT)(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse
     );
 
-typedef struct _VMREST_ENGINE_METHODS
+typedef struct _REST_PROCESSOR
 {
-    PFN_PROCESS_HTTP_GET             pfnHandleHTTP_GET;
-    PFN_PROCESS_HTTP_POST            pfnHandleHTTP_POST;
-    PFN_PROCESS_HTTP_HEAD            pfnHandleHTTP_HEAD;
-    PFN_PROCESS_HTTP_PUT             pfnHandleHTTP_PUT;
-    PFN_PROCESS_HTTP_DELETE          pfnHandleHTTP_DELETE;
-    PFN_PROCESS_HTTP_TRACE           pfnHandleHTTP_TRACE;
-    PFN_PROCESS_HTTP_CONNECT         pfnHandleHTTP_CONNECT;
+    PFN_PROCESS_HTTP_GET             pfnHandleGET;
+    PFN_PROCESS_HTTP_POST            pfnHandlePOST;
+    PFN_PROCESS_HTTP_HEAD            pfnHandleHEAD;
+    PFN_PROCESS_HTTP_PUT             pfnHandlePUT;
+    PFN_PROCESS_HTTP_DELETE          pfnHandleDELETE;
+    PFN_PROCESS_HTTP_TRACE           pfnHandleTRACE;
+    PFN_PROCESS_HTTP_CONNECT         pfnHandleCONNECT;
 
-}VMREST_ENGINE_METHODS, *PVMREST_ENGINE_METHODS;
+} REST_PROCESSOR, *PREST_PROCESSOR;
+
+typedef struct _REST_CONF
+{
+    PSTR                             pSSLCertificate;
+    PSTR                             pSSLKey;
+    PSTR                             pServerPort;
+    PSTR                             pDebugLogFile;
+    PSTR                             pClientCount;
+    PSTR                             pMaxWorkerThread;
+} REST_CONF, *PREST_CONF;
+
+typedef struct _REST_ENDPOINT
+{
+    PSTR                             junk;
+} REST_ENDPOINT, *PREST_ENDPOINT;
 
 /*
  * @brief Rest engine initialization
  *
- * @param[in]                        Handler callbacks
- * @param[in]                        Restengine config file path
- * @param[out]                       void
- * @return Returns 0 for success
+ * @param[in]                        Rest engine configuration.
+ *                                   For default behaviour call this with NULL
+ *                                   This will read config from file /root/restConfig.txt
+ * @return                           Returns 0 for success.
+ */
+
+uint32_t
+VmRESTInit(
+    PREST_CONF                       pConfig
+    );
+
+/**
+ * @brief Starts the HTTP(S) listeners
+ *
+ * @param[in]                        Void.
+ * @return                           Returns 0 for success.
  */
 uint32_t
-VmRESTEngineInit(
-    PVMREST_ENGINE_METHODS*          pHandlers,
-    char*                            configFile
+VmRESTStart(
+    VOID
     );
 
-/*
- * @brief Rest engine exposed API to handle data from raw socket
- *
- * @param[in]                        Buffer with data
- * @param[in]                        byteRead
- * @param[in]                        ssl handler
- * @param[in]                        socket fd
- * @return Returns 0 for success
+/**
+ * @brief Register a REST Endpoint and Handler
+ * @param[in]                        pszEndpoint Endpoint URL to register
+ * @param[in]                        pHandler Callback functions registered for endpoint
+ * @param[out]                       ppEndpoint Optionally return the endpoint registration object
+ * @return                           Returns 0 for Success
  */
 uint32_t
-VmRESTProcessIncomingData(
-    char*                            buffer,
-    uint32_t                         byteRead,
-    SSL*                             ssl,
-    int                              fd
+VmRESTRegisterHandler(
+    PCSTR                            pszEndpoint,
+    PREST_PROCESSOR                  pHandler,
+    PREST_ENDPOINT*                  ppEndpoint
     );
 
-/*
- * @brief Rest engine shutdown
- *
- * @param[in]                        void
- * @param[out]                       void
- * @return Returns 0 for success
+/**
+ * @brief Find a registration object matching the endpoint URL
+ * @param[in]                        pszEndpoint Endpoint URL to lookup
+ * @param[out]                       ppEndpoint Endpoint registration to return for given URL
+ * @return                           Returns 0 for Success
  */
-void
-VmRESTEngineShutdown(
-    void
+uint32_t
+VmRESTFindEndpoint(
+    PCSTR                            pszEndpoint,
+    PREST_ENDPOINT*                  ppEndpoint
     );
 
-/* Exposed Rest engine API's */
+/**
+ * @brief Unregister an endpoint
+ * @return                           Returns 0 for success
+ */
+uint32_t
+VmRESTUnregisterHandler(
+    PREST_ENDPOINT                   pEndpoint
+    );
 
-/* httpUtils.c */
-
+/**
+ * @brief Release the memory associated with the endpoint
+ */
+VOID
+VmRESTReleaseEndpoint(
+    PREST_ENDPOINT                   pEndpoint
+    );
 
 /*
  * @brief Retrieve method name associated with request http object.
  *
  * @param[in]                        Reference to HTTP Request object
  * @param[out]                       HTTP method present in request object.
- * @return Returns 0 for success
+ * @return                           Returns 0 for success else Error code.
  */
+
 uint32_t
 VmRESTGetHttpMethod(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    char*                            response
+    PREST_REQUEST                    pRequest,
+    PSTR                             response
     );
 
 /*
@@ -183,12 +191,12 @@ VmRESTGetHttpMethod(
  *
  * @param[in]                        Reference to HTTP Request object.
  * @param[out]                       URI present in request object.
- * @return Returns 0 for success
+ * @return                           Returns 0 for success else error code.
  */
 uint32_t
 VmRESTGetHttpURI(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    char*                            response
+    PREST_REQUEST                    pRequest,
+    PSTR                             response
     );
 
 /*
@@ -196,12 +204,12 @@ VmRESTGetHttpURI(
  *
  * @param[in]                        Reference to HTTP Request object.
  * @param[out]                       HTTP version (1.0/1.1) present in request object.
- * @return Returns 0 for success
+ * @return                           Returns 0 for success else error code.
  */
 uint32_t
 VmRESTGetHttpVersion(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    char*                            response
+    PREST_REQUEST                    pRequest,
+    PSTR                             response
     );
 
 /*
@@ -210,13 +218,13 @@ VmRESTGetHttpVersion(
  * @param[in]                        Reference to HTTP Request object.
  * @param[in]                        Header field to be retrieve.
  * @param[out]                       Value of header present in request object.
- * @return Returns 0 for success
+ * @return                           Returns 0 for success else error code.
  */
 uint32_t
 VmRESTGetHttpHeader(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    char*                            header,
-    char*                            response
+    PREST_REQUEST                    pRequest,
+    PCSTR                            pszName,
+    PSTR                             ppszResponse
     );
 
 /*
@@ -229,9 +237,9 @@ VmRESTGetHttpHeader(
  */
 uint32_t
 VmRESTSetHttpHeader(
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse,
-    char*                            header,
-    char*                            value
+    PREST_RESPONSE*                  ppResponse,
+    PCSTR                            pszName,
+    PSTR                             pValue 
     );
 
 /*
@@ -243,8 +251,8 @@ VmRESTSetHttpHeader(
  */
 uint32_t
 VmRESTSetHttpStatusCode(
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse,
-    char*                            statusCode
+    PREST_RESPONSE*                  ppResponse,
+    PSTR                             statusCode
     );
 
 /*
@@ -256,8 +264,8 @@ VmRESTSetHttpStatusCode(
  */
 uint32_t
 VmRESTSetHttpStatusVersion(
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse,
-    char*                            version
+    PREST_RESPONSE*                  ppResponse,
+    PSTR                             version
     );
 
 /*
@@ -269,8 +277,8 @@ VmRESTSetHttpStatusVersion(
  */
 uint32_t
 VmRESTSetHttpReasonPhrase(
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse,
-    char*                            reasonPhrase
+    PREST_RESPONSE*                  ppResponse,
+    PSTR                             reasonPhrase
     );
 
 /*
@@ -282,8 +290,8 @@ VmRESTSetHttpReasonPhrase(
  */
 uint32_t
 VmRESTGetHttpPayload(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    char*                            response
+    PREST_REQUEST                    pRequest,
+    PSTR                             response
     );
 
 
@@ -296,8 +304,24 @@ VmRESTGetHttpPayload(
  */
 uint32_t
 VmRESTSetHttpPayload(
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse,
-    char*                            buffer
+    PREST_RESPONSE*                  ppResponse,
+    PSTR                             buffer
+    );
+
+/**
+ * @brief Stop the REST Engine
+ */
+uint32_t
+VmRESTStop(
+    VOID
+    );
+
+/*
+ * @brief Shutdown the REST Library
+ */
+VOID
+VmRESTShutdown(
+    VOID
     );
 
 #endif /* __VMREST_H__ */

@@ -14,4 +14,4 @@
 
 extern VMREST_GLOBALS gVMRESTGlobals;
 
-extern PVMREST_ENGINE_METHODS gpVmRestHandlers;
+extern PREST_PROCESSOR gpVmRestHandlers;

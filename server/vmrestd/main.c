@@ -16,18 +16,57 @@
 
 int main(int argc, char *argv[])
 {
-    uint32_t dwError = 0;
+    uint32_t                         dwError = 0;
+    PREST_CONF                       pConfig = NULL;
 
-    VmRESTSrvBlockSignals();
+    /**** Create and populate the config  struct ****/
 
-    dwError = VmRESTSrvInitialize(argv[1]);
+    char* sslCert = "/root/mycert.pem";
+    char* sslKey  = "/root/mycert.pem";
+    char* port = "443";
+    char* debugLogFile = "/tmp/restServer.log";
+    char* clientCnt = "5";
+    char* workerThCnt = "5";
+
+    pConfig = (PREST_CONF)malloc(sizeof(REST_CONF));
+
+    pConfig->pSSLCertificate = sslCert; 
+    pConfig->pSSLKey = sslKey;
+    pConfig->pServerPort = port;
+    pConfig->pDebugLogFile = debugLogFile;
+    pConfig->pClientCount = clientCnt;
+    pConfig->pMaxWorkerThread = workerThCnt;
+
+    /***********************************
+    *  Call VmRESTInit with pConfig or 
+    *  with NULL for default config from 
+    *  file /root/restConfig.txt 
+    ************************************/
+    
+    dwError = VmRESTInit(
+                  NULL
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
+    dwError = VmRESTRegisterHandler(
+                  NULL,
+                  gpVmRestHandlers,
+                  NULL
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTStart(
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+ 
     sleep(10);
-    dwError = VmRESTSrvShutdown();
-
-    dwError = VmRESTSrvHandleSignals();
+    
+    dwError = VmRESTStop(
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
+
+    VmRESTShutdown(
+        );
 
 cleanup:
 

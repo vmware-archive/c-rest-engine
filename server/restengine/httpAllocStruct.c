@@ -106,7 +106,7 @@ VmRESTAllocateHTTPRequestPacket(
     PVM_REST_HTTP_REQUEST_PACKET*    ppReqPacket
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_REQUEST_PACKET     pReqPacket = NULL;
     PVM_REST_HTTP_REQUEST_LINE       pReqLine = NULL;
     PVM_REST_HTTP_GENERAL_HEADER     pGenHeader = NULL;
@@ -207,7 +207,7 @@ VmRESTAllocateHTTPResponsePacket(
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket = NULL;
     PVM_REST_HTTP_STATUS_LINE        pStatusLine = NULL;
     PVM_REST_HTTP_GENERAL_HEADER     pGenHeader = NULL;
@@ -313,7 +313,7 @@ VmRESTAllocateRequestLine(
     PVM_REST_HTTP_REQUEST_LINE* ppReqLine
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_REQUEST_LINE       pReqLine = NULL;
 
     dwError = VmRESTAllocateMemory(
@@ -348,7 +348,7 @@ VmRESTAllocateStatusLine(
     PVM_REST_HTTP_STATUS_LINE*       ppStatusLine
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_STATUS_LINE        pStatusLine = NULL;
 
     dwError = VmRESTAllocateMemory(
@@ -384,7 +384,7 @@ VmRESTAllocateGeneralHeader(
     PVM_REST_HTTP_GENERAL_HEADER*    ppGenHeader
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_GENERAL_HEADER     pGenHeader = NULL;
 
     dwError = VmRESTAllocateMemory(
@@ -420,7 +420,7 @@ VmRESTAllocateRequestHeader(
     PVM_REST_HTTP_REQUEST_HEADER*    ppReqHeader
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_REQUEST_HEADER     pReqHeader = NULL;
 
     dwError = VmRESTAllocateMemory(
@@ -456,7 +456,7 @@ VmRESTAllocateResponseHeader(
     PVM_REST_HTTP_RESPONSE_HEADER*   ppResHeader
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_RESPONSE_HEADER    pResHeader = NULL;
 
     dwError = VmRESTAllocateMemory(
@@ -492,7 +492,7 @@ VmRESTAllocateEntityHeader(
     PVM_REST_HTTP_ENTITY_HEADER*     ppEntityHeader
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_ENTITY_HEADER      pEntityHeader = NULL;
 
     dwError = VmRESTAllocateMemory(
@@ -528,7 +528,7 @@ VmRESTAllocateMessageBody(
     PVM_REST_HTTP_MESSAGE_BODY*      ppMsgBody
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_MESSAGE_BODY       pMsgBody = NULL;
 
     dwError = VmRESTAllocateMemory(

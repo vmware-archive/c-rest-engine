@@ -18,6 +18,7 @@
 #include <vmrestdefines.h>
 #include <vmrest.h>
 #include <vmrestcommon.h>
+#include <vmrestsock.h>
 #include "defines.h"
 #include "structs.h"
 #include "externs.h"

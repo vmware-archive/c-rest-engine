@@ -20,7 +20,7 @@ VmRESTSecureSocket(
     char*                            key
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     int                              ret = 0;
     const SSL_METHOD*                method = NULL;
     SSL_CTX*                         context = NULL;
@@ -78,15 +78,53 @@ error:
 
 uint32_t
 VmSockPosixCreateServerSocket(
+    void
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    QUEUE*                           myQueue = NULL;
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(QUEUE),
+                  (void *)&(myQueue)
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRestUtilsInitQueue(
+                  myQueue
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    pQueue = myQueue;
+
+cleanup:
+    return dwError;
+error:
+    if (myQueue)
+    {
+        if (pQueue == myQueue)
+        {
+            VmRESTUtilsDestroyQueue(
+                pQueue
+                );
+            pQueue = NULL;
+        }
+        VmRESTFreeMemory(myQueue);
+    }
+    dwError = VMREST_TRANSPORT_SERVER_THREAD_CREATE_FAILED;
+    goto cleanup;
+}
+
+uint32_t
+VmSockPosixStartServerSocket(
     char*                            sslCertificate,
     char*                            sslKey,
     char*                            port,
     uint32_t                         clientCount
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     pthread_t*                       thr = NULL;
-    QUEUE*                           myQueue = NULL;
     PVM_SERVER_THR_PARAMS            thrParams = NULL;
 
     dwError = VmRESTAllocateMemory(
@@ -107,19 +145,6 @@ VmSockPosixCreateServerSocket(
     }
     strcpy(thrParams->serverPort, port);
     thrParams->clientCount = clientCount;
-
-    dwError = VmRESTAllocateMemory(
-                  sizeof(QUEUE),
-                  (void *)&(myQueue)
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRestUtilsInitQueue(
-                  myQueue
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    pQueue = myQueue;
 
     dwError = VmRESTAllocateMemory(
                   sizeof(pthread_t),
@@ -144,34 +169,24 @@ error:
             thrParams
             );
     }
-    if (myQueue)
-    {
-        if (pQueue == myQueue)
-        {
-            VmRESTUtilsDestroyQueue(
-                pQueue
-                );
-            pQueue = NULL;
-        }
-        VmRESTFreeMemory(myQueue);
-    }
     if (thr)
     {
        VmRESTFreeMemory(thr);
     }
-    dwError = VMREST_TRANSPORT_SERVER_THREAD_CREATE_FAILED;
+    dwError = VMREST_TRANSPORT_SERVER_THREAD_START_FAILED;
     goto cleanup;
 }
 
 void
-VmSockPosixDestroyServerSocket(
-   )
+VmSockPosixStopServerSocket(
+    void
+    )
 {
     /* Exit the infinite loop of server thread */
     gServerSocketInfo.keepOpen = 0;
 
     /* join the server thread */
-    if ( pQueue  && pQueue->server_thread )
+    if (pQueue && pQueue->server_thread)
     {
         pthread_join(*(pQueue->server_thread),
                         NULL
@@ -180,10 +195,25 @@ VmSockPosixDestroyServerSocket(
                         );
         pQueue->server_thread = NULL;
 
-        VmRESTUtilsDestroyQueue(pQueue
-                        );
-        VmRESTFreeMemory(pQueue
-                        );
+        VmRESTUtilsRemoveAllNodes(
+            pQueue
+            );
+    }
+}
+
+void
+VmSockPosixDestroyServerSocket(
+   void
+   )
+{
+    if (pQueue)
+    {
+        VmRESTUtilsDestroyQueue(
+            pQueue
+            );
+        VmRESTFreeMemory(
+            pQueue
+            );
         pQueue = NULL;
     }
 }
@@ -193,7 +223,7 @@ VmSockPosixServerListenThread(
     void*                            Args
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         maxListenClient = 0;
     int                              server_fd = -1;
     int                              epoll_fd = -1;
@@ -372,7 +402,7 @@ VmSockPosixSetSocketNonBlocking(
 {
     int                              cur_flags = 0;
     int                              set_flags = 0;
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     cur_flags = fcntl(server_fd, F_GETFL, 0);
     if (cur_flags == -1)
@@ -404,7 +434,7 @@ VmSockPosixHandleEventsFromQueue(
     )
 {
     EVENT_NODE*                      temp = NULL;
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_EVENT_DATA                   acceptData = NULL;
     SSL*                             sslHandler = NULL;
     int                              fd = -1;
@@ -484,7 +514,7 @@ VmsockPosixAcceptNewConnection(
 {
     socklen_t                        sin_size = 0;
     struct sockaddr_storage          client_addr = {0};
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     int                              accept_fd = -1;
     int                              control_fd = -1;
     struct epoll_event               ev = {0};
@@ -568,7 +598,7 @@ VmsockPosixReadDataAtOnce(
     int                              fd
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     int                              read_cnt = 0;
     char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
 
@@ -622,7 +652,7 @@ VmsockPosixWriteDataAtOnce(
     uint32_t                         bytes
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     if (gServerSocketInfo.isSecure)
     {

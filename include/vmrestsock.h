@@ -11,3 +11,54 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
+uint32_t
+VmRestTransportInit(
+    char*                            port
+    );
+
+uint32_t
+VmRestTransportStart(
+    char*                            port,
+    char*                            sslCertificate,
+    char*                            sslKey,
+    uint32_t                         clientCount
+    );
+
+void
+VmRESTTransportStop(
+    void
+    );
+void
+VmRESTTransportShutdown(
+    void
+    );
+
+uint32_t
+VmSockPosixHandleEventsFromQueue(
+    void
+    );
+
+uint32_t
+VmsockPosixReadDataAtOnce(
+    SSL*                             ssl,
+    int                              fd
+    );
+
+uint32_t
+VmsockPosixWriteDataAtOnce(
+    SSL*                             ssl,
+    int                              fd,
+    char*                            buffer,
+    uint32_t                         bytes
+    );
+
+uint32_t
+VmRESTProcessIncomingData(
+    char*                            buffer,
+    uint32_t                         byteRead,
+    SSL*                             ssl,
+    int                              fd
+    );
+
+

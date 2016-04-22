@@ -128,7 +128,7 @@ typedef struct _VM_REST_HTTP_REQUEST_PACKET
     SSL*                             clientSocketSSL;
     int                              clientSocketFd;
 
-}VM_REST_HTTP_REQUEST_PACKET;
+}VM_REST_HTTP_REQUEST_PACKET, *PVM_REST_HTTP_REQUEST_PACKET;
 
 typedef struct _VM_REST_HTTP_RESPONSE_PACKET
 {
@@ -140,7 +140,7 @@ typedef struct _VM_REST_HTTP_RESPONSE_PACKET
     SSL*                             clientSocketSSL;
     int                              clientSocketFd;
 
-}VM_REST_HTTP_RESPONSE_PACKET;
+}VM_REST_HTTP_RESPONSE_PACKET, *PVM_REST_HTTP_RESPONSE_PACKET;
 
 struct _VM_REST_RESPONSE_DATA
 {

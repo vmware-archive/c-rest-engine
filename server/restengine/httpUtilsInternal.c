@@ -16,12 +16,12 @@
 
 uint32_t
 VmRESTMapHeaderToEnum(
-    char*                            header,
+    PCSTR                            header,
     uint32_t*                        result,
     uint32_t*                        resStatus
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     if (header == NULL || result == NULL)
     {
@@ -147,7 +147,7 @@ VmRESTMapMethodToEnum(
     uint32_t*                        result
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     if (method == NULL || result == NULL)
     {
@@ -205,7 +205,7 @@ VmRESTCopyString(
     char*                            des
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         headerValLen = 0;
 
     if (src == NULL || des == NULL)
@@ -240,7 +240,7 @@ VmRESTGetHttpResponseHeader(
     char*                            response
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         headerNo = 0;
     uint32_t                         resStatus = OK;
     char*                            source = NULL;
@@ -352,7 +352,7 @@ VmRESTMapStatusCodeToEnumAndReasonPhrase(
     char*                            reasonPhrase
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     if (statusCode == NULL || result == NULL || reasonPhrase == NULL)
     {
@@ -582,7 +582,7 @@ VmRESTSetHttpRequestHeader(
     uint32_t*                        resStatus
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         headerNo = 0;
 
     if (pRequest == NULL || header == NULL || value == NULL || *resStatus != OK)
@@ -696,7 +696,7 @@ VmRESTParseAndPopulateConfigFile(
     VM_REST_CONFIG**                 ppRESTConfig
     )
 {
-    uint32_t                         dwError = REST_ENGINE_INIT_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     FILE*                            fp = NULL;
     char                             word[MAX_LINE_LEN];
     char*                            result = NULL;
@@ -838,6 +838,43 @@ VmRESTValidateConfig(
         dwError = REST_ENGINE_FAILURE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTCopyConfig(
+    PREST_CONF                       pConfig,
+    PVM_REST_CONFIG*                 ppRESTConfig
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PVM_REST_CONFIG                  pRESTConfig = NULL;    
+
+    if (pConfig == NULL)
+    {
+        VMREST_LOG_DEBUG("VmRESTCopyConfig(): No Config found");
+        dwError = REST_ENGINE_MISSING_CONFIG;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VM_REST_CONFIG),
+                  (void**)&pRESTConfig
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    
+    strcpy(pRESTConfig->ssl_certificate, pConfig->pSSLCertificate);
+    strcpy(pRESTConfig->ssl_key, pConfig->pSSLKey);
+    strcpy(pRESTConfig->server_port, pConfig->pServerPort);
+    strcpy(pRESTConfig->debug_log_file, pConfig->pDebugLogFile);
+    strcpy(pRESTConfig->client_count, pConfig->pClientCount);
+    strcpy(pRESTConfig->worker_thread_count, pConfig->pMaxWorkerThread);
+
+    *ppRESTConfig = pRESTConfig;
 
 cleanup:
     return dwError;

@@ -16,11 +16,11 @@
 
 uint32_t
 VmRESTGetHttpMethod(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    char*                            response
+    PREST_REQUEST                    pRequest,
+    PSTR                             response
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         methodLen = 0;
     uint32_t                         methodNo  = 0;
 
@@ -64,11 +64,11 @@ error:
 
 uint32_t
 VmRESTGetHttpURI(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    char*                            response
+    PREST_REQUEST                    pRequest,
+    PSTR                             response
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         uriLen = 0;
 
     if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (response == NULL))
@@ -96,11 +96,11 @@ error:
 
 uint32_t
 VmRESTGetHttpVersion(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    char*                            response
+    PREST_REQUEST                    pRequest,
+    PSTR                             response
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         versionLen = 0;
 
     if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (response == NULL))
@@ -128,12 +128,12 @@ error:
 
 uint32_t
 VmRESTGetHttpHeader(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    char*                            header,
-    char*                            response
+    PREST_REQUEST                    pRequest,
+    PCSTR                            header,
+    PSTR                             response
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         headerNo = 0;
     uint32_t                         headerValLen = 0;
     uint32_t                         resStatus = 0;
@@ -405,12 +405,12 @@ error:
 
 uint32_t
 VmRESTGetHttpPayload(
-    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
-    char*                            response
+    PREST_REQUEST                    pRequest,
+    PSTR                             response
     )
 {
 
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         contentLen = 0;
 
     if (pRequest == NULL || pRequest->entityHeader == NULL || response == NULL)
@@ -450,13 +450,13 @@ error:
 
 uint32_t
 VmRESTSetHttpPayload(
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse,
-    char*                            buffer
+    PREST_RESPONSE*                  ppResponse,
+    PSTR                             buffer
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         contentLen = 0;
-    PVM_REST_HTTP_RESPONSE_PACKET    pResponse = NULL;
+    PREST_RESPONSE                   pResponse = NULL;
 
     if (ppResponse == NULL || *ppResponse == NULL || buffer == NULL)
     {
@@ -497,16 +497,16 @@ error:
 
 uint32_t
 VmRESTSetHttpHeader(
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse,
-    char*                            header,
-    char*                            value
+    PREST_RESPONSE*                  ppResponse,
+    PCSTR                            header,
+    PSTR                             value
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         headerNo = 0;
     uint32_t                         valLen   = 0;
     uint32_t                         resStatus = 0;
-    PVM_REST_HTTP_RESPONSE_PACKET    pResponse = NULL;
+    PREST_RESPONSE                   pResponse = NULL;
 
     if (ppResponse == NULL || *ppResponse == NULL || header == NULL || value == NULL)
     {
@@ -633,13 +633,13 @@ error:
 
 uint32_t
 VmRESTSetHttpStatusCode(
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse,
-    char*                            statusCode
+    PREST_RESPONSE*                  ppResponse,
+    PSTR                             statusCode
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         statusLen = 0;
-    PVM_REST_HTTP_RESPONSE_PACKET    pResponse = NULL;
+    PREST_RESPONSE    pResponse = NULL;
 
     if (ppResponse == NULL || *ppResponse == NULL || statusCode == NULL)
     {
@@ -670,13 +670,13 @@ error:
 
 uint32_t
 VmRESTSetHttpStatusVersion(
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse,
-    char*                            version
+    PREST_RESPONSE*                  ppResponse,
+    PSTR                             version
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         versionLen = 0;
-    PVM_REST_HTTP_RESPONSE_PACKET    pResponse = NULL;
+    PREST_RESPONSE                   pResponse = NULL;
 
 
     if (ppResponse == NULL || *ppResponse == NULL || version == NULL)
@@ -707,12 +707,12 @@ error:
 
 uint32_t
 VmRESTSetHttpReasonPhrase(
-    PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse,
-    char*                            reasonPhrase
+    PREST_RESPONSE*                  ppResponse,
+    PSTR                             reasonPhrase
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
-    PVM_REST_HTTP_RESPONSE_PACKET    pResponse = NULL;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PREST_RESPONSE                   pResponse = NULL;
 
 
     if (ppResponse == NULL || *ppResponse == NULL || reasonPhrase == NULL)

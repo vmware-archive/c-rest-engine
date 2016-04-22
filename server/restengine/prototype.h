@@ -149,7 +149,7 @@ VmRESTFreeHTTPResponsePacket(
 
 uint32_t
 VmRESTMapHeaderToEnum(
-    char*                            header,
+    PCSTR                            header,
     uint32_t*                        result,
     uint32_t*                        resStatus
     );
@@ -202,4 +202,10 @@ uint32_t
 VmRESTCopyString(
     char*                            src,
     char*                            des
+    );
+
+uint32_t
+VmRESTCopyConfig(
+    PREST_CONF                       pConfig,
+    PVM_REST_CONFIG*                 ppRESTConfig
     );

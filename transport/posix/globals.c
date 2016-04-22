@@ -24,7 +24,7 @@ VmInitGlobalServerSocket(
     char*                            port
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
 
     if (port == NULL)
@@ -57,6 +57,7 @@ VmInitGlobalServerSocket(
     BAIL_ON_VMREST_ERROR(dwError);
 
     gServerSocketInfo.keepOpen = 1;
+    gServerSocketInfo.ServerAlive = 1;
 
 cleanup:
     return dwError;
@@ -106,7 +107,7 @@ VmRESTInsertClientFromGlobal(
     uint32_t*                        index
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         count = 0;
     uint32_t                         temp = 0;
     uint32_t                         success = 0;
@@ -164,7 +165,7 @@ VmRESTRemoveClientFromGlobal(
     uint32_t                         index
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     if (index >= MAX_CONNECTIONS)
     {

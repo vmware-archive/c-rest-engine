@@ -16,17 +16,49 @@
 
 uint32_t
 VmRestTransportInit(
+    char*                            port
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+
+    if (port == NULL)
+    {
+        VMREST_LOG_DEBUG("VmRestTransportInit(): Invalid params");
+        dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmInitGlobalServerSocket(
+                  port
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmSockPosixCreateServerSocket(
+                 );
+    BAIL_ON_VMREST_ERROR(dwError);
+   
+    gServerSocketInfo.ServerAlive = 1;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRestTransportStart(
     char*                            port,
     char*                            sslCertificate,
     char*                            sslKey,
     uint32_t                         clientCount
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     if (port == NULL)
     {
-        VMREST_LOG_DEBUG("VmRESTHTTPGetReqMethod(): Invalid params");
+        VMREST_LOG_DEBUG("VmRestTransportStart(): Invalid params");
         dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -41,25 +73,19 @@ VmRestTransportInit(
     {
         if (sslCertificate == NULL || sslKey == NULL)
         {
-            VMREST_LOG_DEBUG("VmRESTHTTPGetReqMethod(): Invalid SSL params");
+            VMREST_LOG_DEBUG("VmRestTransportStart(): Invalid SSL params");
             dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
         }
         gServerSocketInfo.isSecure = 1;
     }
     else
     {
-        VMREST_LOG_DEBUG("VmRESTHTTPGetReqMethod(): Invalid port number");
+        VMREST_LOG_DEBUG("VmRestTransportStart(): Invalid port number");
         dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmInitGlobalServerSocket(
-                  port
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-    gServerSocketInfo.ServerAlive = 1;
-
-    dwError = VmSockPosixCreateServerSocket(
+    dwError = VmSockPosixStartServerSocket(
                   sslCertificate,
                   sslKey,
                   port,
@@ -74,7 +100,7 @@ error:
 }
 
 void
-VmRESTTransportShutdown(
+VmRESTTransportStop(
     void
     )
 {
@@ -82,9 +108,19 @@ VmRESTTransportShutdown(
     gServerSocketInfo.ServerAlive = 0;
     pthread_cond_broadcast(&(pQueue->signal));
 
-    VmSockPosixDestroyServerSocket(
+    VmSockPosixStopServerSocket(
         );
+
     VmShutdownGlobalServerSocket(
+        );
+}
+
+void
+VmRESTTransportShutdown(
+    void
+    )
+{
+    VmSockPosixDestroyServerSocket(
         );
 }
 

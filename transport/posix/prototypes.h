@@ -14,6 +14,11 @@
 
 uint32_t
 VmSockPosixCreateServerSocket(
+    void
+    );
+
+uint32_t
+VmSockPosixStartServerSocket(
     char*                            sslCertificate,
     char*                            sslKey,
     char*                            port,
@@ -21,7 +26,13 @@ VmSockPosixCreateServerSocket(
     );
 
 void
+VmSockPosixStopServerSocket(
+    void
+    );
+
+void
 VmSockPosixDestroyServerSocket(
+   void
    );
 
 void *
@@ -62,6 +73,10 @@ VmRESTUtilsDestroyQueue(
     QUEUE*                           queue
     );
 
+void
+VmRESTUtilsRemoveAllNodes(
+    QUEUE*                           queue
+    );
 
 /****** globals.c **********/
 

@@ -19,6 +19,7 @@
 
 #include <vmrestsys.h>
 #include <vmrestdefines.h>
+#include <vmrestsock.h>
 #include <vmrestcommon.h>
 #include <vmrest.h>
 #include <fcntl.h>

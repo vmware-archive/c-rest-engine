@@ -16,24 +16,44 @@
 int  vmrest_syslog_level;
 
 uint32_t
-VmRESTEngineInit(
-    PVMREST_ENGINE_METHODS*          pHandlers,
-    char*                            configFile
+VmRESTInit(
+    PREST_CONF                       pConfig
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         isTransportInit = 0;
-    PVMREST_THREAD                   pThreadpool = NULL;
     PVM_REST_CONFIG                  restConfig = NULL;
 
     vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;
 
-    /**** Parse the rest engine configuration ****/
-    dwError = VmRESTParseAndPopulateConfigFile(
-                  configFile,
-                  &restConfig
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
+    if (pConfig != NULL)
+    {
+        dwError = VmRESTCopyConfig(
+                      pConfig,
+                      &restConfig
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    else if (pConfig == NULL)
+    {
+        /**** Init the rest engine with default config ****/
+        dwError = VmRESTParseAndPopulateConfigFile(
+                      "/root/restconfig.txt",
+                      &restConfig
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        /**** Validate the config param ****/
+        dwError= VmRESTValidateConfig(
+                      restConfig
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    else
+    {
+        dwError = REST_ENGINE_INVALID_CONFIG;    
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
 
     /**** Init the debug log ****/
     dwError = VmRESTLogInitialize(
@@ -42,39 +62,21 @@ VmRESTEngineInit(
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Validate the config param ****/
-    dwError= VmRESTValidateConfig(
-                        restConfig
-                        );
+    dwError = VmRESTValidateConfig(
+                  restConfig
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Init Transport ****/
     dwError = VmRestTransportInit(
-                  restConfig->server_port,
-                  restConfig->ssl_certificate,
-                  restConfig->ssl_key,
-                  atoi(restConfig->client_count)
+                  restConfig->server_port
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+
     isTransportInit = 1;
 
-    /*************************************
-    *  Adding test code - will remove
-    *  dwError = VmRESTTestHTTPResponse();
-    *************************************/
-
-    /**** Create the thread pool of worker threads ****/
-    dwError = VmRestSpawnThreads(
-                    &VmRestWorkerThread,
-                    &pThreadpool,
-                    atoi(restConfig->worker_thread_count)
-                    );
-    BAIL_ON_VMREST_ERROR(dwError);
-
     /**** Update the global context for this lib instance ****/
-    gRESTEngGlobals.pThreadpool = pThreadpool;
-    gRESTEngGlobals.nThreads = atoi(restConfig->worker_thread_count);
     gRESTEngGlobals.config = restConfig;
-    gpHttpHandler = *pHandlers;
 
 cleanup:
     return dwError;
@@ -95,13 +97,134 @@ error:
     goto cleanup;
 }
 
-void
-VmRESTEngineShutdown(
-    void
+uint32_t
+VmRESTStart(
+    VOID
     )
-{   
-    /**** Shutdown transport ****/
-    VmRESTTransportShutdown(
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    uint32_t                         isTransportStarted = 0;
+    PVMREST_THREAD                   pThreadpool = NULL;
+
+    /**** Start Transport ****/
+    dwError = VmRestTransportStart(
+                  gRESTEngGlobals.config->server_port,
+                  gRESTEngGlobals.config->ssl_certificate,
+                  gRESTEngGlobals.config->ssl_key,
+                  atoi(gRESTEngGlobals.config->client_count)
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    isTransportStarted = 1;
+
+    /*************************************
+    *  Adding test code - will remove
+    *  dwError = VmRESTTestHTTPResponse();
+    *************************************/
+    
+    /**** Create the thread pool of worker threads ****/
+    dwError = VmRestSpawnThreads(
+                    &VmRestWorkerThread,
+                    &pThreadpool,
+                    atoi(gRESTEngGlobals.config->worker_thread_count)
+                    );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** Update the global context for this lib instance ****/
+    gRESTEngGlobals.pThreadpool = pThreadpool;
+    gRESTEngGlobals.nThreads = atoi(gRESTEngGlobals.config->worker_thread_count);
+    
+    //gpHttpHandler = *pHandlers;
+
+cleanup:
+    return dwError;
+error:
+    if (isTransportStarted == 1)
+    {
+        VmRESTTransportStop(
+            );
+        isTransportStarted = 0;
+    }
+    goto cleanup;
+}
+
+uint32_t
+VmRESTRegisterHandler(
+    PCSTR                            pszEndpoint,
+    PREST_PROCESSOR                  pHandler,
+    PREST_ENDPOINT*                  ppEndpoint
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+
+    if (pHandler == NULL)
+    {
+        dwError = REST_ENGINE_INVALID_REST_PROCESSER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** TODO: END POINT HANDLING ****/
+
+    /**** Register the HTTP method based handler ****/
+    gpHttpHandler = pHandler;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTFindEndpoint(
+    PCSTR                            pszEndpoint,
+    PREST_ENDPOINT*                  ppEndpoint
+    )
+{
+    /**** NOT YET IMPLEMENTED ****/
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    BAIL_ON_VMREST_ERROR(dwError);
+    
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTUnregisterHandler(
+    PREST_ENDPOINT                   pEndpoint
+    )
+{
+    /**** NOT YET IMPLEMENTED ****/
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    BAIL_ON_VMREST_ERROR(dwError);
+    
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup; 
+}
+
+VOID
+VmRESTReleaseEndpoint(
+    PREST_ENDPOINT                   pEndpoint
+    )
+{
+     /**** NOT YET IMPLEMENTED ****/
+
+
+}
+
+uint32_t
+VmRESTStop(
+    VOID
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+
+    /**** Stop transport ****/
+    VmRESTTransportStop(
         );
 
     /**** Stop and free the thread pool of worker thread ****/
@@ -114,6 +237,23 @@ VmRESTEngineShutdown(
         gRESTEngGlobals.pThreadpool = NULL;
         gRESTEngGlobals.nThreads = 0;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+VOID
+VmRESTShutdown(
+    VOID
+    )
+{   
+    /**** Shutdown transport ****/
+    VmRESTTransportShutdown(
+        );
+
     if (gRESTEngGlobals.config)
     {
         VmRESTFreeConfigFileStruct(

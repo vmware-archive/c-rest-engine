@@ -19,15 +19,15 @@ VMREST_GLOBALS gVMRESTGlobals =
     .mutex = PTHREAD_MUTEX_INITIALIZER
 };
 
-VMREST_ENGINE_METHODS gVmRestHandlers =
+REST_PROCESSOR gVmRestHandlers =
 {
-    .pfnHandleHTTP_GET      = &VmRESTHandleHTTP_GET,
-    .pfnHandleHTTP_POST     = &VmRESTHandleHTTP_POST,
-    .pfnHandleHTTP_HEAD     = &VmRESTHandleHTTP_HEAD, 
-    .pfnHandleHTTP_PUT      = &VmRESTHandleHTTP_PUT,
-    .pfnHandleHTTP_DELETE   = &VmRESTHandleHTTP_DELETE, 
-    .pfnHandleHTTP_TRACE    = &VmRESTHandleHTTP_TRACE,
-    .pfnHandleHTTP_CONNECT  = &VmRESTHandleHTTP_CONNECT
+    .pfnHandleGET      = &VmRESTHandleHTTP_GET,
+    .pfnHandlePOST     = &VmRESTHandleHTTP_POST,
+    .pfnHandleHEAD     = &VmRESTHandleHTTP_HEAD, 
+    .pfnHandlePUT      = &VmRESTHandleHTTP_PUT,
+    .pfnHandleDELETE   = &VmRESTHandleHTTP_DELETE, 
+    .pfnHandleTRACE    = &VmRESTHandleHTTP_TRACE,
+    .pfnHandleCONNECT  = &VmRESTHandleHTTP_CONNECT
 };
 
-PVMREST_ENGINE_METHODS gpVmRestHandlers = &gVmRestHandlers;
+PREST_PROCESSOR gpVmRestHandlers = &gVmRestHandlers;

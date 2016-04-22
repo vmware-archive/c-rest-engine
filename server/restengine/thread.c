@@ -32,7 +32,7 @@ VmRestSpawnThreads(
     uint32_t                         maxWorkerThread
     )
 {
-    uint32_t                         dwError = ERROR_VMREST_SUCCESS;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         thrcount = maxWorkerThread;
     PVMREST_THREAD                   pThreadpool = NULL;
     uint32_t                         iThr = 0;

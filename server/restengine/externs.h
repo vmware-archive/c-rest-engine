@@ -17,4 +17,4 @@
 
 extern REST_ENG_GLOBALS gRESTEngGlobals;
 
-extern PVMREST_ENGINE_METHODS gpHttpHandler;
+extern PREST_PROCESSOR gpHttpHandler;
