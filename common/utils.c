@@ -15,7 +15,7 @@
 #include <includes.h>
 
 uint32_t
-my_itoa(
+VmRESTUtilsConvertInttoString(
     int    num,
     char*  str
     )

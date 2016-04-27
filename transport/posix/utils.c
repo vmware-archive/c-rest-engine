@@ -14,7 +14,7 @@
 
 #include "includes.h"
 
-uint32_t 
+uint32_t
 VmRESTInsertElement(
     PVM_EVENT_DATA                   data,
     uint32_t                         flag,
@@ -30,43 +30,43 @@ VmRESTInsertElement(
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    
+
     dwError = VmRESTAllocateMemory(
                   sizeof(EVENT_NODE),
                   (void*)&node
                   );
-    BAIL_ON_VMREST_ERROR(dwError);       
-  
-    memcpy(&(node->data), data, sizeof(VM_EVENT_DATA)); 
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    memcpy(&(node->data), data, sizeof(VM_EVENT_DATA));
     node->flag  = flag;
     node->next  = NULL;
-    
+
     if (queue->count == 0)
     {
         queue->head = node;
         queue->tail = node;
- 
-    } else 
+
+    } else
     {
         queue->tail->next = node;
         queue->tail = node;
     }
     queue->count++;
 
-cleanup: 
+cleanup:
     return dwError;
 error:
     goto cleanup;
 }
 
 
-EVENT_NODE* 
+EVENT_NODE*
 VmRESTUtilsRemoveElement(
     QUEUE*                           queue
-    ) 
+    )
 {
     EVENT_NODE*                      temp = NULL;
-    uint32_t                         dwError = REST_ENGINE_SUCCESS; 
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     if (queue == NULL)
     {
@@ -74,10 +74,10 @@ VmRESTUtilsRemoveElement(
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    
+
     if (queue->count == 0)
     {
-        dwError = VMREST_TRANSPORT_QUEUE_EMPTY; 
+        dwError = VMREST_TRANSPORT_QUEUE_EMPTY;
     }
     else if (queue->count == 1)
     {
@@ -85,7 +85,7 @@ VmRESTUtilsRemoveElement(
         queue->head = NULL;
         queue->tail = NULL;
 
-    } else 
+    } else
     {
         temp = queue->head;
         queue->head = queue->head->next;
@@ -99,14 +99,14 @@ error:
     goto cleanup;
 }
 
-uint32_t 
+uint32_t
 VmRestUtilsInitQueue(
     QUEUE*                           queue
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         mutexInited = 0;  
-     
+    uint32_t                         mutexInited = 0;
+
     if (queue == NULL)
     {
         VMREST_LOG_DEBUG("VmRestUtilsInitQueue(): Invalid params");
@@ -117,7 +117,7 @@ VmRestUtilsInitQueue(
     queue->count = 0;
     queue->head = NULL;
     queue->tail = NULL;
-    
+
     dwError = pthread_mutex_init(
                   &(queue->lock),
                   NULL
@@ -180,11 +180,33 @@ VmRESTUtilsRemoveAllNodes(
 }
 
 
-void 
+void
 VmRESTUtilsDestroyQueue(
     QUEUE*                           queue
     )
 {
     pthread_mutex_destroy(&(queue->lock));
-    pthread_cond_destroy(&(queue->signal)); 
+    pthread_cond_destroy(&(queue->signal));
+}
+
+char
+VmRESTUtilsGetLastChar(
+    PSTR                             src
+    )
+{
+    char                             ret = '\0';
+    PSTR                             temp = NULL;
+
+    if (src == NULL || (strlen(src) > MAX_SERVER_PORT_LEN))
+    {
+        VMREST_LOG_DEBUG("VmRESTUtilsGetLastChar(): Invalid Params");
+        return ret;
+    }
+    temp = src;
+    while (*temp != '\0')
+    {
+        ret = *temp;
+        temp++;
+    }
+    return ret;
 }

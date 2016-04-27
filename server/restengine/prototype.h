@@ -209,3 +209,23 @@ VmRESTCopyConfig(
     PREST_CONF                       pConfig,
     PVM_REST_CONFIG*                 ppRESTConfig
     );
+
+uint32_t
+VmRESTSetHTTPMiscHeader(
+    PMISC_HEADER_QUEUE               miscHeaderQueue,
+    PCSTR                            header,
+    PSTR                             value
+    );
+
+uint32_t
+VmRESTRemoveAllHTTPMiscHeader(
+    PMISC_HEADER_QUEUE               miscHeaderQueue
+    );
+
+uint32_t
+VmRESTGetHTTPMiscHeader(
+    PMISC_HEADER_QUEUE               miscHeaderQueue,
+    PCSTR                            header,
+    PSTR*                            ppResponse
+    );
+

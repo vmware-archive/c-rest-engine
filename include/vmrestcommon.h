@@ -99,39 +99,39 @@ extern VMREST_LOG_LEVEL VMRESTLogGetLevel();
 /*
  * @brief Allocation of heap memory for rest engine.
  *
- * @param[in]           size of memory to be allocated
- * @param[out]          pointer to allocated memory
+ * @param[in]                        size of memory to be allocated
+ * @param[out]                       pointer to allocated memory
  * @return Returns 0 for success
  */
 uint32_t
 VmRESTAllocateMemory(
-    size_t   dwSize,
-    void**   ppMemory
+    size_t                           dwSize,
+    void**                           ppMemory
     );
 
 /*
  * @brief Free of head memory for rest engine.
  *
- * @param[in]           pointer to allocated memory
+ * @param[in]                        pointer to allocated memory
  * @return Returns 0 for success
  */
 
 void
 VmRESTFreeMemory(
-    void*  pMemory
+    void*                            pMemory
     );
 
 /*
  * @brief Rest engine implementation of itoa function.
- * @param[in]           integer number
- * @param[in]           pointer to hold result
+ * @param[in]                        integer number
+ * @param[in]                        pointer to hold result
  * @return Returns 1 for failure, 0 for success,
  */
 
 uint32_t
-my_itoa(
-    int    num,
-    char*  str
+VmRESTUtilsConvertInttoString(
+    int                              num,
+    char*                            str
     );
 
 

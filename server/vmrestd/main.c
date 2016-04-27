@@ -23,14 +23,14 @@ int main(int argc, char *argv[])
 
     char* sslCert = "/root/mycert.pem";
     char* sslKey  = "/root/mycert.pem";
-    char* port = "443";
+    char* port = "443s";
     char* debugLogFile = "/tmp/restServer.log";
     char* clientCnt = "5";
     char* workerThCnt = "5";
 
     pConfig = (PREST_CONF)malloc(sizeof(REST_CONF));
 
-    pConfig->pSSLCertificate = sslCert; 
+    pConfig->pSSLCertificate = sslCert;
     pConfig->pSSLKey = sslKey;
     pConfig->pServerPort = port;
     pConfig->pDebugLogFile = debugLogFile;
@@ -38,11 +38,11 @@ int main(int argc, char *argv[])
     pConfig->pMaxWorkerThread = workerThCnt;
 
     /***********************************
-    *  Call VmRESTInit with pConfig or 
-    *  with NULL for default config from 
-    *  file /root/restConfig.txt 
+    *  Call VmRESTInit with pConfig or
+    *  with NULL for default config from
+    *  file /root/restConfig.txt
     ************************************/
-    
+
     dwError = VmRESTInit(
                   NULL
                   );
@@ -58,9 +58,9 @@ int main(int argc, char *argv[])
     dwError = VmRESTStart(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
- 
+
     sleep(10);
-    
+
     dwError = VmRESTStop(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
