@@ -100,6 +100,18 @@ VmRESTFreeMessageBody(
     PVM_REST_HTTP_MESSAGE_BODY       pMsgBody
     );
 
+static
+uint32_t
+VmRESTAllocateMiscQueue(
+    PMISC_HEADER_QUEUE*              ppMiscHeaderQueue
+    );
+
+static
+void
+VmRESTFreeMiscQueue(
+    PMISC_HEADER_QUEUE               pMiscHeaderQueue
+    );
+
 
 uint32_t
 VmRESTAllocateHTTPRequestPacket(
@@ -113,6 +125,7 @@ VmRESTAllocateHTTPRequestPacket(
     PVM_REST_HTTP_REQUEST_HEADER     pReqHeader = NULL;
     PVM_REST_HTTP_ENTITY_HEADER      pEntityHeader= NULL;
     PVM_REST_HTTP_MESSAGE_BODY       pMessageBody = NULL;
+    PMISC_HEADER_QUEUE               pMiscHeaderQueue = NULL;
 
     dwError = VmRESTAllocateMemory(
                   sizeof(VM_REST_HTTP_REQUEST_PACKET),
@@ -149,6 +162,13 @@ VmRESTAllocateHTTPRequestPacket(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
     pReqPacket->messageBody = pMessageBody;
+
+    dwError = VmRESTAllocateMiscQueue(
+                  &pMiscHeaderQueue
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    pReqPacket->miscHeader = pMiscHeaderQueue;
+
     *ppReqPacket = pReqPacket;
 
 cleanup:
@@ -190,11 +210,17 @@ VmRESTFreeHTTPRequestPacket(
         {
             VmRESTFreeMessageBody(pReqPacket->messageBody);
         }
+        if (pReqPacket->miscHeader)
+        {
+            VmRESTFreeMiscQueue(pReqPacket->miscHeader);
+        }
+ 
         pReqPacket->requestLine = NULL;
         pReqPacket->generalHeader = NULL;
         pReqPacket->requestHeader = NULL;
         pReqPacket->entityHeader = NULL;
         pReqPacket->messageBody = NULL;
+        pReqPacket->miscHeader = NULL;
 
         VmRESTFreeMemory(pReqPacket);
 
@@ -214,6 +240,7 @@ VmRESTAllocateHTTPResponsePacket(
     PVM_REST_HTTP_RESPONSE_HEADER    pResHeader = NULL;
     PVM_REST_HTTP_ENTITY_HEADER      pEntityHeader= NULL;
     PVM_REST_HTTP_MESSAGE_BODY       pMessageBody = NULL;
+    PMISC_HEADER_QUEUE               pMiscHeaderQueue = NULL;
 
     dwError = VmRESTAllocateStatusLine(
                   &pStatusLine
@@ -246,11 +273,17 @@ VmRESTAllocateHTTPResponsePacket(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
+    dwError = VmRESTAllocateMiscQueue(
+                  &pMiscHeaderQueue
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
     pResPacket->statusLine = pStatusLine;
     pResPacket->generalHeader = pGenHeader;
     pResPacket->responseHeader = pResHeader;
     pResPacket->entityHeader = pEntityHeader;
     pResPacket->messageBody = pMessageBody;
+    pResPacket->miscHeader = pMiscHeaderQueue;
 
     *ppResPacket = pResPacket;
 
@@ -294,12 +327,17 @@ VmRESTFreeHTTPResponsePacket(
         {
             VmRESTFreeMessageBody(pResPacket->messageBody);
         }
+        if (pResPacket->miscHeader)
+        {
+            VmRESTFreeMiscQueue(pResPacket->miscHeader);
+        }
 
         pResPacket->statusLine = NULL;
         pResPacket->generalHeader = NULL;
         pResPacket->responseHeader = NULL;
         pResPacket->entityHeader = NULL;
         pResPacket->messageBody = NULL;
+        pResPacket->miscHeader = NULL;
 
         VmRESTFreeMemory(pResPacket);
 
@@ -557,3 +595,40 @@ VmRESTFreeMessageBody(
             );
     }
 }
+
+static
+uint32_t
+VmRESTAllocateMiscQueue(
+    PMISC_HEADER_QUEUE*              ppMiscHeaderQueue
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PMISC_HEADER_QUEUE               pMiscQueue = NULL;
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VM_REST_HTTP_MESSAGE_BODY),
+                  (void**)&pMiscQueue
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    *ppMiscHeaderQueue = pMiscQueue;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+static
+void
+VmRESTFreeMiscQueue(
+    PMISC_HEADER_QUEUE               pMiscHeaderQueue
+    )
+{
+    if (pMiscHeaderQueue)
+    {
+        VmRESTFreeMemory(pMiscHeaderQueue
+            );
+    }
+}
+

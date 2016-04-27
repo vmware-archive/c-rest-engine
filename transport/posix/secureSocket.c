@@ -239,6 +239,8 @@ VmSockPosixServerListenThread(
     VM_EVENT_DATA                    acceptData = {0};
     VM_EVENT_DATA*                   accData1 = NULL;
     PVM_SERVER_THR_PARAMS            thrArgs = NULL;
+    char                             portNo[MAX_SERVER_PORT_LEN];
+    uint32_t                         portLen = 0;
 
     if (Args == NULL)
     {
@@ -247,17 +249,22 @@ VmSockPosixServerListenThread(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    SSL_library_init();
-
     thrArgs = Args;
+    memset(portNo, '\0', MAX_SERVER_PORT_LEN);
+    strcpy(portNo, thrArgs->serverPort);
 
     if (gServerSocketInfo.isSecure)
     {
+        SSL_library_init();
         dwError = VmRESTSecureSocket(
                       thrArgs->sslCert,
                       thrArgs->sslKey
                       );
         BAIL_ON_VMREST_ERROR(dwError);
+
+        /**** The port string ends with char 's': remove it ****/
+        portLen = strlen(portNo);
+        portNo[--portLen] = '\0';
     }
 
     memset(&hints, 0, sizeof(hints));
@@ -267,7 +274,7 @@ VmSockPosixServerListenThread(
     hints.ai_flags = AI_PASSIVE;
 
     dwError = getaddrinfo(NULL,
-                  thrArgs->serverPort,
+                  portNo,
                   &hints,
                   &serinfo
                   );

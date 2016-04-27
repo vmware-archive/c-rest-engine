@@ -55,6 +55,7 @@ VmRestTransportStart(
 {
 
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char                             lastPortChar = '\0';
 
     if (port == NULL)
     {
@@ -63,13 +64,10 @@ VmRestTransportStart(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (strcmp(port, "80") == 0)
-    {
-        gServerSocketInfo.isSecure = 0;
-        sslCertificate = NULL;
-        sslKey = NULL;
-    }
-    else if(strcmp(port, "443") == 0)
+    lastPortChar = VmRESTUtilsGetLastChar(
+                       port
+                       );
+    if (lastPortChar == 's' || lastPortChar == 'S')
     {
         if (sslCertificate == NULL || sslKey == NULL)
         {
@@ -78,9 +76,15 @@ VmRestTransportStart(
         }
         gServerSocketInfo.isSecure = 1;
     }
+    else if (lastPortChar >= '0' && lastPortChar <= '9')
+    {
+        gServerSocketInfo.isSecure = 0;
+        sslCertificate = NULL;
+        sslKey = NULL;
+    }
     else
     {
-        VMREST_LOG_DEBUG("VmRestTransportStart(): Invalid port number");
+        VMREST_LOG_DEBUG("VmRestTransportStart(): Invalid port number %s", lastPortChar);
         dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);

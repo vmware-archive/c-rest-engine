@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 
     char* sslCert = "/root/mycert.pem";
     char* sslKey  = "/root/mycert.pem";
-    char* port = "443";
+    char* port = "443s";
     char* debugLogFile = "/tmp/restServer.log";
     char* clientCnt = "5";
     char* workerThCnt = "5";

@@ -188,3 +188,25 @@ VmRESTUtilsDestroyQueue(
     pthread_mutex_destroy(&(queue->lock));
     pthread_cond_destroy(&(queue->signal)); 
 }
+
+char
+VmRESTUtilsGetLastChar(
+    PSTR                             src
+    )
+{
+    char                             ret = '\0';
+    PSTR                             temp = NULL;
+
+    if (src == NULL || (strlen(src) > MAX_SERVER_PORT_LEN))
+    {
+        VMREST_LOG_DEBUG("VmRESTUtilsGetLastChar(): Invalid Params");
+        return ret;
+    }
+    temp = src;
+    while (*temp != '\0')
+    {
+        ret = *temp;
+        temp++;
+    }
+    return ret;
+}

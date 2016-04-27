@@ -183,7 +183,7 @@ VmRESTReleaseEndpoint(
 uint32_t
 VmRESTGetHttpMethod(
     PREST_REQUEST                    pRequest,
-    PSTR                             response
+    PSTR*                            ppResponse
     );
 
 /*
@@ -196,7 +196,7 @@ VmRESTGetHttpMethod(
 uint32_t
 VmRESTGetHttpURI(
     PREST_REQUEST                    pRequest,
-    PSTR                             response
+    PSTR*                            ppResponse
     );
 
 /*
@@ -209,7 +209,7 @@ VmRESTGetHttpURI(
 uint32_t
 VmRESTGetHttpVersion(
     PREST_REQUEST                    pRequest,
-    PSTR                             response
+    PSTR*                            ppResponse
     );
 
 /*
@@ -224,7 +224,7 @@ uint32_t
 VmRESTGetHttpHeader(
     PREST_REQUEST                    pRequest,
     PCSTR                            pszName,
-    PSTR                             ppszResponse
+    PSTR*                            ppszResponse
     );
 
 /*
