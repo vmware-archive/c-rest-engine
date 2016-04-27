@@ -129,9 +129,7 @@ VmRESTMapHeaderToEnum(
     }
     else
     {
-        VMREST_LOG_DEBUG("VmRESTMapHeaderToEnum: Unknown header in request to set");
-        dwError =  VMREST_HTTP_VALIDATION_FAILED;
-        *resStatus = BAD_REQUEST;
+        *result = HTTP_MISC_HEADER_ALL;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -244,6 +242,7 @@ VmRESTGetHttpResponseHeader(
     uint32_t                         headerNo = 0;
     uint32_t                         resStatus = OK;
     char*                            source = NULL;
+    PSTR                             pRes = NULL;
 
     if (pResponse == NULL || header == NULL || response == NULL)
     {
@@ -259,7 +258,7 @@ VmRESTGetHttpResponseHeader(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_ENTITY_HEADER_CONTENT_TYPE))
+    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_MISC_HEADER_ALL))
     {
         VMREST_LOG_DEBUG("VmRESTGetHttpResponseHeader(): Not a valid HTTP header");
         dwError = VMREST_APPLICATION_VALIDATION_FAILED;
@@ -324,6 +323,15 @@ VmRESTGetHttpResponseHeader(
                  break;
         case HTTP_ENTITY_HEADER_CONTENT_TYPE:
                  source = pResponse->entityHeader->contentType;
+                 break;
+        case HTTP_MISC_HEADER_ALL:
+                 dwError = VmRESTGetHTTPMiscHeader(
+                               pResponse->miscHeader,
+                               header,
+                               &pRes
+                               );
+                 BAIL_ON_VMREST_ERROR(dwError);
+                 source = pRes;
                  break;
         default:
                  VMREST_LOG_DEBUG("VmRESTGetHttpResponseHeader(): Header not recognised");
@@ -600,7 +608,7 @@ VmRESTSetHttpRequestHeader(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_ENTITY_HEADER_CONTENT_TYPE))
+    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_MISC_HEADER_ALL))
     {
         /* Not a valid HTTP header */
         VMREST_LOG_DEBUG("VmRESTSetHttpRequestHeader(): Header not in acceptable range");
@@ -676,6 +684,13 @@ VmRESTSetHttpRequestHeader(
                  break;
         case HTTP_ENTITY_HEADER_CONTENT_TYPE:
                  strcpy(pRequest->entityHeader->contentType, value);
+                 break;
+        case HTTP_MISC_HEADER_ALL:
+                 dwError = VmRESTSetHTTPMiscHeader(
+                               pRequest->miscHeader,
+                               header,
+                               value
+                               );
                  break;
         default:
                  VMREST_LOG_DEBUG("VmRESTSetHttpRequestHeader(): Header not found in req object");
@@ -818,27 +833,6 @@ VmRESTValidateConfig(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    /**** Port 80 will be replaced with HTTPS port 443 ****/
-    if (strcmp(pRESTConfig->server_port, "443") == 0)
-    {
-        if (pRESTConfig->ssl_certificate == NULL || pRESTConfig->ssl_key == NULL)
-        {
-            VMREST_LOG_DEBUG("VmRESTValidateConfig(): Configuration Validation failed in SSL.");
-            dwError = REST_ENGINE_FAILURE;
-        }
-    }
-    else if (strcmp(pRESTConfig->server_port, "80") == 0)
-    {
-        memset(pRESTConfig->ssl_certificate, '\0', MAX_PATH_LEN);
-        memset(pRESTConfig->ssl_key, '\0', MAX_PATH_LEN);
-    }
-    else
-    {
-        VMREST_LOG_DEBUG("VmRESTValidateConfig(): Invalid port number.");
-        dwError = REST_ENGINE_FAILURE;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
 cleanup:
     return dwError;
 error:
@@ -852,7 +846,7 @@ VmRESTCopyConfig(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    PVM_REST_CONFIG                  pRESTConfig = NULL;    
+    PVM_REST_CONFIG                  pRESTConfig = NULL;
 
     if (pConfig == NULL)
     {
@@ -866,7 +860,7 @@ VmRESTCopyConfig(
                   (void**)&pRESTConfig
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-    
+
     strcpy(pRESTConfig->ssl_certificate, pConfig->pSSLCertificate);
     strcpy(pRESTConfig->ssl_key, pConfig->pSSLKey);
     strcpy(pRESTConfig->server_port, pConfig->pServerPort);
@@ -875,6 +869,130 @@ VmRESTCopyConfig(
     strcpy(pRESTConfig->worker_thread_count, pConfig->pMaxWorkerThread);
 
     *ppRESTConfig = pRESTConfig;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTSetHTTPMiscHeader(
+    PMISC_HEADER_QUEUE               miscHeaderQueue,
+    PCSTR                            header,
+    PSTR                             value
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PVM_REST_HTTP_HEADER_NODE        node = NULL;
+    PVM_REST_HTTP_HEADER_NODE        temp = NULL;
+    uint32_t                         headerLen = 0;
+    uint32_t                         valueLen = 0;
+
+    if (miscHeaderQueue == NULL || header == NULL || value == NULL)
+    {
+        VMREST_LOG_DEBUG("VmRESTSetHTTPMiscHeader: Invalid Params");
+        dwError =  VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    headerLen = strlen(header);
+    valueLen = strlen(value);
+
+    if (headerLen >= MAX_HTTP_HEADER_ATTR_LEN || valueLen >= MAX_HTTP_HEADER_VAL_LEN)
+    {
+        VMREST_LOG_DEBUG("VmRESTSetHTTPMiscHeader: Header or value length too long");
+        dwError = VMREST_HTTP_VALIDATION_FAILED;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** Allocate the node ****/
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VM_REST_HTTP_HEADER_NODE),
+                  (void**)&node
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    strcpy(node->header, header);
+    strcpy(node->value, value);
+    node->next = NULL;
+
+    if (miscHeaderQueue->head == NULL)
+    {
+        miscHeaderQueue->head = node;
+    }
+    else
+    {
+        temp = miscHeaderQueue->head;
+        while(temp->next != NULL)
+        {
+            temp = temp->next;
+        }
+        temp->next = node;
+    }
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTRemoveAllHTTPMiscHeader(
+    PMISC_HEADER_QUEUE               miscHeaderQueue
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PVM_REST_HTTP_HEADER_NODE        node = NULL;
+    PVM_REST_HTTP_HEADER_NODE        temp = NULL;
+
+    temp = miscHeaderQueue->head;
+    while (temp != NULL)
+    {
+        node = temp;
+        temp = temp->next;
+        node->next = NULL;
+        VmRESTFreeMemory(
+            node
+            );
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+    miscHeaderQueue->head = NULL;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTGetHTTPMiscHeader(
+    PMISC_HEADER_QUEUE               miscHeaderQueue,
+    PCSTR                            header,
+    PSTR*                            response
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PVM_REST_HTTP_HEADER_NODE        temp = NULL;
+
+    if (miscHeaderQueue == NULL)
+    {
+        VMREST_LOG_DEBUG("VmRESTGetHTTPMiscHeader: Invalid Params");
+        dwError =  VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    *response = NULL;
+    temp = miscHeaderQueue->head;
+    while (temp != NULL)
+    {
+        if (strcmp(temp->header, header) == 0)
+        {
+            *response = temp->value;
+            break;
+        }
+        temp = temp->next;
+    }
 
 cleanup:
     return dwError;

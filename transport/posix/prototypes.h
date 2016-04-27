@@ -107,3 +107,8 @@ VmRemoveAllClientsFromGlobal(
     void
     );
 
+char
+VmRESTUtilsGetLastChar(
+    PSTR                             src
+    );
+

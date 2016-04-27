@@ -281,7 +281,7 @@ VmRESTValidateHTTPVersion(
     len = strlen(pRequest->requestLine->version);
     if (len > 0)
     {
-        if (strcmp(pRequest->requestLine->version, "HTTP/1.1") == 0)
+        if ((strcmp(pRequest->requestLine->version, "HTTP/1.1") == 0) || (strcmp(pRequest->requestLine->version, "HTTP/1.0") == 0))
         {
             *err = 0;
             *result = PASS;

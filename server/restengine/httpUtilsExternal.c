@@ -17,14 +17,14 @@
 uint32_t
 VmRESTGetHttpMethod(
     PREST_REQUEST                    pRequest,
-    PSTR                             response
+    PSTR*                            ppResponse
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         methodLen = 0;
     uint32_t                         methodNo  = 0;
 
-    if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (response == NULL))
+    if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (ppResponse == NULL))
     {
         VMREST_LOG_DEBUG("VmRESTGetHttpMethod(): Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
@@ -47,7 +47,7 @@ VmRESTGetHttpMethod(
 
     if ((methodNo >= HTTP_METHOD_GET) && (methodNo <= HTTP_METHOD_CONNECT))
     {
-        strcpy(response, pRequest->requestLine->method);
+        *ppResponse = pRequest->requestLine->method;
     }
     else
     {
@@ -59,19 +59,20 @@ VmRESTGetHttpMethod(
 cleanup:
     return dwError;
 error:
+    *ppResponse = NULL;
     goto cleanup;
 }
 
 uint32_t
 VmRESTGetHttpURI(
     PREST_REQUEST                    pRequest,
-    PSTR                             response
+    PSTR*                            ppResponse
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         uriLen = 0;
 
-    if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (response == NULL))
+    if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (ppResponse == NULL))
     {
         VMREST_LOG_DEBUG("VmRESTGetHttpURI(): Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
@@ -85,25 +86,25 @@ VmRESTGetHttpURI(
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-
-    strcpy(response, pRequest->requestLine->uri);
+    *ppResponse = pRequest->requestLine->uri;
 
 cleanup:
     return dwError;
 error:
+    *ppResponse = NULL;
     goto cleanup;
 }
 
 uint32_t
 VmRESTGetHttpVersion(
     PREST_REQUEST                    pRequest,
-    PSTR                             response
+    PSTR*                            ppResponse
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         versionLen = 0;
 
-    if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (response == NULL))
+    if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (ppResponse == NULL))
     {
         VMREST_LOG_DEBUG("VmRESTGetHttpVersion(): Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
@@ -117,12 +118,12 @@ VmRESTGetHttpVersion(
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-
-    strcpy(response, pRequest->requestLine->version);
+    *ppResponse = pRequest->requestLine->version;
 
 cleanup:
     return dwError;
 error:
+    *ppResponse = NULL;
     goto cleanup;
 }
 
@@ -130,7 +131,7 @@ uint32_t
 VmRESTGetHttpHeader(
     PREST_REQUEST                    pRequest,
     PCSTR                            header,
-    PSTR                             response
+    PSTR*                            ppResponse
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -138,7 +139,7 @@ VmRESTGetHttpHeader(
     uint32_t                         headerValLen = 0;
     uint32_t                         resStatus = 0;
 
-    if ((pRequest == NULL) || (header == NULL) || (response == NULL))
+    if ((pRequest == NULL) || (header == NULL) || (ppResponse == NULL))
     {
         VMREST_LOG_DEBUG("VmRESTGetHttpHeader(): Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
@@ -152,7 +153,7 @@ VmRESTGetHttpHeader(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_ENTITY_HEADER_CONTENT_TYPE))
+    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_MISC_HEADER_ALL))
     {
         VMREST_LOG_DEBUG("VmRESTGetHttpHeader: Seems like invalid header in request object");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
@@ -173,7 +174,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->requestHeader->accept);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->requestHeader->accept);
+                     *ppResponse = pRequest->requestHeader->accept;
                  }
                  else
                  {
@@ -184,7 +185,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->requestHeader->acceptCharSet);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->requestHeader->acceptCharSet);
+                     *ppResponse = pRequest->requestHeader->acceptCharSet;
                  }
                  else
                  {
@@ -195,7 +196,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->requestHeader->acceptEncoding);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->requestHeader->acceptEncoding);
+                     *ppResponse = pRequest->requestHeader->acceptEncoding;
                  }
                  else
                  {
@@ -206,7 +207,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->requestHeader->acceptLanguage);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->requestHeader->acceptLanguage);
+                     *ppResponse = pRequest->requestHeader->acceptLanguage;
                  }
                  else
                  {
@@ -217,7 +218,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->requestHeader->authorization);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->requestHeader->authorization);
+                     *ppResponse = pRequest->requestHeader->authorization;
                  }
                  else
                  {
@@ -228,7 +229,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->requestHeader->from);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->requestHeader->from);
+                     *ppResponse = pRequest->requestHeader->from;
                  }
                  else
                  {
@@ -239,7 +240,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->requestHeader->host);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->requestHeader->host);
+                     *ppResponse = pRequest->requestHeader->host;
                  }
                  else
                  {
@@ -250,7 +251,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->requestHeader->referer);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->requestHeader->referer);
+                     *ppResponse = pRequest->requestHeader->referer;
                  }
                  else
                  {
@@ -261,7 +262,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->generalHeader->cacheControl);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->generalHeader->cacheControl);
+                     *ppResponse = pRequest->generalHeader->cacheControl;
                  }
                  else
                  {
@@ -272,7 +273,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->generalHeader->connection);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->generalHeader->connection);
+                     *ppResponse = pRequest->generalHeader->connection;
                  }
                  else
                  {
@@ -283,7 +284,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->generalHeader->trailer);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->generalHeader->trailer);
+                     *ppResponse = pRequest->generalHeader->trailer;
                  }
                  else
                  {
@@ -294,7 +295,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->generalHeader->transferEncoding);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->generalHeader->transferEncoding);
+                     *ppResponse = pRequest->generalHeader->transferEncoding;
                  }
                  else
                  {
@@ -305,7 +306,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->entityHeader->allow);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->entityHeader->allow);
+                     *ppResponse = pRequest->entityHeader->allow;
                  }
                  else
                  {
@@ -316,7 +317,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->entityHeader->contentEncoding);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->entityHeader->contentEncoding);
+                     *ppResponse = pRequest->entityHeader->contentEncoding;
                  }
                  else
                  {
@@ -327,7 +328,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->entityHeader->contentLanguage);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->entityHeader->contentLanguage);
+                     *ppResponse = pRequest->entityHeader->contentLanguage;
                  }
                  else
                  {
@@ -338,7 +339,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->entityHeader->contentLength);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->entityHeader->contentLength);
+                     *ppResponse = pRequest->entityHeader->contentLength;
                  }
                  else
                  {
@@ -349,7 +350,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->entityHeader->contentLocation);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->entityHeader->contentLocation);
+                     *ppResponse = pRequest->entityHeader->contentLocation;
                  }
                  else
                  {
@@ -360,7 +361,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->entityHeader->contentMD5);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->entityHeader->contentMD5);
+                     *ppResponse = pRequest->entityHeader->contentMD5;
                  }
                  else
                  {
@@ -371,7 +372,7 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->entityHeader->contentRange);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->entityHeader->contentRange);
+                     *ppResponse = pRequest->entityHeader->contentRange;
                  }
                  else
                  {
@@ -382,11 +383,31 @@ VmRESTGetHttpHeader(
                  headerValLen = strlen(pRequest->entityHeader->contentType);
                  if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
                  {
-                     strcpy(response, pRequest->entityHeader->contentType);
+                     *ppResponse = pRequest->entityHeader->contentType;
                  }
                  else
                  {
                       dwError = VMREST_HTTP_VALIDATION_FAILED;
+                 }
+                 break;
+        case HTTP_MISC_HEADER_ALL:
+                dwError = VmRESTGetHTTPMiscHeader(
+                               pRequest->miscHeader,
+                               header,
+                               ppResponse
+                               );
+                 BAIL_ON_VMREST_ERROR(dwError);
+                 if (*ppResponse)
+                 {
+                     headerValLen = strlen(*ppResponse);
+                     if (headerValLen < 0 || headerValLen > MAX_HTTP_HEADER_VAL_LEN)
+                     {
+                         dwError = VMREST_HTTP_VALIDATION_FAILED;
+                     }
+                 }
+                 else
+                 {
+                     VMREST_LOG_DEBUG("VmRESTGetHttpHeader(): Header %s not found in request object", header);
                  }
                  break;
         default:
@@ -399,7 +420,7 @@ VmRESTGetHttpHeader(
 cleanup:
     return dwError;
 error:
-    response = NULL;
+    *ppResponse = NULL;
     goto cleanup;
 }
 
@@ -531,7 +552,7 @@ VmRESTSetHttpHeader(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_ENTITY_HEADER_CONTENT_TYPE))
+    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_MISC_HEADER_ALL))
     {
         VMREST_LOG_DEBUG("VmRESTSetHttpHeader(): Not a valid HTTP header");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
@@ -619,7 +640,14 @@ VmRESTSetHttpHeader(
         case HTTP_ENTITY_HEADER_CONTENT_TYPE:
                      strcpy(pResponse->entityHeader->contentType, value);
                      break;
-
+        case HTTP_MISC_HEADER_ALL:
+                    dwError = VmRESTSetHTTPMiscHeader(
+                               pResponse->miscHeader,
+                               header,
+                               value
+                               );
+                     BAIL_ON_VMREST_ERROR(dwError);
+                     break;
         default:
                      dwError = VMREST_HTTP_VALIDATION_FAILED;
                      BAIL_ON_VMREST_ERROR(dwError);

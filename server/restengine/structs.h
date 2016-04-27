@@ -118,6 +118,20 @@ typedef struct _VM_REST_HTTP_ENTITY_HEADER
 
 }VM_REST_HTTP_ENTITY_HEADER, *PVM_REST_HTTP_ENTITY_HEADER;
 
+typedef struct _VM_REST_HTTP_HEADER_NODE
+{
+    char                             header[MAX_HTTP_HEADER_ATTR_LEN];
+    char                             value[MAX_HTTP_HEADER_VAL_LEN];
+    struct _VM_REST_HTTP_HEADER_NODE *next;
+
+}VM_REST_HTTP_HEADER_NODE, *PVM_REST_HTTP_HEADER_NODE;
+
+typedef struct _MISC_HEADER_QUEUE {
+
+    PVM_REST_HTTP_HEADER_NODE        head;
+
+}MISC_HEADER_QUEUE, *PMISC_HEADER_QUEUE;
+
 typedef struct _VM_REST_HTTP_REQUEST_PACKET
 {
     PVM_REST_HTTP_REQUEST_LINE       requestLine;
@@ -127,6 +141,7 @@ typedef struct _VM_REST_HTTP_REQUEST_PACKET
     PVM_REST_HTTP_MESSAGE_BODY       messageBody;
     SSL*                             clientSocketSSL;
     int                              clientSocketFd;
+    PMISC_HEADER_QUEUE               miscHeader;
 
 }VM_REST_HTTP_REQUEST_PACKET, *PVM_REST_HTTP_REQUEST_PACKET;
 
@@ -139,6 +154,7 @@ typedef struct _VM_REST_HTTP_RESPONSE_PACKET
     PVM_REST_HTTP_MESSAGE_BODY       messageBody;
     SSL*                             clientSocketSSL;
     int                              clientSocketFd;
+    PMISC_HEADER_QUEUE               miscHeader;
 
 }VM_REST_HTTP_RESPONSE_PACKET, *PVM_REST_HTTP_RESPONSE_PACKET;
 

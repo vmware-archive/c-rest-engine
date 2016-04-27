@@ -24,13 +24,8 @@ VmRESTHTTPGetReqMethod(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    char*                            buffer = NULL;
     char                             local[MAX_METHOD_LEN] = {0};
-    char*                            temp = NULL;
-    uint32_t                         i = 0;
-
-    buffer = line;
-    temp = local;
+    PSTR                             firstSpace = NULL;
 
     if (lineLen > MAX_REQ_LIN_LEN || line == NULL || result == NULL || *resStatus != OK)
     {
@@ -40,19 +35,20 @@ VmRESTHTTPGetReqMethod(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    while ((buffer != NULL) && (i <= lineLen))
+    firstSpace = strchr(line, ' ');
+    if (firstSpace != NULL)
     {
-        if (*buffer == ' ')
-        {
-            break;
-        }
-        *temp = *buffer;
-        temp++;
-        buffer++;
-        i++;
+        strncpy(local, line, firstSpace - line);
+        local[firstSpace - line] = '\0';
     }
-    *temp = '\0';
-    if (strlen(local) > MAX_METHOD_LEN)
+    else
+    {
+        VMREST_LOG_DEBUG("VmRESTHTTPGetReqMethod(): Bad method name in request");
+        dwError = VMREST_HTTP_VALIDATION_FAILED;
+        *resStatus = BAD_REQUEST;
+    }
+
+    if (strlen(result) > MAX_METHOD_LEN)
     {
         VMREST_LOG_DEBUG("VmRESTHTTPGetReqMethod(): method len too large");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
@@ -104,22 +100,16 @@ error:
 
 uint32_t
 VmRESTHTTPGetReqURI(
-    char*                            line,
+    PSTR                             line,
     uint32_t                         lineLen,
-    char*     result,
-    uint32_t* resStatus
+    PSTR                             result,
+    uint32_t*                        resStatus
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    char*                            buffer = NULL;
-    char                             local[MAX_URI_LEN] = {0};
-    char*                            temp = NULL;
-    char                             flag = '0';
-    uint32_t                         i = 0;
+    PSTR                             firstSpace = NULL;
+    PSTR                             secondSpace = NULL;
     uint32_t                         uriLen = 0;
-
-    buffer = line;
-    temp = local;
 
     if (lineLen > MAX_REQ_LIN_LEN || line == NULL || result == NULL || *resStatus != OK)
     {
@@ -129,73 +119,57 @@ VmRESTHTTPGetReqURI(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    while ((buffer != NULL) && (i <= lineLen))
+    firstSpace = strchr(line, ' ');
+    if (firstSpace != NULL)
     {
-        if (flag == '1')
+        secondSpace = strchr(firstSpace + 1, ' ');
+        if (secondSpace != NULL)
         {
-            *temp = *buffer;
-            temp++;
+            strncpy(result, firstSpace+1, secondSpace - firstSpace);
+            result[secondSpace - firstSpace] = '\0';
         }
-        if (*buffer == ' ')
+        else
         {
-            if (flag == '1')
-            {
-                break;
-            }
-            flag = '1';
+            VMREST_LOG_DEBUG("VmRESTHTTPGetReqURI(): Invalid params");
+            dwError =  VMREST_HTTP_INVALID_PARAMS;
+            *resStatus = BAD_REQUEST;
         }
-        buffer++;
-        i++;
     }
-    *temp = '\0';
+    BAIL_ON_VMREST_ERROR(dwError);
 
-    /* URI will be second letter in line */
-    uriLen = strlen(local);
-    if (uriLen == 0)
-    {
-        VMREST_LOG_DEBUG("VmRESTHTTPGetReqURI(): No URI found in request");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
-        *resStatus = BAD_REQUEST;
-    }
-    else if (uriLen > MAX_URI_LEN)
+    uriLen = strlen(result);
+    if (uriLen == 0 || uriLen > MAX_URI_LEN)
     {
         VMREST_LOG_DEBUG("VmRESTHTTPGetReqURI(): URI length too large");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
         *resStatus = REQUEST_URI_TOO_LARGE;
-    }
-    else
-    {
-        strcpy(result,buffer);
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     return dwError;
 error:
+    result = NULL;
     goto cleanup;
 }
 
 uint32_t
 VmRESTHTTPGetReqVersion(
-    char*                            line,
+    PSTR                             line,
     uint32_t                         lineLen,
-    char*                            result,
+    PSTR                             result,
     uint32_t*                        resStatus
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         count   = 0;
-    char*                            buffer = NULL;
     char                             local[MAX_VERSION_LEN] = {0};
-    char*                            temp = NULL;
-    uint32_t                         i = 0;
     uint32_t                         verLen = 0;
+    PSTR                             firstSpace = NULL;
+    PSTR                             secondSpace = NULL;
+    PSTR                             endLine = NULL;
+
 
     /* Version will be third letter in line */
-
-    buffer = line;
-    temp = local;
-
     if (lineLen > MAX_REQ_LIN_LEN || line == NULL || result == NULL || *resStatus != OK)
     {
        VMREST_LOG_DEBUG("VmRESTHTTPGetReqVersion(): Invalid params");
@@ -204,23 +178,27 @@ VmRESTHTTPGetReqVersion(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    while ((buffer != NULL) && (i <= lineLen))
+    firstSpace = strchr(line, ' ');
+    if (firstSpace != NULL)
     {
-        if (*buffer == ' ')
+        secondSpace = strchr(firstSpace + 1, ' ');
+        if (secondSpace != NULL)
         {
-            count++;
-            buffer++;
-            continue;
+            endLine = strchr(secondSpace +1, '\0');
+            if (endLine != NULL)
+            {
+                strncpy(local, secondSpace+1, HTTP_VER_LEN);
+                local[HTTP_VER_LEN] = '\0';
+            }
+            else
+            {
+                VMREST_LOG_DEBUG("VmRESTHTTPGetReqVersion(): HTTP version not found");
+                dwError = VMREST_HTTP_VALIDATION_FAILED;
+                *resStatus = BAD_REQUEST;
+            }
         }
-        if (count == 2)
-        {
-            *temp = *buffer;
-            temp++;
-        }
-        buffer++;
-        i++;
     }
-    *temp = '\0';
+    BAIL_ON_VMREST_ERROR(dwError);
 
     verLen = strlen(local);
     if (verLen == 0 || verLen > MAX_VERSION_LEN)
@@ -231,7 +209,7 @@ VmRESTHTTPGetReqVersion(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((strcmp(local, "HTTP/1.1")) == 0 )
+    if ((strcmp(local, "HTTP/1.1") == 0) || (strcmp(local, "HTTP/1.0") == 0))
     {
         strcpy(result,local);
     }
@@ -246,6 +224,7 @@ VmRESTHTTPGetReqVersion(
 cleanup:
     return dwError;
 error:
+    result = NULL;
     goto cleanup;
 }
 
@@ -283,7 +262,7 @@ VmRESTHTTPPopulateHeader(
         if (*buffer == ':')
         {
             buffer++;
-            temp = '\0';
+            *temp = '\0';
             strcpy(attribute,local);
             attrLen = strlen(attribute);
             memset(local,'\0', sizeof(local));
@@ -582,8 +561,11 @@ VmRESTAddAllHeaderInResponseStream(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
+    uint32_t                         headerLen = 0;
+    uint32_t                         valueLen = 0;
     uint32_t                         streamBytes = 0;
     char*                            curr = NULL;
+    PVM_REST_HTTP_HEADER_NODE        miscHeaderNode = NULL;
 
     if (buffer == NULL || pResPacket == NULL)
     {
@@ -786,12 +768,27 @@ VmRESTAddAllHeaderInResponseStream(
         streamBytes = streamBytes + len + 2 + 15;
         len = 0;
     }
+    miscHeaderNode = pResPacket->miscHeader->head;
+    while (miscHeaderNode != NULL)
+    {
+        headerLen = strlen(miscHeaderNode->header);
+        valueLen = strlen(miscHeaderNode->value);
+        memcpy(curr, miscHeaderNode->header, headerLen);
+        curr = curr + headerLen;
+        memcpy(curr, " : ", 3);
+        curr = curr + 3;
+        memcpy(curr, miscHeaderNode->value, valueLen);
+        curr = curr + valueLen;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + headerLen + valueLen + 3 + 2;
+        miscHeaderNode = miscHeaderNode->next;
+    }
 
     /* Last Header written, Write one extra CR LF */
     memcpy(curr, "\r\n", 2);
     curr = curr + 2;
     streamBytes = streamBytes + 2;
-
 
     *bytes = streamBytes;
 cleanup:
@@ -860,6 +857,9 @@ VmRESTSendResponsePacket(
     totalBytes = totalBytes + bytes;
     bytes = 0;
 
+    /**** This is for debug purpose:: will be removed ****/
+    VMREST_LOG_DEBUG("Entire response stream\n--------\n %s\n----------", buffer);
+
     dwError = VmsockPosixWriteDataAtOnce(
                   pResPacket->clientSocketSSL,
                   pResPacket->clientSocketFd,
@@ -912,6 +912,8 @@ VmRESTProcessIncomingData(
         fileDes = fd;
     }
 
+    pReqPacket->miscHeader->head = NULL;
+    pResPacket->miscHeader->head = NULL;
     pReqPacket->clientSocketSSL = sslDes;
     pReqPacket->clientSocketFd = fileDes;
     pResPacket->clientSocketSSL = pReqPacket->clientSocketSSL;
@@ -935,7 +937,7 @@ VmRESTProcessIncomingData(
     }
     else
     {
-        dwError = my_itoa(
+        dwError = VmRESTUtilsConvertInttoString(
                       resStatus,
                       statusStng
                       );
@@ -955,12 +957,12 @@ VmRESTProcessIncomingData(
     *  callback function
     ********************************************/
 
-    /**** Test function :: Will be removed ****/
+    /**** Test function :: Will be removed ****
     dwError = VmRESTTestHTTPResponse(
                   pReqPacket,
                   pResPacket
                   );
-    /************* End Test Function **********/
+    ************* End Test Function **********/
 
     dwError = VmRESTSendResponsePacket(
                   &pResPacket
@@ -982,13 +984,13 @@ error:
         if (!responseSent)
         {
             memset(statusStng,'\0', MAX_STATUS_LENGTH);
-            tempStatus =  my_itoa(
+            tempStatus =  VmRESTUtilsConvertInttoString(
                               INTERNAL_SERVER_ERROR,
                               statusStng
                               );
             if (!tempStatus)
             {
-                VMREST_LOG_DEBUG("VmRESTProcessIncomingData(): Error in my_itoa");
+                VMREST_LOG_DEBUG("VmRESTProcessIncomingData(): Error in VmRESTUtilsConvertInttoString");
                 goto cleanup;
             }
 
