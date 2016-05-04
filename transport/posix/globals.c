@@ -26,6 +26,7 @@ VmInitGlobalServerSocket(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
+    uint32_t                         index = 0;
 
     if (port == NULL)
     {
@@ -41,6 +42,14 @@ VmInitGlobalServerSocket(
         dwError = ERROR_TRANSPORT_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+
+    for (index = 0; index < MAX_CONNECTIONS; index++)
+    {
+        gServerSocketInfo.clients[index].fd = -1;
+        gServerSocketInfo.clients[index].notStale = 0;
+        gServerSocketInfo.clients[index].ssl = NULL;
+        gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].self = NULL;
+    }
 
     gServerSocketInfo.clientCount = 0;
     gServerSocketInfo.emptyIndex  = 0;
@@ -73,11 +82,19 @@ VmRemoveAllClientsFromGlobal(
     uint32_t                         index = 0;
 
     pthread_mutex_lock(&(gServerSocketInfo.lock));
-    for (index = 0; index <= MAX_CONNECTIONS; index++)
+    for (index = 0; index < MAX_CONNECTIONS; index++)
     {
         if (gServerSocketInfo.clients[index].notStale == 1)
         {
-            close(gServerSocketInfo.clients[index].fd);
+            if (gServerSocketInfo.isSecure && gServerSocketInfo.clients[index].ssl != NULL)
+            {
+                SSL_shutdown(gServerSocketInfo.clients[index].ssl);
+                SSL_free(gServerSocketInfo.clients[index].ssl);
+            }
+            else if (gServerSocketInfo.clients[index].fd > 0)
+            {
+                close(gServerSocketInfo.clients[index].fd);
+            }
         }
         gServerSocketInfo.clients[index].fd = -1;
         gServerSocketInfo.clients[index].notStale = 0;
@@ -102,8 +119,7 @@ VmShutdownGlobalServerSocket(
 
 uint32_t
 VmRESTInsertClientFromGlobal(
-    SSL*                             ssl,
-    int                              fd,
+    PVM_EVENT_DATA                   data,
     uint32_t*                        index
     )
 {
@@ -112,7 +128,14 @@ VmRESTInsertClientFromGlobal(
     uint32_t                         temp = 0;
     uint32_t                         success = 0;
 
-    if ((ssl == NULL && fd < 0) || (index == NULL))
+    if (data == NULL)
+    {
+        VMREST_LOG_DEBUG("VmRESTInsertClientFromGlobal(): Invalid data");
+        dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if ((data->ssl == NULL && data->fd < 0) || (index == NULL))
     {
         VMREST_LOG_DEBUG("VmRESTInsertClientFromGlobal(): Invalid params");
         dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
@@ -122,9 +145,10 @@ VmRESTInsertClientFromGlobal(
     pthread_mutex_lock(&(gServerSocketInfo.lock));
 
     gServerSocketInfo.clientCount++;
-    gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].fd = fd;
+    gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].fd = data->fd;
     gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].notStale = 1;
-    gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].ssl = ssl;
+    gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].ssl = data->ssl;
+    gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].self = data;
     temp = gServerSocketInfo.emptyIndex;
 
     while (count < MAX_CONNECTIONS)
@@ -136,7 +160,6 @@ VmRESTInsertClientFromGlobal(
         }
         if (gServerSocketInfo.clients[temp].notStale == 0)
         {
-            gServerSocketInfo.emptyIndex = temp;
             success = 1;
             break;
         }
@@ -145,6 +168,7 @@ VmRESTInsertClientFromGlobal(
     if (success)
     {
         *index = gServerSocketInfo.emptyIndex;
+        gServerSocketInfo.emptyIndex = temp;
     }
     else
     {
@@ -179,6 +203,7 @@ VmRESTRemoveClientFromGlobal(
     gServerSocketInfo.clients[index].fd = -1;
     gServerSocketInfo.clients[index].notStale = 0;
     gServerSocketInfo.clients[index].ssl = NULL;
+    gServerSocketInfo.clients[index].self = NULL;
     gServerSocketInfo.clientCount--;
 
     pthread_mutex_unlock(&(gServerSocketInfo.lock));

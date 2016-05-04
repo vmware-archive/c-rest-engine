@@ -443,10 +443,6 @@ VmSockPosixHandleEventsFromQueue(
     EVENT_NODE*                      temp = NULL;
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_EVENT_DATA                   acceptData = NULL;
-    SSL*                             sslHandler = NULL;
-    int                              fd = -1;
-
-    //PVMREST_THREAD_DATA pThrData = (PVMREST_THREAD_DATA)args;
 
     while (gServerSocketInfo.ServerAlive)
     {
@@ -472,10 +468,12 @@ VmSockPosixHandleEventsFromQueue(
         if ((temp->flag & EPOLLERR) || (temp->flag & EPOLLHUP) || (!(temp->flag & EPOLLIN)))
         {
             /* Error on this socket, hence closing */
-            dwError = VmRESTRemoveClientFromGlobal(
-                          acceptData->index
-                          );
-            close(acceptData->fd);
+            if (((gServerSocketInfo.clients[acceptData->index].ssl != NULL) && (gServerSocketInfo.clients[acceptData->index].ssl == acceptData->ssl)) || ((gServerSocketInfo.clients[acceptData->index].fd > 0) && (gServerSocketInfo.clients[acceptData->index].fd == acceptData->fd)))
+            {
+                dwError = VmSockPosixCloseConnection(
+                              acceptData->index
+                              );
+            }
         }
         else if (acceptData->fd == pQueue->server_fd)
         {
@@ -486,17 +484,8 @@ VmSockPosixHandleEventsFromQueue(
         }
         else
         {
-            if (gServerSocketInfo.isSecure)
-            {
-                sslHandler = acceptData->ssl;
-            }
-            else
-            {
-                fd = acceptData->fd;
-            }
             dwError = VmsockPosixReadDataAtOnce(
-                          sslHandler,
-                          fd
+                          acceptData->index
                           );
         }
         BAIL_ON_VMREST_ERROR(dwError);
@@ -528,12 +517,14 @@ VmsockPosixAcceptNewConnection(
     SSL*                             ssl = NULL;
     uint32_t                         try = MAX_RETRY_ATTEMPTS;
     uint32_t                         cntRty = 0;
-    uint32_t                         globalIndex = 0;
-    VM_EVENT_DATA*                   acceptData = NULL;
+    uint32_t                         clientIndex = 0;
+    PVM_EVENT_DATA                   acceptData = NULL;
 
-    /* TODO : this has to replaced with vmfree function and memory free should be called **/
-    acceptData = (VM_EVENT_DATA*)malloc(sizeof(VM_EVENT_DATA));
-    memset(acceptData, '\0', sizeof(VM_EVENT_DATA));
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VM_EVENT_DATA),
+                  (void**)&acceptData
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);    
 
     sin_size  = sizeof(client_addr);
     accept_fd = accept(server_fd, (struct sockaddr *)&client_addr, &sin_size);
@@ -570,16 +561,16 @@ retry:
         }
     }
 
+    acceptData->fd = accept_fd;
+    acceptData->ssl = ssl;
+
     dwError = VmRESTInsertClientFromGlobal(
-                  ssl,
-                  accept_fd,
-                  &globalIndex
+                  acceptData,
+                  &clientIndex
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    acceptData->fd = accept_fd;
-    acceptData->index = globalIndex;
-    acceptData->ssl = ssl;
+    acceptData->index = clientIndex;
 
     ev.data.ptr = (void *)acceptData;
     ev.events = EPOLLIN | EPOLLET;
@@ -598,23 +589,52 @@ error:
     goto cleanup;
 }
 
+uint32_t
+VmSockPosixCloseConnection(
+    uint32_t                         clientIndex
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+
+    if (gServerSocketInfo.isSecure)
+    {
+        SSL_shutdown(gServerSocketInfo.clients[clientIndex].ssl);
+        SSL_free(gServerSocketInfo.clients[clientIndex].ssl);
+    }
+    else
+    {
+        close(gServerSocketInfo.clients[clientIndex].fd);
+    }
+    VmRESTFreeMemory(
+        gServerSocketInfo.clients[clientIndex].self
+        );
+
+    dwError = VmRESTRemoveClientFromGlobal(
+                  clientIndex
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
 
 uint32_t
 VmsockPosixReadDataAtOnce(
-    SSL*                             ssl,
-    int                              fd
+    uint32_t                         clientIndex
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     int                              read_cnt = 0;
     char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
 
-    if ((gServerSocketInfo.isSecure == 1) && (ssl == NULL))
+    if ((gServerSocketInfo.isSecure == 1) && (gServerSocketInfo.clients[clientIndex].ssl == NULL))
     {
         VMREST_LOG_DEBUG("VmsockPosixReadDataAtOnce(): Invalid ssl params");
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
     }
-    else if ((gServerSocketInfo.isSecure == 0) && (fd <= 0))
+    else if ((gServerSocketInfo.isSecure == 0) && ( gServerSocketInfo.clients[clientIndex].fd <= 0))
     {
         VMREST_LOG_DEBUG("VmsockPosixReadDataAtOnce(): Invalid params");
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
@@ -624,13 +644,17 @@ VmsockPosixReadDataAtOnce(
     while(1)
     {
         memset(buffer,'\0',MAX_DATA_BUFFER_LEN);
-        if (gServerSocketInfo.isSecure)
+        if (gServerSocketInfo.isSecure && gServerSocketInfo.clients[clientIndex].ssl != NULL)
         {
-            read_cnt = SSL_read(ssl, buffer, (sizeof(buffer)));
+            read_cnt = SSL_read(gServerSocketInfo.clients[clientIndex].ssl, buffer, (sizeof(buffer)));
+        }
+        else if(gServerSocketInfo.clients[clientIndex].fd > 0)
+        {
+            read_cnt = read(gServerSocketInfo.clients[clientIndex].fd, buffer, (sizeof(buffer)));
         }
         else
         {
-            read_cnt = read(fd, buffer, (sizeof(buffer)));
+            read_cnt = 0;
         }
 
         if (read_cnt == -1 || read_cnt == 0)
@@ -640,8 +664,7 @@ VmsockPosixReadDataAtOnce(
         dwError =  VmRESTProcessIncomingData(
                        buffer,
                        (uint32_t)read_cnt,
-                       ssl,
-                       fd
+                       clientIndex
                        );
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -653,21 +676,20 @@ error:
 
 uint32_t
 VmsockPosixWriteDataAtOnce(
-    SSL*                             ssl,
-    int                              fd,
+    uint32_t                         clientIndex,
     char*                            buffer,
     uint32_t                         bytes
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (gServerSocketInfo.isSecure)
+    if ((gServerSocketInfo.isSecure) && (gServerSocketInfo.clients[clientIndex].ssl != NULL))
     {
-        SSL_write(ssl, buffer,bytes);
+        SSL_write(gServerSocketInfo.clients[clientIndex].ssl, buffer,bytes);
     }
     else
     {
-        write(fd, buffer,bytes);
+        write(gServerSocketInfo.clients[clientIndex].fd, buffer,bytes);
     }
     BAIL_ON_VMREST_ERROR(dwError);
 

@@ -92,8 +92,7 @@ VmShutdownGlobalServerSocket(
 
 uint32_t
 VmRESTInsertClientFromGlobal(
-    SSL*                             ssl,
-    int                              fd,
+    PVM_EVENT_DATA                   data,
     uint32_t*                        index
     );
 
@@ -109,6 +108,6 @@ VmRemoveAllClientsFromGlobal(
 
 char
 VmRESTUtilsGetLastChar(
-    PSTR                             src
+    char*                            src
     );
 

@@ -41,14 +41,12 @@ VmSockPosixHandleEventsFromQueue(
 
 uint32_t
 VmsockPosixReadDataAtOnce(
-    SSL*                             ssl,
-    int                              fd
+    uint32_t                         clientIndex
     );
 
 uint32_t
 VmsockPosixWriteDataAtOnce(
-    SSL*                             ssl,
-    int                              fd,
+    uint32_t                         clientIndex,
     char*                            buffer,
     uint32_t                         bytes
     );
@@ -57,8 +55,11 @@ uint32_t
 VmRESTProcessIncomingData(
     char*                            buffer,
     uint32_t                         byteRead,
-    SSL*                             ssl,
-    int                              fd
+    uint32_t                         clientIndex
     );
 
+uint32_t
+VmSockPosixCloseConnection(
+    uint32_t                         clientIndex
+    );
 
