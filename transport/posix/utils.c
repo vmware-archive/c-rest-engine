@@ -191,11 +191,11 @@ VmRESTUtilsDestroyQueue(
 
 char
 VmRESTUtilsGetLastChar(
-    PSTR                             src
+    char*                            src
     )
 {
     char                             ret = '\0';
-    PSTR                             temp = NULL;
+    char*                            temp = NULL;
 
     if (src == NULL || (strlen(src) > MAX_SERVER_PORT_LEN))
     {

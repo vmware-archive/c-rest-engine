@@ -21,13 +21,7 @@ VMREST_GLOBALS gVMRESTGlobals =
 
 REST_PROCESSOR gVmRestHandlers =
 {
-    .pfnHandleGET      = &VmRESTHandleHTTP_GET,
-    .pfnHandlePOST     = &VmRESTHandleHTTP_POST,
-    .pfnHandleHEAD     = &VmRESTHandleHTTP_HEAD, 
-    .pfnHandlePUT      = &VmRESTHandleHTTP_PUT,
-    .pfnHandleDELETE   = &VmRESTHandleHTTP_DELETE, 
-    .pfnHandleTRACE    = &VmRESTHandleHTTP_TRACE,
-    .pfnHandleCONNECT  = &VmRESTHandleHTTP_CONNECT
+    .pfnHandleRequest = &VmRESTHandleHTTP_REQUEST
 };
 
 PREST_PROCESSOR gpVmRestHandlers = &gVmRestHandlers;

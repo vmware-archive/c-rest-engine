@@ -14,19 +14,20 @@
 
 #include "defines.h"
 
-typedef struct _CONNECTION
-{
-    int                              fd;
-    int                              notStale;
-    SSL*                             ssl;
-} VM_CONNECTION;
-
 typedef struct _EVENT_DATA
 {
     int                              fd;
     SSL*                             ssl;
     int                              index;
 } VM_EVENT_DATA, *PVM_EVENT_DATA;
+
+typedef struct _CONNECTION
+{
+    int                              fd;
+    int                              notStale;
+    SSL*                             ssl;
+    PVM_EVENT_DATA                   self;
+} VM_CONNECTION, *PVM_CONNECTION;
 
 typedef struct _VM_SOCKET
 {

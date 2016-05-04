@@ -25,7 +25,7 @@ VmRESTHTTPGetReqMethod(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char                             local[MAX_METHOD_LEN] = {0};
-    PSTR                             firstSpace = NULL;
+    char*                            firstSpace = NULL;
 
     if (lineLen > MAX_REQ_LIN_LEN || line == NULL || result == NULL || *resStatus != OK)
     {
@@ -100,15 +100,15 @@ error:
 
 uint32_t
 VmRESTHTTPGetReqURI(
-    PSTR                             line,
+    char*                            line,
     uint32_t                         lineLen,
-    PSTR                             result,
+    char*                            result,
     uint32_t*                        resStatus
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    PSTR                             firstSpace = NULL;
-    PSTR                             secondSpace = NULL;
+    char*                            firstSpace = NULL;
+    char*                            secondSpace = NULL;
     uint32_t                         uriLen = 0;
 
     if (lineLen > MAX_REQ_LIN_LEN || line == NULL || result == NULL || *resStatus != OK)
@@ -155,18 +155,18 @@ error:
 
 uint32_t
 VmRESTHTTPGetReqVersion(
-    PSTR                             line,
+    char*                            line,
     uint32_t                         lineLen,
-    PSTR                             result,
+    char*                            result,
     uint32_t*                        resStatus
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char                             local[MAX_VERSION_LEN] = {0};
     uint32_t                         verLen = 0;
-    PSTR                             firstSpace = NULL;
-    PSTR                             secondSpace = NULL;
-    PSTR                             endLine = NULL;
+    char*                            firstSpace = NULL;
+    char*                            secondSpace = NULL;
+    char*                            endLine = NULL;
 
 
     /* Version will be third letter in line */
@@ -579,193 +579,193 @@ VmRESTAddAllHeaderInResponseStream(
     len = strlen(pResPacket->generalHeader->cacheControl);
     if ( len > 0)
     {
-        memcpy(curr,"Cache-Control : ", 16);
-        curr = curr + 16;
-        memcpy(curr, pResPacket->generalHeader->cacheControl, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 16;
-        len = 0;
-    }
-    len = strlen(pResPacket->generalHeader->connection);
-    if ( len > 0)
-    {
-        memcpy(curr,"Connection : ", 13);
-        curr = curr + 13;
-        memcpy(curr, pResPacket->generalHeader->connection, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 13;
-        len = 0;
-    }
-    len = strlen(pResPacket->generalHeader->trailer);
-    if ( len > 0)
-    {
-        memcpy(curr,"Trailer : ", 10);
-        curr = curr + 10;
-        memcpy(curr, pResPacket->generalHeader->trailer, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 10;
-        len = 0;
-    }
-    len = strlen(pResPacket->generalHeader->transferEncoding);
-    if ( len > 0)
-    {
-        memcpy(curr,"Transfer-Encoding: ", 19);
-        curr = curr + 19;
-        memcpy(curr, pResPacket->generalHeader->transferEncoding, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 19;
-        len = 0;
-    }
-    len = strlen(pResPacket->responseHeader->acceptRange);
-    if ( len > 0)
-    {
-        memcpy(curr,"Accept-Ranges : ", 16);
-        curr = curr + 16;
-        memcpy(curr, pResPacket->responseHeader->acceptRange, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 16;
-        len = 0;
-    }
-    len = strlen(pResPacket->responseHeader->location);
-    if ( len > 0)
-    {
-        memcpy(curr,"Location : ", 11);
-        curr = curr + 11;
-        memcpy(curr, pResPacket->responseHeader->location, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 11;
-        len = 0;
-    }
-    len = strlen(pResPacket->responseHeader->proxyAuth);
-    if ( len > 0)
-    {
-        memcpy(curr,"Proxy-Authenticate : ", 21);
-        curr = curr + 21;
-        memcpy(curr, pResPacket->responseHeader->proxyAuth, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 21;
-        len = 0;
-    }
-    len = strlen(pResPacket->responseHeader->server);
-    if ( len > 0)
-    {
-        memcpy(curr,"Server : ", 9);
-        curr = curr + 9;
-        memcpy(curr, pResPacket->responseHeader->server, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 9;
-        len = 0;
-    }
-    len = strlen(pResPacket->entityHeader->allow);
-    if ( len > 0)
-    {
-        memcpy(curr,"Allow : ", 8);
-        curr = curr + 8;
-        memcpy(curr, pResPacket->entityHeader->allow, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 8;
-        len = 0;
-    }
-    len = strlen(pResPacket->entityHeader->contentEncoding);
-    if ( len > 0)
-    {
-        memcpy(curr,"Content-Encoding : ", 19);
-        curr = curr + 19;
-        memcpy(curr, pResPacket->entityHeader->contentEncoding, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 19;
-        len = 0;
-    }
-    len = strlen(pResPacket->entityHeader->contentLanguage);
-    if ( len > 0)
-    {
-        memcpy(curr,"Content-Language : ", 19);
-        curr = curr + 19;
-        memcpy(curr, pResPacket->entityHeader->contentLanguage, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 19;
-        len = 0;
-    }
-    len = strlen(pResPacket->entityHeader->contentLength);
-    if ( len > 0)
-    {
-        memcpy(curr,"Content-Length : ", 17);
-        curr = curr + 17;
-        memcpy(curr,pResPacket->entityHeader->contentLength, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 17;
-        len = 0;
-    }
-    len = strlen(pResPacket->entityHeader->contentLocation);
-    if ( len > 0)
-    {
-        memcpy(curr,"Content-Location : ", 19);
-        curr = curr + 19;
-        memcpy(curr, pResPacket->entityHeader->contentLocation, len);
-        curr = curr + len;
-        memcpy(curr, "\r\n", 2);
-        curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 19;
-        len = 0;
-    }
-    len = strlen(pResPacket->entityHeader->contentMD5);
-    if ( len > 0)
-    {
-        memcpy(curr,"Content-MD5 : ", 14);
+        memcpy(curr,"Cache-Control:", 14);
         curr = curr + 14;
-        memcpy(curr, pResPacket->entityHeader->contentMD5, len);
+        memcpy(curr, pResPacket->generalHeader->cacheControl, len);
         curr = curr + len;
         memcpy(curr, "\r\n", 2);
         curr = curr + 2;
         streamBytes = streamBytes + len + 2 + 14;
         len = 0;
     }
+    len = strlen(pResPacket->generalHeader->connection);
+    if ( len > 0)
+    {
+        memcpy(curr,"Connection:", 11);
+        curr = curr + 11;
+        memcpy(curr, pResPacket->generalHeader->connection, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 11;
+        len = 0;
+    }
+    len = strlen(pResPacket->generalHeader->trailer);
+    if ( len > 0)
+    {
+        memcpy(curr,"Trailer:", 8);
+        curr = curr + 8;
+        memcpy(curr, pResPacket->generalHeader->trailer, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 8;
+        len = 0;
+    }
+    len = strlen(pResPacket->generalHeader->transferEncoding);
+    if ( len > 0)
+    {
+        memcpy(curr,"Transfer-Encoding:", 18);
+        curr = curr + 18;
+        memcpy(curr, pResPacket->generalHeader->transferEncoding, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 18;
+        len = 0;
+    }
+    len = strlen(pResPacket->responseHeader->acceptRange);
+    if ( len > 0)
+    {
+        memcpy(curr,"Accept-Ranges:", 14);
+        curr = curr + 14;
+        memcpy(curr, pResPacket->responseHeader->acceptRange, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 14;
+        len = 0;
+    }
+    len = strlen(pResPacket->responseHeader->location);
+    if ( len > 0)
+    {
+        memcpy(curr,"Location:", 9);
+        curr = curr + 9;
+        memcpy(curr, pResPacket->responseHeader->location, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 9;
+        len = 0;
+    }
+    len = strlen(pResPacket->responseHeader->proxyAuth);
+    if ( len > 0)
+    {
+        memcpy(curr,"Proxy-Authenticate:", 19);
+        curr = curr + 19;
+        memcpy(curr, pResPacket->responseHeader->proxyAuth, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 19;
+        len = 0;
+    }
+    len = strlen(pResPacket->responseHeader->server);
+    if ( len > 0)
+    {
+        memcpy(curr,"Server:", 7);
+        curr = curr + 7;
+        memcpy(curr, pResPacket->responseHeader->server, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 7;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->allow);
+    if ( len > 0)
+    {
+        memcpy(curr,"Allow:", 6);
+        curr = curr + 6;
+        memcpy(curr, pResPacket->entityHeader->allow, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 6;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentEncoding);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-Encoding:", 17);
+        curr = curr + 17;
+        memcpy(curr, pResPacket->entityHeader->contentEncoding, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 17;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentLanguage);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-Language:", 17);
+        curr = curr + 17;
+        memcpy(curr, pResPacket->entityHeader->contentLanguage, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 17;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentLength);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-Length:", 15);
+        curr = curr + 15;
+        memcpy(curr,pResPacket->entityHeader->contentLength, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 15;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentLocation);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-Location:", 17);
+        curr = curr + 17;
+        memcpy(curr, pResPacket->entityHeader->contentLocation, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 17;
+        len = 0;
+    }
+    len = strlen(pResPacket->entityHeader->contentMD5);
+    if ( len > 0)
+    {
+        memcpy(curr,"Content-MD5:", 12);
+        curr = curr + 12;
+        memcpy(curr, pResPacket->entityHeader->contentMD5, len);
+        curr = curr + len;
+        memcpy(curr, "\r\n", 2);
+        curr = curr + 2;
+        streamBytes = streamBytes + len + 2 + 12;
+        len = 0;
+    }
     len = strlen(pResPacket->entityHeader->contentRange);
     if ( len > 0)
     {
-        memcpy(curr,"Content-Range : ", 16);
-        curr = curr + 16;
+        memcpy(curr,"Content-Range:", 14);
+        curr = curr + 14;
         memcpy(curr, pResPacket->entityHeader->contentRange, len);
         curr = curr + len;
         memcpy(curr, "\r\n", 2);
         curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 16;
+        streamBytes = streamBytes + len + 2 + 14;
         len = 0;
     }
     len = strlen(pResPacket->entityHeader->contentType);
     if ( len > 0)
     {
-        memcpy(curr,"Content-Type : ", 15);
-        curr = curr + 15;
+        memcpy(curr,"Content-Type:", 13);
+        curr = curr + 13;
         memcpy(curr, pResPacket->entityHeader->contentType, len);
         curr = curr + len;
         memcpy(curr, "\r\n", 2);
         curr = curr + 2;
-        streamBytes = streamBytes + len + 2 + 15;
+        streamBytes = streamBytes + len + 2 + 13;
         len = 0;
     }
     miscHeaderNode = pResPacket->miscHeader->head;
@@ -775,13 +775,13 @@ VmRESTAddAllHeaderInResponseStream(
         valueLen = strlen(miscHeaderNode->value);
         memcpy(curr, miscHeaderNode->header, headerLen);
         curr = curr + headerLen;
-        memcpy(curr, " : ", 3);
-        curr = curr + 3;
+        memcpy(curr, ":", 1);
+        curr = curr + 1;
         memcpy(curr, miscHeaderNode->value, valueLen);
         curr = curr + valueLen;
         memcpy(curr, "\r\n", 2);
         curr = curr + 2;
-        streamBytes = streamBytes + headerLen + valueLen + 3 + 2;
+        streamBytes = streamBytes + headerLen + valueLen + 1 + 2;
         miscHeaderNode = miscHeaderNode->next;
     }
 
@@ -861,12 +861,24 @@ VmRESTSendResponsePacket(
     VMREST_LOG_DEBUG("Entire response stream\n--------\n %s\n----------", buffer);
 
     dwError = VmsockPosixWriteDataAtOnce(
-                  pResPacket->clientSocketSSL,
-                  pResPacket->clientSocketFd,
+                  pResPacket->clientIndex,
                   buffer,
                   totalBytes
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** Closing the connection all the time. TODO:: check based close of connection ****/
+    dwError = VmSockPosixCloseConnection(
+                  pResPacket->clientIndex
+                  );    
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** Free all associcated request and response object memory ****/
+    VmRESTFreeMemory(pResPacket->requestPacket);
+    pResPacket->requestPacket = NULL;
+    VmRESTFreeMemory(pResPacket);        
+
+    
 
 cleanup:
     return dwError;
@@ -879,8 +891,7 @@ uint32_t
 VmRESTProcessIncomingData(
     char*                            buffer,
     uint32_t                         byteRead,
-    SSL*                             ssl,
-    int                              fd
+    uint32_t                         clientIndex
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -890,8 +901,6 @@ VmRESTProcessIncomingData(
     uint32_t                         resStatus = OK;
     uint32_t                         responseSent = 0;
     char                             statusStng[MAX_STATUS_LENGTH] = {0};
-    int                              fileDes = -1;
-    SSL*                             sslDes = NULL;
 
     dwError = VmRESTAllocateHTTPRequestPacket(
                   &pReqPacket
@@ -903,21 +912,11 @@ VmRESTProcessIncomingData(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((fd == -1) && (ssl != NULL))
-    {
-        sslDes = ssl;
-    }
-    else if ((ssl == NULL) && (fd >= 0))
-    {
-        fileDes = fd;
-    }
-
     pReqPacket->miscHeader->head = NULL;
     pResPacket->miscHeader->head = NULL;
-    pReqPacket->clientSocketSSL = sslDes;
-    pReqPacket->clientSocketFd = fileDes;
-    pResPacket->clientSocketSSL = pReqPacket->clientSocketSSL;
-    pResPacket->clientSocketFd = pReqPacket->clientSocketFd;
+    pReqPacket->clientIndex = clientIndex;
+    pResPacket->clientIndex = pReqPacket->clientIndex;
+    pResPacket->requestPacket = pReqPacket;
     memset(statusStng,'\0', MAX_STATUS_LENGTH);
 
     dwError = VmRESTParseAndPopulateRawHTTPMessage(
@@ -1093,19 +1092,12 @@ VmRESTTriggerAppCb(
 )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         methodNo = 0;
 
     if (pRequest == NULL || ppResponse == NULL)
     {
        VMREST_LOG_DEBUG("VmRESTTriggerAppCb(): Invalid params");
        dwError =  VMREST_APPLICATION_INVALID_PARAMS;
     }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTMapMethodToEnum(
-                  pRequest->requestLine->method,
-                  &methodNo
-                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     if (gpHttpHandler == NULL)
@@ -1115,102 +1107,14 @@ VmRESTTriggerAppCb(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    switch(methodNo)
+    if (gpHttpHandler->pfnHandleRequest)
     {
-        case HTTP_METHOD_GET:
-             if (gpHttpHandler->pfnHandleGET)
-             {
-                 dwError = gpHttpHandler->pfnHandleGET(pRequest,
-                                        ppResponse
-                                        );
-             }
-             else
-             {
-                 VMREST_LOG_DEBUG("VmRESTTriggerAppCb(): No HTTP GET CB registered");
-                 dwError = VMREST_APPLICATION_NO_METHOD_GET_CB;
-             }
-             break;
-        case HTTP_METHOD_HEAD:
-             if (gpHttpHandler->pfnHandleHEAD)
-             {
-                 dwError = gpHttpHandler->pfnHandleHEAD(pRequest,
-                                        ppResponse
-                                        );
-             }
-             else
-             {
-                 VMREST_LOG_DEBUG("VmRESTTriggerAppCb(): No HTTP HEAD CB registered");
-                 dwError = VMREST_APPLICATION_NO_METHOD_HEAD_CB;
-             }
-             break;
-        case HTTP_METHOD_POST:
-             if (gpHttpHandler->pfnHandlePOST)
-             {
-                 dwError = gpHttpHandler->pfnHandlePOST(pRequest,
-                                        ppResponse
-                                        );
-             }
-             else
-             {
-                 VMREST_LOG_DEBUG("VmRESTTriggerAppCb(): No HTTP POST CB registered");
-                 dwError = VMREST_APPLICATION_NO_METHOD_POST_CB;
-             }
-             break;
-        case HTTP_METHOD_PUT:
-             if (gpHttpHandler->pfnHandlePUT)
-             {
-                 dwError = gpHttpHandler->pfnHandlePUT(pRequest,
-                                        ppResponse
-                                        );
-             }
-             else
-             {
-                 VMREST_LOG_DEBUG("VmRESTTriggerAppCb(): No HTTP PUT CB registered");
-                 dwError = VMREST_APPLICATION_NO_METHOD_PUT_CB;
-             }
-             break;
-        case HTTP_METHOD_DELETE:
-             if (gpHttpHandler->pfnHandleDELETE)
-             {
-                 dwError = gpHttpHandler->pfnHandleDELETE(pRequest,
-                                        ppResponse
-                                        );
-             }
-             else
-             {
-                 VMREST_LOG_DEBUG("VmRESTTriggerAppCb(): No HTTP DELETE CB registered");
-                 dwError = VMREST_APPLICATION_NO_METHOD_DELETE_CB;
-             }
-             break;
-        case HTTP_METHOD_TRACE:
-             if (gpHttpHandler->pfnHandleTRACE)
-             {
-                 dwError = gpHttpHandler->pfnHandleTRACE(pRequest,
-                                        ppResponse
-                                        );
-             }
-             else
-             {
-                 VMREST_LOG_DEBUG("VmRESTTriggerAppCb(): No HTTP TRACE CB registered");
-                 dwError = VMREST_APPLICATION_NO_METHOD_TRACE_CB;
-             }
-             break;
-        case HTTP_METHOD_CONNECT:
-             if (gpHttpHandler->pfnHandleCONNECT)
-             {
-                 dwError = gpHttpHandler->pfnHandleCONNECT(pRequest,
-                                        ppResponse
-                                        );
-             }
-             else
-             {
-                 VMREST_LOG_DEBUG("VmRESTTriggerAppCb(): No HTTP CONNECT CB registered");
-                 dwError = VMREST_APPLICATION_NO_METHOD_CONNECT_CB;
-             }
-             break;
-        default:
-             dwError = VMREST_APPLICATION_VALIDATION_FAILED;
-             break;
+        dwError = gpHttpHandler->pfnHandleRequest(pRequest, ppResponse);
+    }
+    else
+    {
+        VMREST_LOG_DEBUG("VmRESTTriggerAppCb(): No Request callback registered");
+        dwError = VMREST_APPLICATION_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 

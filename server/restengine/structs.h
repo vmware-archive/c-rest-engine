@@ -139,9 +139,8 @@ typedef struct _VM_REST_HTTP_REQUEST_PACKET
     PVM_REST_HTTP_REQUEST_HEADER     requestHeader;
     PVM_REST_HTTP_ENTITY_HEADER      entityHeader;
     PVM_REST_HTTP_MESSAGE_BODY       messageBody;
-    SSL*                             clientSocketSSL;
-    int                              clientSocketFd;
     PMISC_HEADER_QUEUE               miscHeader;
+    uint32_t                         clientIndex;
 
 }VM_REST_HTTP_REQUEST_PACKET, *PVM_REST_HTTP_REQUEST_PACKET;
 
@@ -152,9 +151,9 @@ typedef struct _VM_REST_HTTP_RESPONSE_PACKET
     PVM_REST_HTTP_RESPONSE_HEADER    responseHeader;
     PVM_REST_HTTP_ENTITY_HEADER      entityHeader;
     PVM_REST_HTTP_MESSAGE_BODY       messageBody;
-    SSL*                             clientSocketSSL;
-    int                              clientSocketFd;
     PMISC_HEADER_QUEUE               miscHeader;
+    uint32_t                         clientIndex;
+    PVM_REST_HTTP_REQUEST_PACKET     requestPacket;
 
 }VM_REST_HTTP_RESPONSE_PACKET, *PVM_REST_HTTP_RESPONSE_PACKET;
 

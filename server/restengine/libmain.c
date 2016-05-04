@@ -99,7 +99,7 @@ error:
 
 uint32_t
 VmRESTStart(
-    VOID
+    void
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -149,7 +149,7 @@ error:
 
 uint32_t
 VmRESTRegisterHandler(
-    PCSTR                            pszEndpoint,
+    char const*                      pszEndpoint,
     PREST_PROCESSOR                  pHandler,
     PREST_ENDPOINT*                  ppEndpoint
     )
@@ -175,7 +175,7 @@ error:
 
 uint32_t
 VmRESTFindEndpoint(
-    PCSTR                            pszEndpoint,
+    char const*                      pszEndpoint,
     PREST_ENDPOINT*                  ppEndpoint
     )
 {
@@ -206,7 +206,7 @@ error:
     goto cleanup; 
 }
 
-VOID
+void
 VmRESTReleaseEndpoint(
     PREST_ENDPOINT                   pEndpoint
     )
@@ -218,7 +218,7 @@ VmRESTReleaseEndpoint(
 
 uint32_t
 VmRESTStop(
-    VOID
+    void
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -245,9 +245,9 @@ error:
     goto cleanup;
 }
 
-VOID
+void
 VmRESTShutdown(
-    VOID
+    void
     )
 {   
     /**** Shutdown transport ****/
