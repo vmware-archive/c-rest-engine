@@ -149,7 +149,7 @@ VmRESTFreeHTTPResponsePacket(
 
 uint32_t
 VmRESTMapHeaderToEnum(
-    PCSTR                            header,
+    char const*                      header,
     uint32_t*                        result,
     uint32_t*                        resStatus
     );
@@ -213,8 +213,8 @@ VmRESTCopyConfig(
 uint32_t
 VmRESTSetHTTPMiscHeader(
     PMISC_HEADER_QUEUE               miscHeaderQueue,
-    PCSTR                            header,
-    PSTR                             value
+    char const*                      header,
+    char*                            value
     );
 
 uint32_t
@@ -225,7 +225,7 @@ VmRESTRemoveAllHTTPMiscHeader(
 uint32_t
 VmRESTGetHTTPMiscHeader(
     PMISC_HEADER_QUEUE               miscHeaderQueue,
-    PCSTR                            header,
-    PSTR*                            ppResponse
+    char const*                      header,
+    char**                           ppResponse
     );
 

@@ -40,45 +40,7 @@ VmRESTSrvHandleSignals(
 /* httpHandlers.c */
 
 uint32_t
-VmRESTHandleHTTP_GET(
+VmRESTHandleHTTP_REQUEST(
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     );
-
-uint32_t
-VmRESTHandleHTTP_POST(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-uint32_t
-VmRESTHandleHTTP_DELETE(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-uint32_t 
-VmRESTHandleHTTP_PUT(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-uint32_t
-VmRESTHandleHTTP_HEAD(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-
-uint32_t
-VmRESTHandleHTTP_TRACE(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-uint32_t
-VmRESTHandleHTTP_CONNECT(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-

@@ -16,7 +16,7 @@
 
 uint32_t
 VmRESTMapHeaderToEnum(
-    PCSTR                            header,
+    char const*                      header,
     uint32_t*                        result,
     uint32_t*                        resStatus
     )
@@ -242,7 +242,7 @@ VmRESTGetHttpResponseHeader(
     uint32_t                         headerNo = 0;
     uint32_t                         resStatus = OK;
     char*                            source = NULL;
-    PSTR                             pRes = NULL;
+    char*                            pRes = NULL;
 
     if (pResponse == NULL || header == NULL || response == NULL)
     {
@@ -781,6 +781,17 @@ VmRESTParseAndPopulateConfigFile(
             resultLen = MAX_WORKER_COUNT_LEN;
         }
     }
+
+    /**** Use default if thread count or client count missing ****/
+    if (strlen(pRESTConfig->worker_thread_count) == 0)
+    {
+        strcpy(pRESTConfig->worker_thread_count, DEFAULT_WORKER_THR_CNT);
+    }
+    if (strlen(pRESTConfig->client_count) == 0)
+    {
+        strcpy(pRESTConfig->client_count, DEFAULT_CLIENT_CNT);
+    }
+
     *ppRESTConfig = pRESTConfig;
 
 cleanup:
@@ -826,13 +837,13 @@ VmRESTValidateConfig(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((pRESTConfig->server_port == NULL) || (pRESTConfig->worker_thread_count == NULL) || (pRESTConfig->client_count == NULL))
+    if (pRESTConfig->server_port == NULL)
     {
-        VMREST_LOG_DEBUG("VmRESTValidateConfig(): Configuration Validation failed (check port/th cnt/client cnt)");
+        VMREST_LOG_DEBUG("VmRESTValidateConfig(): Configuration Validation failed: Port not specified");
         dwError = REST_ENGINE_FAILURE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-
+ 
 cleanup:
     return dwError;
 error:
@@ -860,13 +871,40 @@ VmRESTCopyConfig(
                   (void**)&pRESTConfig
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+  
+    if (pConfig->pSSLCertificate)
+    {
+        strcpy(pRESTConfig->ssl_certificate, pConfig->pSSLCertificate);
+    }
+    if (pConfig->pSSLKey)
+    {
+        strcpy(pRESTConfig->ssl_key, pConfig->pSSLKey);
+    }
+    if (pConfig->pServerPort)
+    {
+        strcpy(pRESTConfig->server_port, pConfig->pServerPort);
+    }
+    if (pConfig->pDebugLogFile)
+    {
+        strcpy(pRESTConfig->debug_log_file, pConfig->pDebugLogFile);
+    }
+    if (pConfig->pClientCount) 
+    {
+        strcpy(pRESTConfig->client_count, pConfig->pClientCount);
+    }
+    else
+    {
+        strcpy(pRESTConfig->worker_thread_count, DEFAULT_WORKER_THR_CNT);
+    }
 
-    strcpy(pRESTConfig->ssl_certificate, pConfig->pSSLCertificate);
-    strcpy(pRESTConfig->ssl_key, pConfig->pSSLKey);
-    strcpy(pRESTConfig->server_port, pConfig->pServerPort);
-    strcpy(pRESTConfig->debug_log_file, pConfig->pDebugLogFile);
-    strcpy(pRESTConfig->client_count, pConfig->pClientCount);
-    strcpy(pRESTConfig->worker_thread_count, pConfig->pMaxWorkerThread);
+    if (pConfig->pMaxWorkerThread)
+    {
+        strcpy(pRESTConfig->worker_thread_count, pConfig->pMaxWorkerThread);
+    }
+    else
+    {
+        strcpy(pRESTConfig->client_count, DEFAULT_CLIENT_CNT);
+    }
 
     *ppRESTConfig = pRESTConfig;
 
@@ -879,8 +917,8 @@ error:
 uint32_t
 VmRESTSetHTTPMiscHeader(
     PMISC_HEADER_QUEUE               miscHeaderQueue,
-    PCSTR                            header,
-    PSTR                             value
+    char const*                      header,
+    char*                            value
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -968,8 +1006,8 @@ error:
 uint32_t
 VmRESTGetHTTPMiscHeader(
     PMISC_HEADER_QUEUE               miscHeaderQueue,
-    PCSTR                            header,
-    PSTR*                            response
+    char const*                      header,
+    char**                           response
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;

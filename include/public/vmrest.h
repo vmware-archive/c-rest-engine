@@ -14,94 +14,35 @@
 #ifndef __VMREST_H__
 #define __VMREST_H__
 
-#ifndef REST_PCSTR_DEFINED
-typedef char const* REST_PCSTR;
-typedef char* REST_PSTR;
-#define REST_PCSTR_DEFINED 1
-#endif /* REST_PCSTR_DEFINED */
-
-#ifndef REST_VOID_DEFINED
-typedef void REST_VOID;
-#define REST_VOID_DEFINED 1
-#endif /* REST_VOID_DEFINED */
-
-
-typedef REST_PCSTR PCSTR;
-typedef REST_PSTR  PSTR;
-typedef REST_VOID  VOID;
-typedef VOID*      PVOID;
-
 typedef struct _VM_REST_HTTP_REQUEST_PACKET*  PREST_REQUEST;
 
 typedef struct _VM_REST_HTTP_RESPONSE_PACKET* PREST_RESPONSE;
 
 typedef uint32_t(
-*PFN_PROCESS_HTTP_GET)(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-typedef uint32_t(
-*PFN_PROCESS_HTTP_POST)(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-typedef uint32_t(
-*PFN_PROCESS_HTTP_HEAD)(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-typedef uint32_t(
-*PFN_PROCESS_HTTP_PUT)(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-typedef uint32_t(
-*PFN_PROCESS_HTTP_DELETE)(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-typedef uint32_t(
-*PFN_PROCESS_HTTP_TRACE)(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse
-    );
-
-typedef uint32_t(
-*PFN_PROCESS_HTTP_CONNECT)(
+*PFN_PROCESS_HTTP_REQUEST)(
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     );
 
 typedef struct _REST_PROCESSOR
 {
-    PFN_PROCESS_HTTP_GET             pfnHandleGET;
-    PFN_PROCESS_HTTP_POST            pfnHandlePOST;
-    PFN_PROCESS_HTTP_HEAD            pfnHandleHEAD;
-    PFN_PROCESS_HTTP_PUT             pfnHandlePUT;
-    PFN_PROCESS_HTTP_DELETE          pfnHandleDELETE;
-    PFN_PROCESS_HTTP_TRACE           pfnHandleTRACE;
-    PFN_PROCESS_HTTP_CONNECT         pfnHandleCONNECT;
+    PFN_PROCESS_HTTP_REQUEST         pfnHandleRequest;
 
 } REST_PROCESSOR, *PREST_PROCESSOR;
 
 typedef struct _REST_CONF
 {
-    PSTR                             pSSLCertificate;
-    PSTR                             pSSLKey;
-    PSTR                             pServerPort;
-    PSTR                             pDebugLogFile;
-    PSTR                             pClientCount;
-    PSTR                             pMaxWorkerThread;
+    char*                            pSSLCertificate;
+    char*                            pSSLKey;
+    char*                            pServerPort;
+    char*                            pDebugLogFile;
+    char*                            pClientCount;
+    char*                            pMaxWorkerThread;
 } REST_CONF, *PREST_CONF;
 
 typedef struct _REST_ENDPOINT
 {
-    PSTR                             junk;
+    char*                             junk;
 } REST_ENDPOINT, *PREST_ENDPOINT;
 
 /*
@@ -126,7 +67,7 @@ VmRESTInit(
  */
 uint32_t
 VmRESTStart(
-    VOID
+    void
     );
 
 /**
@@ -138,7 +79,7 @@ VmRESTStart(
  */
 uint32_t
 VmRESTRegisterHandler(
-    PCSTR                            pszEndpoint,
+    char const*                      pszEndpoint,
     PREST_PROCESSOR                  pHandler,
     PREST_ENDPOINT*                  ppEndpoint
     );
@@ -151,7 +92,7 @@ VmRESTRegisterHandler(
  */
 uint32_t
 VmRESTFindEndpoint(
-    PCSTR                            pszEndpoint,
+    char const*                      pszEndpoint,
     PREST_ENDPOINT*                  ppEndpoint
     );
 
@@ -167,7 +108,7 @@ VmRESTUnregisterHandler(
 /**
  * @brief Release the memory associated with the endpoint
  */
-VOID
+void
 VmRESTReleaseEndpoint(
     PREST_ENDPOINT                   pEndpoint
     );
@@ -183,7 +124,7 @@ VmRESTReleaseEndpoint(
 uint32_t
 VmRESTGetHttpMethod(
     PREST_REQUEST                    pRequest,
-    PSTR*                            ppResponse
+    char**                           ppResponse
     );
 
 /*
@@ -196,7 +137,7 @@ VmRESTGetHttpMethod(
 uint32_t
 VmRESTGetHttpURI(
     PREST_REQUEST                    pRequest,
-    PSTR*                            ppResponse
+    char**                           ppResponse
     );
 
 /*
@@ -209,7 +150,7 @@ VmRESTGetHttpURI(
 uint32_t
 VmRESTGetHttpVersion(
     PREST_REQUEST                    pRequest,
-    PSTR*                            ppResponse
+    char**                           ppResponse
     );
 
 /*
@@ -223,8 +164,8 @@ VmRESTGetHttpVersion(
 uint32_t
 VmRESTGetHttpHeader(
     PREST_REQUEST                    pRequest,
-    PCSTR                            pszName,
-    PSTR*                            ppszResponse
+    char const*                      pszName,
+    char**                           ppszResponse
     );
 
 /*
@@ -238,8 +179,8 @@ VmRESTGetHttpHeader(
 uint32_t
 VmRESTSetHttpHeader(
     PREST_RESPONSE*                  ppResponse,
-    PCSTR                            pszName,
-    PSTR                             pValue
+    char const*                      pszName,
+    char*                            pValue
     );
 
 /*
@@ -252,7 +193,7 @@ VmRESTSetHttpHeader(
 uint32_t
 VmRESTSetHttpStatusCode(
     PREST_RESPONSE*                  ppResponse,
-    PSTR                             statusCode
+    char*                            statusCode
     );
 
 /*
@@ -265,7 +206,7 @@ VmRESTSetHttpStatusCode(
 uint32_t
 VmRESTSetHttpStatusVersion(
     PREST_RESPONSE*                  ppResponse,
-    PSTR                             version
+    char*                            version
     );
 
 /*
@@ -278,7 +219,7 @@ VmRESTSetHttpStatusVersion(
 uint32_t
 VmRESTSetHttpReasonPhrase(
     PREST_RESPONSE*                  ppResponse,
-    PSTR                             reasonPhrase
+    char*                            reasonPhrase
     );
 
 /*
@@ -291,7 +232,7 @@ VmRESTSetHttpReasonPhrase(
 uint32_t
 VmRESTGetHttpPayload(
     PREST_REQUEST                    pRequest,
-    PSTR                             response
+    char*                            response
     );
 
 
@@ -305,7 +246,7 @@ VmRESTGetHttpPayload(
 uint32_t
 VmRESTSetHttpPayload(
     PREST_RESPONSE*                  ppResponse,
-    PSTR                             buffer
+    char*                            buffer
     );
 
 /**
@@ -313,15 +254,15 @@ VmRESTSetHttpPayload(
  */
 uint32_t
 VmRESTStop(
-    VOID
+    void
     );
 
 /*
  * @brief Shutdown the REST Library
  */
-VOID
+void
 VmRESTShutdown(
-    VOID
+    void
     );
 
 #endif /* __VMREST_H__ */

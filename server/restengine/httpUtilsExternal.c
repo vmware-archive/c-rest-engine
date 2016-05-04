@@ -17,7 +17,7 @@
 uint32_t
 VmRESTGetHttpMethod(
     PREST_REQUEST                    pRequest,
-    PSTR*                            ppResponse
+    char**                           ppResponse
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -66,7 +66,7 @@ error:
 uint32_t
 VmRESTGetHttpURI(
     PREST_REQUEST                    pRequest,
-    PSTR*                            ppResponse
+    char**                           ppResponse
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -98,7 +98,7 @@ error:
 uint32_t
 VmRESTGetHttpVersion(
     PREST_REQUEST                    pRequest,
-    PSTR*                            ppResponse
+    char**                           ppResponse
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -130,8 +130,8 @@ error:
 uint32_t
 VmRESTGetHttpHeader(
     PREST_REQUEST                    pRequest,
-    PCSTR                            header,
-    PSTR*                            ppResponse
+    char const*                      header,
+    char**                           ppResponse
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -427,7 +427,7 @@ error:
 uint32_t
 VmRESTGetHttpPayload(
     PREST_REQUEST                    pRequest,
-    PSTR                             response
+    char*                            response
     )
 {
 
@@ -472,7 +472,7 @@ error:
 uint32_t
 VmRESTSetHttpPayload(
     PREST_RESPONSE*                  ppResponse,
-    PSTR                             buffer
+    char*                            buffer
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -519,8 +519,8 @@ error:
 uint32_t
 VmRESTSetHttpHeader(
     PREST_RESPONSE*                  ppResponse,
-    PCSTR                            header,
-    PSTR                             value
+    char const*                      header,
+    char*                            value
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -662,7 +662,7 @@ error:
 uint32_t
 VmRESTSetHttpStatusCode(
     PREST_RESPONSE*                  ppResponse,
-    PSTR                             statusCode
+    char*                            statusCode
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -699,7 +699,7 @@ error:
 uint32_t
 VmRESTSetHttpStatusVersion(
     PREST_RESPONSE*                  ppResponse,
-    PSTR                             version
+    char*                            version
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -736,7 +736,7 @@ error:
 uint32_t
 VmRESTSetHttpReasonPhrase(
     PREST_RESPONSE*                  ppResponse,
-    PSTR                             reasonPhrase
+    char*                            reasonPhrase
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
