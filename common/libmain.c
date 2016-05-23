@@ -16,7 +16,7 @@
 
 uint32_t
 VmRESTCommonInit(
-    VOID
+    void
     )
 {
     return 0;
