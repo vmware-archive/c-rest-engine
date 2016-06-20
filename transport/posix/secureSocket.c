@@ -337,7 +337,7 @@ VmSockPosixServerListenThread(
 
     VMREST_LOG_DEBUG("SERVER LISTENING on %d .....", server_fd);
 
-    epoll_fd = epoll_create1(0);
+    epoll_fd = epoll_create(128);
     if (epoll_fd == -1)
     {
         VMREST_LOG_DEBUG("VmSockPosixServerListenThread(): Epoll Create Error");
@@ -443,6 +443,8 @@ VmSockPosixHandleEventsFromQueue(
     EVENT_NODE*                      temp = NULL;
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_EVENT_DATA                   acceptData = NULL;
+    char                             appBuffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesRead = 0;
 
     while (gServerSocketInfo.ServerAlive)
     {
@@ -484,9 +486,22 @@ VmSockPosixHandleEventsFromQueue(
         }
         else
         {
-            dwError = VmsockPosixReadDataAtOnce(
+            memset(appBuffer,'\0',MAX_DATA_BUFFER_LEN);
+            dwError = VmsockPosixGetXBytes(
+                          MAX_DATA_BUFFER_LEN,
+                          appBuffer,
+                          acceptData->index,
+                          &bytesRead
+                          );
+            BAIL_ON_VMREST_ERROR(dwError);
+
+            dwError = VmRESTProcessIncomingData(
+                          appBuffer,
+                          bytesRead,
                           acceptData->index
                           );
+            BAIL_ON_VMREST_ERROR(dwError);
+
         }
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -621,13 +636,128 @@ error:
 }
 
 uint32_t
+VmSockPosixAdjustProcessedBytes(
+    uint32_t                         clientIndex,
+    uint32_t                         dataSeen
+)
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+
+    if (dataSeen > MAX_DATA_BUFFER_LEN)
+    {
+        VMREST_LOG_DEBUG("VmSockPosixAdjustProcessedBytes(): Invalid new Processed Data Index %u", dataSeen);
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    gServerSocketInfo.clients[clientIndex].dataProcessed = dataSeen;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmsockPosixGetLastDataReadCount(
+    uint32_t                         clientIndex,
+    uint32_t*                        readCount
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+
+    if (readCount == NULL)
+    {
+        VMREST_LOG_DEBUG("VmsockPosixGetLastDataReadCount(): NULL result pointer");
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    *readCount = gServerSocketInfo.clients[clientIndex].dataRead;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmsockPosixGetXBytes(
+    uint32_t                         bytesRequested,
+    char*                            appBuffer,
+    uint32_t                         clientIndex,
+    uint32_t*                        bytesRead
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    uint32_t                         dataIndex = 0;
+    uint32_t                         remainingBytes = 0;
+    uint32_t                         dataAvailableInCache = 0;
+
+    if (bytesRequested > MAX_DATA_BUFFER_LEN || appBuffer == NULL || bytesRead == NULL)
+    {
+        VMREST_LOG_DEBUG("VmsockPosixGetXBytes(): Bytes to be read %u is too large or app buffer is NULL %s", bytesRequested, appBuffer);
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+
+    if (sizeof(appBuffer) > MAX_DATA_BUFFER_LEN)
+    {
+        VMREST_LOG_DEBUG("VmsockPosixGetXBytes():Invalid app data buffer size");
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dataIndex = gServerSocketInfo.clients[clientIndex].dataProcessed;
+    dataAvailableInCache = gServerSocketInfo.clients[clientIndex].dataRead - gServerSocketInfo.clients[clientIndex].dataProcessed;
+    if (dataAvailableInCache >= bytesRequested)
+    {
+        /**** Enough data available in stream cache buffer ****/
+        memcpy(appBuffer,&(gServerSocketInfo.clients[clientIndex].streamDataBuffer[dataIndex]), bytesRequested);
+        gServerSocketInfo.clients[clientIndex].dataProcessed = gServerSocketInfo.clients[clientIndex].dataProcessed + bytesRequested;
+        *bytesRead = bytesRequested;
+    }
+    else if(dataAvailableInCache < bytesRequested)
+    {
+        /**** Copy all remaining client Stream bytes and perform read ****/
+        if (dataAvailableInCache > 0)
+        {
+            memcpy(appBuffer, &(gServerSocketInfo.clients[clientIndex].streamDataBuffer[dataIndex]), dataAvailableInCache);
+            gServerSocketInfo.clients[clientIndex].dataProcessed += dataAvailableInCache;
+        }
+
+        dwError = VmsockPosixReadDataAtOnce(
+                      clientIndex
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+ 
+        remainingBytes = bytesRequested - dataAvailableInCache;
+        dataIndex = 0;
+        if (remainingBytes > gServerSocketInfo.clients[clientIndex].dataRead)
+        {
+            remainingBytes = gServerSocketInfo.clients[clientIndex].dataRead;
+            VMREST_LOG_DEBUG("VmsockPosixGetXBytes() WARNING:: Requested %u bytes, available only %u bytes", bytesRequested, (dataAvailableInCache + remainingBytes - 1));
+        }
+        memcpy((appBuffer + dataAvailableInCache), &(gServerSocketInfo.clients[clientIndex].streamDataBuffer[dataIndex]), remainingBytes);
+        gServerSocketInfo.clients[clientIndex].dataProcessed = remainingBytes;
+        *bytesRead = dataAvailableInCache + remainingBytes;
+    }
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+
+uint32_t
 VmsockPosixReadDataAtOnce(
     uint32_t                         clientIndex
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     int                              read_cnt = 0;
-    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
 
     if ((gServerSocketInfo.isSecure == 1) && (gServerSocketInfo.clients[clientIndex].ssl == NULL))
     {
@@ -641,33 +771,22 @@ VmsockPosixReadDataAtOnce(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    while(1)
+    memset(gServerSocketInfo.clients[clientIndex].streamDataBuffer,'\0',MAX_DATA_BUFFER_LEN);
+    if (gServerSocketInfo.isSecure && gServerSocketInfo.clients[clientIndex].ssl != NULL)
     {
-        memset(buffer,'\0',MAX_DATA_BUFFER_LEN);
-        if (gServerSocketInfo.isSecure && gServerSocketInfo.clients[clientIndex].ssl != NULL)
-        {
-            read_cnt = SSL_read(gServerSocketInfo.clients[clientIndex].ssl, buffer, (sizeof(buffer)));
-        }
-        else if(gServerSocketInfo.clients[clientIndex].fd > 0)
-        {
-            read_cnt = read(gServerSocketInfo.clients[clientIndex].fd, buffer, (sizeof(buffer)));
-        }
-        else
-        {
-            read_cnt = 0;
-        }
-
-        if (read_cnt == -1 || read_cnt == 0)
-        {
-            break;
-        }
-        dwError =  VmRESTProcessIncomingData(
-                       buffer,
-                       (uint32_t)read_cnt,
-                       clientIndex
-                       );
-        BAIL_ON_VMREST_ERROR(dwError);
+        read_cnt = SSL_read(gServerSocketInfo.clients[clientIndex].ssl, gServerSocketInfo.clients[clientIndex].streamDataBuffer, MAX_DATA_BUFFER_LEN);
     }
+    else if(gServerSocketInfo.clients[clientIndex].fd > 0)
+    {
+        read_cnt = read(gServerSocketInfo.clients[clientIndex].fd, &(gServerSocketInfo.clients[clientIndex].streamDataBuffer), MAX_DATA_BUFFER_LEN);
+    }
+    if (read_cnt == -1 || read_cnt == 0)
+    {
+        VMREST_LOG_DEBUG("WARNING:: Attempt to read closed socket or no data to read, bytes read %d",read_cnt);
+    }
+    gServerSocketInfo.clients[clientIndex].dataProcessed = 0;
+    gServerSocketInfo.clients[clientIndex].dataRead = read_cnt;
+
 cleanup:
     return dwError;
 error:
@@ -682,6 +801,7 @@ VmsockPosixWriteDataAtOnce(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    uint32_t                         bytesWritten = 0;
 
     if ((gServerSocketInfo.isSecure) && (gServerSocketInfo.clients[clientIndex].ssl != NULL))
     {
@@ -689,7 +809,9 @@ VmsockPosixWriteDataAtOnce(
     }
     else
     {
-        write(gServerSocketInfo.clients[clientIndex].fd, buffer,bytes);
+        bytesWritten = write(gServerSocketInfo.clients[clientIndex].fd, buffer,bytes);
+        VMREST_LOG_DEBUG("\nData..........\n%s\n written bytes %u\n..............", buffer,bytesWritten);
+        //sleep(1); 
     }
     BAIL_ON_VMREST_ERROR(dwError);
 

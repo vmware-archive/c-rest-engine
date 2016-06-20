@@ -26,6 +26,9 @@ typedef struct _CONNECTION
     int                              fd;
     int                              notStale;
     SSL*                             ssl;
+    uint32_t                         dataProcessed;
+    uint32_t                         dataRead;
+    char                             streamDataBuffer[MAX_DATA_BUFFER_LEN];
     PVM_EVENT_DATA                   self;
 } VM_CONNECTION, *PVM_CONNECTION;
 

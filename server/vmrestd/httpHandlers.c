@@ -13,6 +13,8 @@
  */
 
 #include "includes.h"
+#define TEST_SEND_CHUNK 0
+
 
 uint32_t
 VmRESTHandleHTTP_REQUEST(
@@ -23,6 +25,8 @@ VmRESTHandleHTTP_REQUEST(
     uint32_t                         dwError = 0;
     char                             buffer[56];
     char*                            ptr = NULL;
+    uint32_t                         temp = 0;
+    uint32_t                         done = 0;
 
     memset(buffer, '\0', 56);
 
@@ -41,30 +45,75 @@ VmRESTHandleHTTP_REQUEST(
     write(1,"\nVer: ", 6);
     write(1,ptr,8);
 
-//    dwError = VmRESTGetHttpHeader(pRequest,"Location", &ptr);
- //   write(1,"\nHeader General Location: ", 27);
-  //  write(1,ptr,56);
+    dwError = VmRESTGetHttpHeader(pRequest,"Connection", &ptr);
+    write(1,"\nConnection: ", 12);
+    write(1,ptr,11);
 
-    dwError = VmRESTGetHttpHeader(pRequest, "Kumar", &ptr);
-    write(1,"\nHeader Misc Kumar: ", 20);
-    write(1,ptr,56);
-    memset(buffer, '\0', 56);
+    dwError = VmRESTGetHttpHeader(pRequest,"Transfer-Encoding", &ptr);
+    
+    if ((ptr != NULL) && (strlen(ptr) > 0))
+    {
+        write(1,"\nTransfer-Encoding: ", 20);
+        write(1,ptr,8);
+    }
+    else
+    {
+        dwError = VmRESTGetHttpHeader(pRequest,"Content-Length", &ptr);
+        write(1,"\nContent-Length: ", 17);
+        write(1,ptr,3);
+    }
 
-    dwError = VmRESTGetHttpPayload(pRequest, buffer);
     write(1,"\nPayload: ", 9);
-    write(1,buffer,56);
-    memset(buffer, '\0', 56);
+    /**** Get the payload ****/
+    while(done != 1)
+    {
+        dwError = VmRESTGetHttpPayload(
+                      pRequest,
+                      buffer,
+                      &done
+                      );
+        if (strlen(buffer) > 0)
+        {
+            write(1,buffer,strlen(buffer));
+        }
+        memset(buffer, '\0', 56);
+    }
 
-    dwError = VmRESTSetHttpHeader(ppResponse, "Unix", "Linux");
-    dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
-    dwError = VmRESTSetHttpHeader(ppResponse, "Content-Length", "35");
+    /*** SET all HTTP response Headers before setting payload ****/
+
     dwError = VmRESTSetHttpHeader(ppResponse, "Kumar", "Kaushik");
     dwError = VmRESTSetHttpHeader(ppResponse, "Location", "United States");
     dwError = VmRESTSetHttpStatusCode(ppResponse, "200");
     dwError = VmRESTSetHttpStatusVersion(ppResponse,"HTTP/1.1");
     dwError = VmRESTSetHttpReasonPhrase(ppResponse,"OK");
-    dwError = VmRESTSetHttpPayload(ppResponse, "This is response payload with length");
+    dwError = VmRESTSetHttpHeader(ppResponse, "Unix", "Linux");
+    dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
+       
+    /**** Set the payload ****/
+    if (TEST_SEND_CHUNK == 1)
+    {
+        dwError = VmRESTSetHttpHeader(
+                      ppResponse,
+                      "Transfer-Encoding",
+                      "chunked"
+                      );
+        dwError = VmRESTSetHttpPayload(ppResponse,"This is response payload with length 40",41,&temp);
+        dwError = VmRESTSetHttpPayload(ppResponse, "My name is Kumar",16, &temp );
+        dwError = VmRESTSetHttpPayload(ppResponse, "Kaush",5, &temp );
+        dwError = VmRESTSetHttpPayload(ppResponse, "ik  ",2, &temp );
+        
+    }
+    else if(TEST_SEND_CHUNK == 0)
+    {
+        dwError = VmRESTSetHttpHeader(
+                      ppResponse,
+                      "Transfer-Encoding",
+                      "chunked"
+                      );
+        dwError = VmRESTSetHttpPayload(ppResponse,"This is response payload with length 40",41,&temp);
 
+    }
+ 
     write(1, "\nThis is App CB for Method", 26);
 
 cleanup:

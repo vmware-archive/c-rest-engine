@@ -63,3 +63,23 @@ VmSockPosixCloseConnection(
     uint32_t                         clientIndex
     );
 
+uint32_t
+VmSockPosixAdjustProcessedBytes(
+    uint32_t                         clientIndex,
+    uint32_t                         dataSeen
+    );
+
+uint32_t
+VmsockPosixGetLastDataReadCount(
+    uint32_t                         clientIndex,
+    uint32_t*                        readCount
+    );
+
+uint32_t
+VmsockPosixGetXBytes(
+    uint32_t                         bytesRequested,
+    char*                            appBuffer,
+    uint32_t                         clientIndex,
+    uint32_t*                        bytesRead
+    );
+

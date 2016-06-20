@@ -258,5 +258,7 @@ VmRESTShutdown(
             gRESTEngGlobals.config
             );
     }
+    VmRESTLogTerminate(
+        );
 }
 

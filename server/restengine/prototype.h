@@ -106,7 +106,26 @@ VMRESTWriteMessageBodyInResponseStream(
     );
 
 uint32_t
-VmRESTSendResponsePacket(
+VMRESTWriteChunkedMessageInResponseStream(
+    char*                            src,
+    uint32_t                         srcSize,
+    char*                            buffer,
+    uint32_t*                        bytes
+);
+
+uint32_t
+VmRESTSendHeader(
+    PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
+    );
+
+uint32_t
+VmRESTSendChunkedPayload(
+    PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket,
+    uint32_t                         dataLen
+    );
+
+uint32_t
+VmRESTSendHeaderAndPayload(
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
@@ -119,6 +138,11 @@ VmRESTTriggerAppCb(
 uint32_t
 VmRESTTestHTTPResponse(
     PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
+    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
+    );
+
+uint32_t
+VmRESTCloseClient(
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
     );
 
@@ -143,7 +167,6 @@ void
 VmRESTFreeHTTPResponsePacket(
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
-
 
 /***************** httpUtilsInternal.c ************/
 
@@ -171,7 +194,7 @@ uint32_t
 VmRESTGetHttpResponseHeader(
     PVM_REST_HTTP_RESPONSE_PACKET    pResponse,
     char*                            header,
-    char*                            response
+    char**                           response
     );
 
 uint32_t
@@ -228,4 +251,20 @@ VmRESTGetHTTPMiscHeader(
     char const*                      header,
     char**                           ppResponse
     );
+
+uint32_t
+VmRESTGetChunkSize(
+    char*                            lineStart,
+    uint32_t*                        skipBytes,
+    uint32_t*                        chunkSize
+    );
+
+uint32_t
+VmRESTCopyDataWithoutCRLF(
+    uint32_t                         maxBytes,
+    char*                            src,
+    char*                            des,
+    uint32_t*                        actualBytes
+    );
+
 

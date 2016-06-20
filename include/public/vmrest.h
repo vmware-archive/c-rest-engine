@@ -232,7 +232,8 @@ VmRESTSetHttpReasonPhrase(
 uint32_t
 VmRESTGetHttpPayload(
     PREST_REQUEST                    pRequest,
-    char*                            response
+    char*                            response,
+    uint32_t*                        done
     );
 
 
@@ -241,12 +242,16 @@ VmRESTGetHttpPayload(
  *
  * @param[in]                        Reference to HTTP Response object.
  * @param[in]                        Payload data.
+ * @param[in]                        Payload data length.
+ * @param[out]                       Status after all data chunks sent.
  * @return Returns 0 for success
  */
 uint32_t
 VmRESTSetHttpPayload(
     PREST_RESPONSE*                  ppResponse,
-    char*                            buffer
+    char*                            buffer,
+    uint32_t                         dataLen,
+    uint32_t*                        done
     );
 
 /**

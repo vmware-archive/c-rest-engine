@@ -48,7 +48,10 @@ VmInitGlobalServerSocket(
         gServerSocketInfo.clients[index].fd = -1;
         gServerSocketInfo.clients[index].notStale = 0;
         gServerSocketInfo.clients[index].ssl = NULL;
+        gServerSocketInfo.clients[index].dataRead = 0;
+        gServerSocketInfo.clients[index].dataProcessed = 0;
         gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].self = NULL;
+        memset(gServerSocketInfo.clients[index].streamDataBuffer, '\0',MAX_DATA_BUFFER_LEN);
     }
 
     gServerSocketInfo.clientCount = 0;
@@ -99,6 +102,8 @@ VmRemoveAllClientsFromGlobal(
         gServerSocketInfo.clients[index].fd = -1;
         gServerSocketInfo.clients[index].notStale = 0;
         gServerSocketInfo.clients[index].ssl = NULL;
+        gServerSocketInfo.clients[index].dataRead = 0;
+        gServerSocketInfo.clients[index].dataProcessed = 0;
         gServerSocketInfo.clientCount--;
     }
     pthread_mutex_unlock(&(gServerSocketInfo.lock));
