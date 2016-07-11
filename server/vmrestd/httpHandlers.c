@@ -50,7 +50,6 @@ VmRESTHandleHTTP_REQUEST(
     write(1,ptr,11);
 
     dwError = VmRESTGetHttpHeader(pRequest,"Transfer-Encoding", &ptr);
-    
     if ((ptr != NULL) && (strlen(ptr) > 0))
     {
         write(1,"\nTransfer-Encoding: ", 20);
@@ -88,7 +87,7 @@ VmRESTHandleHTTP_REQUEST(
     dwError = VmRESTSetHttpReasonPhrase(ppResponse,"OK");
     dwError = VmRESTSetHttpHeader(ppResponse, "Unix", "Linux");
     dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
-       
+
     /**** Set the payload ****/
     if (TEST_SEND_CHUNK == 1)
     {
@@ -97,23 +96,24 @@ VmRESTHandleHTTP_REQUEST(
                       "Transfer-Encoding",
                       "chunked"
                       );
-        dwError = VmRESTSetHttpPayload(ppResponse,"This is response payload with length 40",41,&temp);
+        dwError = VmRESTSetHttpPayload(ppResponse,
+                  "This is response payload with length 39",39,&temp);
         dwError = VmRESTSetHttpPayload(ppResponse, "My name is Kumar",16, &temp );
         dwError = VmRESTSetHttpPayload(ppResponse, "Kaush",5, &temp );
         dwError = VmRESTSetHttpPayload(ppResponse, "ik  ",2, &temp );
-        
+        dwError = VmRESTSetHttpPayload(ppResponse, "0",0, &temp );
     }
     else if(TEST_SEND_CHUNK == 0)
     {
         dwError = VmRESTSetHttpHeader(
                       ppResponse,
-                      "Transfer-Encoding",
-                      "chunked"
+                      "Content-Length",
+                      "39"
                       );
-        dwError = VmRESTSetHttpPayload(ppResponse,"This is response payload with length 40",41,&temp);
+        dwError = VmRESTSetHttpPayload(ppResponse,
+                  "This is response payload with length 39",39,&temp);
 
     }
- 
     write(1, "\nThis is App CB for Method", 26);
 
 cleanup:

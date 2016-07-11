@@ -765,8 +765,15 @@ VmRESTCopyDataWithoutCRLF(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+    if (maxBytes == 0)
+    {
+        *actualBytes = 0;
+        goto cleanup;
+    }
+
     temp = des;
     res = src;
+  
     while (bytesCounter < (maxBytes -1))
     {
         if(*res == '\r' && *(res+1) == '\n')
@@ -783,7 +790,6 @@ VmRESTCopyDataWithoutCRLF(
     }
     *temp = *res;
     bytesCounter++;
-    
     *actualBytes = bytesCounter - skip;
 
 cleanup:

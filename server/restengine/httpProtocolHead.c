@@ -393,8 +393,9 @@ VmRESTParseAndPopulateHTTPHeaders(
     char*                            line = local;
     char                             appBuffer[MAX_DATA_BUFFER_LEN]={0};
     uint32_t                         bytesReadInBuffer = 0;
+    uint32_t                         skipRead = 0;
 
-    if (buffer == NULL || pReqPacket == NULL || *resStatus != OK)
+    if (buffer == NULL || pReqPacket == NULL || *resStatus != OK || packetLen <= 4)
     {
        VMREST_LOG_DEBUG("VmRESTParseAndPopulateHTTPHeaders(): Invalid params");
        dwError =  VMREST_HTTP_INVALID_PARAMS;
@@ -404,27 +405,44 @@ VmRESTParseAndPopulateHTTPHeaders(
 
     while(1)
     {
-        if (bytesRead == (packetLen - 4))
+        if (bytesRead >= (packetLen - 4))
         {
+
+            if (temp && (strcmp(temp,"\r\n\r\n") == 0))
+            {
+                skipRead = 1;
+            }
             /**** More socket read required to process the headers ****/
 
-            dwError = VmSockPosixAdjustProcessedBytes(
-                          pReqPacket->clientIndex,
-                          bytesRead
-                          );
-            BAIL_ON_VMREST_ERROR(dwError);
-            memset(appBuffer, '\0', MAX_DATA_BUFFER_LEN);
+            if (!skipRead)
+            {
+                dwError = VmSockPosixAdjustProcessedBytes(
+                              pReqPacket->clientIndex,
+                              bytesRead
+                              );
+                BAIL_ON_VMREST_ERROR(dwError);
+                memset(appBuffer, '\0', MAX_DATA_BUFFER_LEN);
 
-            dwError = VmsockPosixGetXBytes(
-                          MAX_DATA_BUFFER_LEN,
-                          appBuffer,
-                          pReqPacket->clientIndex,
-                          &bytesReadInBuffer
-                          );
-            BAIL_ON_VMREST_ERROR(dwError);
-            temp = appBuffer;
-            bytesRead = 1;
-            packetLen = bytesReadInBuffer;
+                dwError = VmsockPosixGetXBytes(
+                              MAX_DATA_BUFFER_LEN,
+                              appBuffer,
+                              pReqPacket->clientIndex,
+                              &bytesReadInBuffer
+                              );
+                BAIL_ON_VMREST_ERROR(dwError);
+                temp = appBuffer;
+                bytesRead = 0;
+                packetLen = bytesReadInBuffer;
+
+                if ((packetLen <= 4) && (appBuffer != NULL)  && (strcmp(appBuffer, "\r\n\r\n") != 0))
+                {
+                    skipRead = 1;
+                    VMREST_LOG_DEBUG("VmRESTParseAndPopulateHTTPHeaders(): Bad HTTP request detected");
+                    dwError =  VMREST_HTTP_VALIDATION_FAILED;
+                    *resStatus = BAD_REQUEST;
+                }
+                BAIL_ON_VMREST_ERROR(dwError);
+            }
         }
         if((*temp == '\r') && (*(temp+1) == '\n'))
         {
@@ -441,6 +459,7 @@ VmRESTParseAndPopulateHTTPHeaders(
                           );
             BAIL_ON_VMREST_ERROR(dwError);
             bytesRead = bytesRead + 2;
+            VMREST_LOG_DEBUG("DEBUG:: Added Request Line\n%s\n", local);
 
             if((*(temp+2) == '\r') && (*(temp+3) == '\n'))
             {
@@ -451,6 +470,7 @@ VmRESTParseAndPopulateHTTPHeaders(
                               bytesRead
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
+                VMREST_LOG_DEBUG("DEBUG::Finished all header parsing, total header bytes %u", bytesRead);
                 break;
             }
             temp = temp + 2;
@@ -513,7 +533,7 @@ VMRESTWriteChunkedMessageInResponseStream(
         memcpy(curr, src, srcSize);
         curr = curr + srcSize;
         memcpy(curr,"\r\n",2);
-        curr = curr + 2;                     
+        curr = curr + 2;
     }
     *bytes = srcSize + chunkLen + 4;
 
@@ -541,12 +561,12 @@ VMRESTWriteMessageBodyInResponseStream(
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-   
+
     curr = buffer;
 
     dwError = VmRESTGetHttpResponseHeader(
                   pResPacket,
-                  "Content-Length", 
+                  "Content-Length",
                   &lenBytes
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -566,10 +586,7 @@ VMRESTWriteMessageBodyInResponseStream(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    memcpy(curr,"\r\n",2);
-    curr = curr + 2;
-
-    *bytes = (contentLen + 2);
+    *bytes = contentLen;
 
 cleanup:
     return dwError;
@@ -716,8 +733,8 @@ VmRESTSendHeader(
                   (sizeof(VM_REST_HTTP_HEADER_NODE) * 10),
                   (void**)&buffer
                   );
-    BAIL_ON_VMREST_ERROR(dwError); 
-    
+    BAIL_ON_VMREST_ERROR(dwError);
+
     pResPacket = *ppResPacket;
     curr = buffer;
 
@@ -745,7 +762,7 @@ VmRESTSendHeader(
     curr = curr + bytes;
     totalBytes = totalBytes + bytes;
     bytes = 0;
-    
+
     dwError = VmsockPosixWriteDataAtOnce(
                   pResPacket->clientIndex,
                   buffer,
@@ -775,7 +792,7 @@ VmRESTSendChunkedPayload(
     uint32_t                         bytes = 0;
     char*                            curr = NULL;
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket = NULL;
-    
+
     if (ppResPacket == NULL || *ppResPacket == NULL)
     {
         VMREST_LOG_DEBUG("VmRESTSendChunkedPayload(): Invalid params");
@@ -897,7 +914,6 @@ VmRESTCloseClient(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    VMREST_LOG_DEBUG("Kaushik.closing clinet");
     /**** Closing the connection all the time. TODO:: check based close of connection ****/
     dwError = VmSockPosixCloseConnection(
                   pResPacket->clientIndex
@@ -964,6 +980,7 @@ VmRESTProcessIncomingData(
                   pReqPacket,
                   &resStatus
                   );
+    VMREST_LOG_DEBUG("DEBUG:: Header parsing done : return code %u", dwError);
 
     /**** 3. Set the total payload information in request object ****/
 
@@ -974,6 +991,7 @@ VmRESTProcessIncomingData(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
+
     if ((contentLen != NULL) && (strlen(contentLen) > 0))
     {
         pReqPacket->dataRemaining = atoi(contentLen);
@@ -982,6 +1000,7 @@ VmRESTProcessIncomingData(
     {
         pReqPacket->dataRemaining = 0;
     }
+    
 
     /**** 4. Give application the callback ****/
 
@@ -992,6 +1011,7 @@ VmRESTProcessIncomingData(
                       pReqPacket,
                       &pResPacket
                       );
+        VMREST_LOG_DEBUG("DEBUG::CallBack given to App: return code %u", dwError);
     }
     else
     {
@@ -1027,17 +1047,24 @@ VmRESTProcessIncomingData(
     dwError = VmRESTCloseClient(
                   pResPacket
                   );
+    VMREST_LOG_DEBUG("DEBUG::Closed Client Connection: error code %u", dwError);
     BAIL_ON_VMREST_ERROR(dwError);
     connectionClosed = 1;
 
 cleanup:
     return dwError;
 error:
+    VMREST_LOG_DEBUG("ERROR:: Something failed");
     if (pReqPacket)
     {
         VmRESTFreeMemory(
             pReqPacket
             );
+        if (pResPacket)
+        {
+            pResPacket->requestPacket = NULL;
+        }
+        pReqPacket = NULL;
     }
     if (pResPacket)
     {
@@ -1050,7 +1077,7 @@ error:
                               );
             if (tempStatus)
             {
-                VMREST_LOG_DEBUG("VmRESTProcessIncomingData(): Error in VmRESTUtilsConvertInttoString");
+                VMREST_LOG_DEBUG("Error in VmRESTUtilsConvertInttoString");
                 goto cleanup;
             }
 
@@ -1060,7 +1087,7 @@ error:
                              );
             if (tempStatus)
             {
-                VMREST_LOG_DEBUG("VmRESTProcessIncomingData(): Error in VmRESTSetHttpStatusCode");
+                VMREST_LOG_DEBUG("Error in VmRESTSetHttpStatusCode");
                 goto cleanup;
             }
             tempStatus = VmRESTSendHeaderAndPayload(
@@ -1068,7 +1095,7 @@ error:
                           );
             if (tempStatus)
             {
-                VMREST_LOG_DEBUG("VmRESTProcessIncomingData(): Error in VmRESTSendHeaderAndPayload");
+                VMREST_LOG_DEBUG("Error in VmRESTSendHeaderAndPayload");
                 goto cleanup;
             }
         }

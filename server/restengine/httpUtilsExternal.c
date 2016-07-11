@@ -175,9 +175,9 @@ VmRESTGetHttpPayload(
     char*                            contentLength = NULL;
     char*                            transferEncoding = NULL;
 
-    if (pRequest == NULL || response == NULL || done == NULL ) 
+    if (pRequest == NULL || response == NULL || done == NULL)
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpPayload(): Invalid params");
+        VMREST_LOG_DEBUG("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -185,7 +185,7 @@ VmRESTGetHttpPayload(
 
     if (sizeof(response) > MAX_DATA_BUFFER_LEN)
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpPayload(): Response buffer size %u not large enough",sizeof(response));
+        VMREST_LOG_DEBUG("Response buffer size %u not large enough",sizeof(response));
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -193,7 +193,7 @@ VmRESTGetHttpPayload(
 
     dwError = VmRESTGetHttpHeader(
                   pRequest,
-                  "Content-Length", 
+                  "Content-Length",
                   &contentLength
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -207,7 +207,7 @@ VmRESTGetHttpPayload(
 
     if (contentLength != NULL && strlen(contentLength) > 0)
     {
-       /**** Content-Length based packets ****/    
+       /**** Content-Length based packets ****/
 
         dataRemaining = pRequest->dataRemaining;
         if ((dataRemaining > 0) && (dataRemaining <= MAX_DATA_BUFFER_LEN))
@@ -240,8 +240,14 @@ VmRESTGetHttpPayload(
         {
             *done = 1;
         }
+        if (bytesRead == 0 && readXBytes != 0)
+        {
+            dwError = VMREST_HTTP_VALIDATION_FAILED;
+            VMREST_LOG_DEBUG("ERROR :: No data available over socket to read");
+            *done = 1;
+        }
     }
-    else if(strcmp(transferEncoding,"chunked") == 0)
+    else if((transferEncoding != NULL) && (strcmp(transferEncoding,"chunked")) == 0)
     {
         res = response;
         dataRemaining = pRequest->dataRemaining;
@@ -294,8 +300,8 @@ VmRESTGetHttpPayload(
                     memcpy(res, (localAppBuffer + chunkLenBytes), extraRead);
                     res = res + extraRead;
                     pRequest->dataRemaining = pRequest->dataRemaining - extraRead;
-                }   
-            
+                }
+
                 memset(localAppBuffer,'\0',MAX_DATA_BUFFER_LEN);
 
                 if (pRequest->dataRemaining > (MAX_DATA_BUFFER_LEN - extraRead))
@@ -314,7 +320,6 @@ VmRESTGetHttpPayload(
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
 
-            
                 dwError = VmRESTCopyDataWithoutCRLF(
                               bytesRead,
                               localAppBuffer,
@@ -332,11 +337,12 @@ VmRESTGetHttpPayload(
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
             }
-        }    
-    }    
+        }
+    }
     else
     {
         VMREST_LOG_DEBUG("VmRESTGetHttpPayload(): Content length not specified");
+        *done = 1;
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -365,7 +371,7 @@ VmRESTSetHttpPayload(
 
     if (ppResponse == NULL || *ppResponse == NULL || buffer == NULL || done == NULL)
     {
-        VMREST_LOG_DEBUG("VmRESTSetHttpPayload(): Invalid params");
+        VMREST_LOG_DEBUG("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -391,13 +397,13 @@ VmRESTSetHttpPayload(
     if ((contentLength != NULL) && (strlen(contentLength) > 0))
     {
         contentLen = atoi(contentLength);
-        if ((contentLen > 0) && (contentLen <= MAX_DATA_BUFFER_LEN))
+        if ((contentLen >= 0) && (contentLen <= MAX_DATA_BUFFER_LEN))
         {
             memcpy(pResponse->messageBody->buffer, buffer, contentLen);
         }
         else
         {
-            VMREST_LOG_DEBUG("VmRESTSetHttpPayload(): Invalid content length %u", contentLen);
+            VMREST_LOG_DEBUG("Invalid content length %u", contentLen);
             dwError = VMREST_HTTP_VALIDATION_FAILED;
         }
         dwError = VmRESTSendHeaderAndPayload(
@@ -410,7 +416,7 @@ VmRESTSetHttpPayload(
     {
          if (dataLen > MAX_DATA_BUFFER_LEN)
          {
-             VMREST_LOG_DEBUG("VmRESTSetHttpPayload(): Chunked data length %u not allowed, please set smaller chunks", dataLen);
+             VMREST_LOG_DEBUG("Chunked data length %u not allowed", dataLen);
              dwError = VMREST_HTTP_VALIDATION_FAILED;
          }
          BAIL_ON_VMREST_ERROR(dwError);
@@ -437,7 +443,7 @@ VmRESTSetHttpPayload(
     }
     else
     {
-        VMREST_LOG_DEBUG("VmRESTSetHttpPayload(): Content length or TransferEncoding not specified in packet header");
+        VMREST_LOG_DEBUG("Content length or TransferEncoding");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -445,7 +451,7 @@ VmRESTSetHttpPayload(
 cleanup:
     return dwError;
 error:
-    VMREST_LOG_DEBUG("VmRESTSetHttpPayload() SomeThing failed");
+    VMREST_LOG_DEBUG("SomeThing failed");
     goto cleanup;
 }
 

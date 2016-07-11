@@ -51,7 +51,8 @@ VmInitGlobalServerSocket(
         gServerSocketInfo.clients[index].dataRead = 0;
         gServerSocketInfo.clients[index].dataProcessed = 0;
         gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].self = NULL;
-        memset(gServerSocketInfo.clients[index].streamDataBuffer, '\0',MAX_DATA_BUFFER_LEN);
+        memset(gServerSocketInfo.clients[index].streamDataBuffer,
+               '\0',MAX_DATA_BUFFER_LEN);
     }
 
     gServerSocketInfo.clientCount = 0;
