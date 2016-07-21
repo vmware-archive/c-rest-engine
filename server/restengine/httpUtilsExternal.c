@@ -341,9 +341,8 @@ VmRESTGetHttpPayload(
     }
     else
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpPayload(): Content length not specified");
+        VMREST_LOG_DEBUG("WARNING: Data length Specific Header not set");
         *done = 1;
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -409,7 +408,9 @@ VmRESTSetHttpPayload(
         dwError = VmRESTSendHeaderAndPayload(
                       ppResponse
                       );
+        VMREST_LOG_DEBUG("Sending Header and Payload done, returned code %u", dwError);
         BAIL_ON_VMREST_ERROR(dwError);
+        pResponse->headerSent = 1;
         *done = 1;
     }
     else if ((transferEncoding != NULL) && (strcmp(transferEncoding, "chunked") == 0))

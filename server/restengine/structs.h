@@ -47,6 +47,10 @@ typedef struct _REST_ENG_GLOBALS
     PVMREST_THREAD                   pThreadpool;
     uint32_t                         nThreads;
     PVM_REST_CONFIG                  config;
+    pthread_mutex_t                  mutex;
+    PREST_ENDPOINT                   pEndPointQueue;
+    uint32_t                         useEndPoint;
+    REST_PROCESSOR                   internalHandler;
 
 } REST_ENG_GLOBALS, *PREST_ENG_GLOBALS;
 
@@ -55,6 +59,13 @@ typedef struct _VM_REST_HTTP_MESSAGE_BODY
     char                             buffer[MAX_DATA_BUFFER_LEN];
 
 }VM_REST_HTTP_MESSAGE_BODY, *PVM_REST_HTTP_MESSAGE_BODY;
+
+typedef struct _VM_REST_URL_PARAMS
+{
+    char                             key[MAX_KEY_VAL_PARAM_LEN];
+    char                             value[MAX_KEY_VAL_PARAM_LEN];
+
+}VM_REST_URL_PARAMS, *PVM_REST_URL_PARAMS;
 
 /* http protocol structures */
 
@@ -94,6 +105,7 @@ typedef struct _VM_REST_HTTP_REQUEST_PACKET
     PMISC_HEADER_QUEUE               miscHeader;
     uint32_t                         clientIndex;
     uint32_t                         dataRemaining;
+    VM_REST_URL_PARAMS               paramArray[MAX_URL_PARAMS_ARR_SIZE];    
 
 }VM_REST_HTTP_REQUEST_PACKET, *PVM_REST_HTTP_REQUEST_PACKET;
 
@@ -112,3 +124,4 @@ struct _VM_REST_RESPONSE_DATA
 {
 
 }VM_REST_RESPONSE_DATA, *PVM_REST_RESPONSE_DATA;
+

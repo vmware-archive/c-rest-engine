@@ -4,7 +4,8 @@ vmrestd_SOURCES = \
     globals.c \
     httpHandlers.c \
     main.c \
-    signal.c
+    signal.c \
+    tdnf.c
 
 vmrestd_CPPFLAGS = \
     -I$(top_srcdir)/include \

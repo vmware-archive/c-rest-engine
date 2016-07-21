@@ -14,6 +14,50 @@
 
 #include "includes.h"
 
+uint32_t
+VmRegisterAllHandler(
+    void
+    )
+{
+    uint32_t                         dwError = 0;
+    /**** Call helper in global with resource specific pointer ****/
+
+    VmAppStoreEndpoint(
+        0,
+        NULL,
+        &VmHandleTDNFVersionGet,
+        &VmHandleTDNFVersionSet,
+        NULL
+        );
+    
+     dwError = VmRESTRegisterHandler(
+                  "/v1/tdnf/version",
+                  &(gVmEndPointHandler[0]),
+                  NULL
+                  );
+     BAIL_ON_VMREST_ERROR(dwError);
+
+    VmAppStoreEndpoint(
+        1,
+        &VmHandlePackageWrite,
+        &VmHandlePackageRead,
+        &VmHandlePackageUpdate,
+        &VmHandlePackageDelete
+        );
+
+     dwError = VmRESTRegisterHandler(
+                  "/v1/tdnf/packages",
+                  &(gVmEndPointHandler[1]),
+                  NULL
+                  );
+     BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
 int main(int argc, char *argv[])
 {
     uint32_t                         dwError = 0;
@@ -48,13 +92,17 @@ int main(int argc, char *argv[])
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTRegisterHandler(
+
+    /**** register all handler ****/
+    VmRegisterAllHandler();
+
+/*    dwError = VmRESTRegisterHandler(
                   NULL,
                   gpVmRestHandlers,
                   NULL
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-
+*/
     dwError = VmRESTStart(
                   );
     BAIL_ON_VMREST_ERROR(dwError);

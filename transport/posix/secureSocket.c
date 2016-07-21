@@ -610,6 +610,17 @@ VmSockPosixCloseConnection(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    int                              ctlFd = 0;
+
+    ctlFd = epoll_ctl(pQueue->epoll_fd,
+                         EPOLL_CTL_DEL,
+                         gServerSocketInfo.clients[clientIndex].fd,
+                         NULL
+                         );
+    if (ctlFd == -1)
+    {
+        VMREST_LOG_DEBUG("ERROR: Epoll ctl command failed");
+    }
 
     if (gServerSocketInfo.isSecure)
     {

@@ -13,7 +13,9 @@ librestengine_la_SOURCES = \
     httpProtocolHead.c \
     httpAllocStruct.c \
     httpUtilsInternal.c \
-    httpUtilsExternal.c
+    httpUtilsExternal.c \
+    httpMain.c \
+    restProtocolHead.c
 
 librestengine_la_LIBADD = \
     @top_builddir@/common/libcommon.la \

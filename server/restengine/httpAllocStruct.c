@@ -212,10 +212,80 @@ VmRESTFreeHTTPResponsePacket(
     }
 }
 
+uint32_t
+VmRESTAllocateEndPoint(
+     PREST_ENDPOINT*                 ppEndPoint
+     )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PREST_ENDPOINT                   pEndPoint = NULL;
+    char*                            pEndPointURI = NULL;
+    PREST_PROCESSOR                  pHandler = NULL;
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(REST_ENDPOINT),
+                  (void**)&pEndPoint
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (void**)&pEndPointURI
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(REST_PROCESSOR),
+                  (void**)&pHandler
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    pEndPoint->pszEndPointURI = pEndPointURI;
+    pEndPoint->pHandler = pHandler;
+
+    *ppEndPoint = pEndPoint;
+     
+cleanup:
+    return dwError;
+error:
+    if (pEndPoint)
+    {
+        VmRESTFreeEndPoint(
+            pEndPoint
+            );
+    }
+    goto cleanup;
+}
+
+void
+VmRESTFreeEndPoint(
+    PREST_ENDPOINT                   pEndPoint
+    )
+{
+    if (pEndPoint)
+    {
+        if (pEndPoint->pszEndPointURI)
+        {
+            VmRESTFreeMemory(
+                pEndPoint->pszEndPointURI
+                );
+            pEndPoint->pszEndPointURI = NULL;
+        }
+        if (pEndPoint->pHandler)
+        {
+            VmRESTFreeMemory(
+                pEndPoint->pHandler
+                );
+            pEndPoint->pHandler = NULL;
+        }
+        VmRESTFreeMemory(pEndPoint);
+    }
+}
+
 static
 uint32_t
 VmRESTAllocateRequestLine(
-    PVM_REST_HTTP_REQUEST_LINE* ppReqLine
+    PVM_REST_HTTP_REQUEST_LINE*      ppReqLine
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;

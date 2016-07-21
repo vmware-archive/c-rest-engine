@@ -125,3 +125,81 @@ error:
     goto cleanup;
 }
 
+#if 0
+uint32_t
+VmRESTHandleCreate(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    )
+{
+    uint32_t                         dwError = 0;
+
+    printf("\nCreate\n");
+
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTHandleRead(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    )
+{
+    uint32_t                         dwError = 0;
+
+    printf("\nRead\n");
+
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTHandleDelete(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    )
+{
+    uint32_t                         dwError = 0;
+
+    printf("\nDelete\n");
+
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTHandleUpdate(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    )
+{
+    uint32_t                         dwError = 0;
+
+    printf("\nUpdate\n");
+
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+#endif

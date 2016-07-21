@@ -36,6 +36,15 @@ VmRESTSrvHandleSignals(
     void
     );
 
+/* global.c */
+void
+VmAppStoreEndpoint(
+    uint32_t                         index,
+    PFN_PROCESS_REST_CREATE          pfnCreate,
+    PFN_PROCESS_REST_READ            pfnRead,
+    PFN_PROCESS_REST_UPDATE          pfnUpdate,
+    PFN_PROCESS_REST_DELETE          pfnDelete
+    );
 
 /* httpHandlers.c */
 
@@ -44,3 +53,81 @@ VmRESTHandleHTTP_REQUEST(
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     );
+
+/*
+uint32_t
+VmRESTHandleCreate(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+
+uint32_t
+VmRESTHandleRead(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+
+uint32_t
+VmRESTHandleDelete(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+
+uint32_t
+VmRESTHandleUpdate(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+*/
+
+/**** tdnf.c ****/
+
+/***** TDNF Version ****/
+uint32_t
+VmHandleTDNFVersionGet(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+
+uint32_t
+VmHandleTDNFVersionSet(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+
+
+/***** Package related operation ****/
+uint32_t
+VmHandlePackageRead(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+
+uint32_t
+VmHandlePackageWrite(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+
+uint32_t
+VmHandlePackageUpdate(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+
+uint32_t
+VmHandlePackageDelete(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+

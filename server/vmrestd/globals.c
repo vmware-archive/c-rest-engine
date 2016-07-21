@@ -21,7 +21,29 @@ VMREST_GLOBALS gVMRESTGlobals =
 
 REST_PROCESSOR gVmRestHandlers =
 {
-    .pfnHandleRequest = &VmRESTHandleHTTP_REQUEST
+    .pfnHandleRequest = &VmRESTHandleHTTP_REQUEST,
+    .pfnHandleCreate = NULL,
+    .pfnHandleRead = NULL,
+    .pfnHandleUpdate = NULL,
+    .pfnHandleDelete = NULL
 };
 
 PREST_PROCESSOR gpVmRestHandlers = &gVmRestHandlers;
+
+REST_PROCESSOR gVmEndPointHandler[MAX_RESOURCE];
+
+void
+VmAppStoreEndpoint(
+    uint32_t                         index,
+    PFN_PROCESS_REST_CREATE          pfnCreate,
+    PFN_PROCESS_REST_READ            pfnRead,
+    PFN_PROCESS_REST_UPDATE          pfnUpdate,
+    PFN_PROCESS_REST_DELETE          pfnDelete
+    )
+{
+    gVmEndPointHandler[index].pfnHandleCreate = pfnCreate;
+    gVmEndPointHandler[index].pfnHandleRead = pfnRead;
+    gVmEndPointHandler[index].pfnHandleUpdate = pfnUpdate;
+    gVmEndPointHandler[index].pfnHandleDelete = pfnDelete;
+}
+

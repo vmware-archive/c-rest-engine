@@ -168,6 +168,16 @@ VmRESTFreeHTTPResponsePacket(
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
+uint32_t
+VmRESTAllocateEndPoint(
+     PREST_ENDPOINT*                 ppEndPoint
+     );
+
+void
+VmRESTFreeEndPoint(
+    PREST_ENDPOINT                   pEndPoint
+    );
+
 /***************** httpUtilsInternal.c ************/
 
 uint32_t
@@ -267,4 +277,87 @@ VmRESTCopyDataWithoutCRLF(
     uint32_t*                        actualBytes
     );
 
+/***************** restProtocolHead.c  ************/
+
+uint32_t
+VmRestEngineHandler(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse
+    );
+
+uint32_t
+VmRestEngineInitEndPointRegistration(
+    );
+
+void
+VmRestEngineShutdownEndPointRegistration(
+    );
+
+uint32_t
+VmRestEngineAddEndpoint(
+    char*                            pEndPointURI,
+    PREST_PROCESSOR                  pHandler
+    );
+
+uint32_t
+VmRestEngineRemoveEndpoint(
+    char*                            pEndPointURI
+    );
+
+uint32_t
+VmRestEngineGetEndPoint(
+    char*                            pEndPointURI,
+    PREST_ENDPOINT*                  ppEndPoint
+    );
+
+uint32_t
+VmRestGetEndPointURIfromRequestURI(
+    char*                            pRequestURI,
+    char*                            endPointURI
+    );
+
+uint32_t
+VmRestGetParamsCountInReqURI(
+    char*                            pRequestURI,
+    uint32_t*                        paramCount
+    );
+
+uint32_t
+VmRestParseParams(
+    char*                            pRequestURI,
+    uint32_t                         paramsCount,
+    PREST_REQUEST                    pRequest
+    );
+
+/***************** httpMain.c  ************/
+
+uint32_t
+VmHTTPInit(
+    PREST_CONF                       pConfig
+    );
+
+uint32_t
+VmHTTPStart(
+    void
+    );
+
+uint32_t
+VmHTTPRegisterHandler(
+    PREST_PROCESSOR                  pHandler
+    );
+
+uint32_t
+VmHTTPUnRegisterHandler(
+    void
+    );
+
+uint32_t
+VmHTTPStop(
+    void
+    );
+
+void
+VmHTTPShutdown(
+    void
+    );
 
