@@ -32,7 +32,7 @@ PREST_PROCESSOR gpVmRestHandlers = &gVmRestHandlers;
 
 REST_PROCESSOR gVmEndPointHandler[MAX_RESOURCE];
 
-VMRESTD_CONFIG restdConfig = {0};
+VMRESTD_CONFIG restdConfig;
 
 void
 VmAppStoreEndpoint(
