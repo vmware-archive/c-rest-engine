@@ -997,6 +997,7 @@ VmRESTProcessIncomingData(
     uint32_t                         connectionClosed = 0;
     char                             statusStng[MAX_STATUS_LENGTH] = {0};
     char*                            contentLen = NULL;
+    uint32_t                         done = 0;
 
     /**** 1. Allocate and init request and response objects ****/
 
@@ -1116,31 +1117,55 @@ error:
     {
         if (!connectionClosed)
         {
-            memset(statusStng,'\0', MAX_STATUS_LENGTH);
-            tempStatus =  VmRESTUtilsConvertInttoString(
-                              INTERNAL_SERVER_ERROR,
-                              statusStng
-                              );
-            if (tempStatus)
-            {
-                VMREST_LOG_DEBUG("Error in VmRESTUtilsConvertInttoString");
-                goto cleanup;
-            }
-
-            tempStatus = VmRESTSetHttpStatusCode(
-                             &pResPacket,
-                             statusStng
-                             );
-            if (tempStatus)
-            {
-                VMREST_LOG_DEBUG("Error in VmRESTSetHttpStatusCode");
-                goto cleanup;
-            }
             if (pResPacket->headerSent == 0)
             {
-                tempStatus = VmRESTSendHeaderAndPayload(
-                                 &pResPacket
+                if (dwError == 100)
+                {
+                    tempStatus = VmRESTSetFailureResponse(
+                                     &pResPacket,
+                                     "400",
+                                     "Bad Request"
+                                     );
+                }
+                else
+                {
+                    tempStatus = VmRESTSetFailureResponse(
+                                     &pResPacket,
+                                     NULL,
+                                     NULL
+                                     );
+                }
+                if (tempStatus)
+                {
+                    VMREST_LOG_DEBUG("ERROR setting the failure response object");
+                    goto cleanup;
+                }
+
+
+                tempStatus = VmRESTSetDataLength(
+                                 &pResPacket,
+                                 "0"
                                  );
+
+                if (tempStatus)
+                {
+                    VMREST_LOG_DEBUG("ERROR setting the data length in failure response");
+                    goto cleanup;
+                }
+
+                tempStatus =  VmRESTSetData(
+                                  &pResPacket,
+                                  "",
+                                  0,
+                                  &done
+                                  );
+
+                if (tempStatus)
+                {
+                    VMREST_LOG_DEBUG("ERROR setting data in failure response");
+                    goto cleanup;
+                }
+
                 pResPacket->headerSent = 1;
             }
             if (tempStatus)

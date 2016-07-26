@@ -17,3 +17,13 @@ typedef struct _VMREST_GLOBALS
     pthread_mutex_t mutex;
 } VMREST_GLOBALS, *PVMREST_GLOBALS;
 
+typedef struct _VMRESTD_CONFIG
+{
+    char                             sslCert[MAX_CONFIG_PARAMS_LEN];
+    char                             sslKey[MAX_CONFIG_PARAMS_LEN];
+    char                             port[MAX_CONFIG_PARAMS_LEN];
+    char                             debugLogFile[MAX_CONFIG_PARAMS_LEN];
+    char                             clientCnt[MAX_CONFIG_PARAMS_LEN];
+    char                             workerThCnt[MAX_CONFIG_PARAMS_LEN];
+    char                             configFile[MAX_CONFIG_PARAMS_LEN];
+} VMRESTD_CONFIG, *PVMRESTD_CONFIG;
