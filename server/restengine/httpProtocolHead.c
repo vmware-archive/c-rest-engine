@@ -1173,12 +1173,12 @@ error:
                 VMREST_LOG_DEBUG("Error in VmRESTSendHeaderAndPayload");
                 goto cleanup;
             }
-        }
-        tempStatus = VmRESTCloseClient(
+            tempStatus = VmRESTCloseClient(
                          pResPacket
                          );
-        /**** Error response is already sent to client, return success ****/
-        dwError = REST_ENGINE_SUCCESS;
+            /**** Error response is already sent to client, return success ****/
+            dwError = REST_ENGINE_SUCCESS;
+        }
     }
     goto cleanup;
 }
