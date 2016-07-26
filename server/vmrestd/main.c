@@ -398,7 +398,8 @@ void readOptionRestEngine(int argc, char *argv[])
                      pConfig->pMaxWorkerThread = restdConfig.workerThCnt;
                 }
                 dwError = VmRESTInit(
-                              pConfig
+                              pConfig,
+                              restdConfig.configFile
                               );
                 if (!dwError)
                 {

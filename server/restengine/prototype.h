@@ -333,7 +333,8 @@ VmRestParseParams(
 
 uint32_t
 VmHTTPInit(
-    PREST_CONF                       pConfig
+    PREST_CONF                       pConfig,
+    char*                            file
     );
 
 uint32_t

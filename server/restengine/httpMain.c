@@ -17,7 +17,8 @@ int  vmrest_syslog_level;
 
 uint32_t
 VmHTTPInit(
-    PREST_CONF                       pConfig
+    PREST_CONF                       pConfig,
+    char*                            file
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -36,12 +37,23 @@ VmHTTPInit(
     }
     else if (pConfig == NULL)
     {
-        /**** Init the rest engine with default config ****/
-        dwError = VmRESTParseAndPopulateConfigFile(
-                      "/root/restconfig.txt",
-                      &restConfig
-                      );
+        if (file == NULL)
+        {
+            /**** Init the rest engine with default config ****/
+            dwError = VmRESTParseAndPopulateConfigFile(
+                          "/root/restconfig.txt",
+                          &restConfig
+                          );
+        }
+        else
+        {
+            dwError = VmRESTParseAndPopulateConfigFile(
+                          file,
+                          &restConfig
+                          );
+        }
         BAIL_ON_VMREST_ERROR(dwError);
+ 
 
         /**** Validate the config param ****/
         dwError= VmRESTValidateConfig(

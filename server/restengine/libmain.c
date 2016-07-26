@@ -17,13 +17,15 @@ int  vmrest_syslog_level;
 
 uint32_t
 VmRESTInit(
-    PREST_CONF                       pConfig
+    PREST_CONF                       pConfig,
+    char*                            file
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     dwError = VmHTTPInit(
-                  pConfig
+                  pConfig,
+                  file
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 

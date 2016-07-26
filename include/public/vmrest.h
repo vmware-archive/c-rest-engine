@@ -84,13 +84,17 @@ typedef struct _REST_ENDPOINT
  *
  * @param[in]                        Rest engine configuration.
  *                                   For default behaviour call this with NULL
- *                                   This will read config from file /root/restConfig.txt
+ *                                   to read config params from file.
+ * @param[in]                        Config file Path.
+ *                                   If this is NULL, restengine will try
+ *                                   reading config from /root/restconfig.txt.
  * @return                           Returns 0 for success.
  */
 
 uint32_t
 VmRESTInit(
-    PREST_CONF                       pConfig
+    PREST_CONF                       pConfig,
+    char*                            file
     );
 
 /**
