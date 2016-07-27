@@ -40,10 +40,10 @@ VmRESTSrvHandleSignals(
 void
 VmAppStoreEndpoint(
     uint32_t                         index,
-    PFN_PROCESS_REST_CREATE          pfnCreate,
-    PFN_PROCESS_REST_READ            pfnRead,
-    PFN_PROCESS_REST_UPDATE          pfnUpdate,
-    PFN_PROCESS_REST_DELETE          pfnDelete
+    PFN_PROCESS_REST_CRUD            pfnCreate,
+    PFN_PROCESS_REST_CRUD            pfnRead,
+    PFN_PROCESS_REST_CRUD            pfnUpdate,
+    PFN_PROCESS_REST_CRUD            pfnDelete
     );
 
 /* httpHandlers.c */

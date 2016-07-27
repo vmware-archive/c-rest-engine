@@ -25,28 +25,7 @@ typedef uint32_t(
     );
 
 typedef uint32_t(
-*PFN_PROCESS_REST_CREATE)(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse,
-    uint32_t                         paramsCount
-    );
-
-typedef uint32_t(
-*PFN_PROCESS_REST_READ)(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse,
-    uint32_t                         paramsCount
-    );
-
-typedef uint32_t(
-*PFN_PROCESS_REST_UPDATE)(
-    PREST_REQUEST                    pRequest,
-    PREST_RESPONSE*                  ppResponse,
-    uint32_t                         paramsCount
-    );
-
-typedef uint32_t(
-*PFN_PROCESS_REST_DELETE)(
+*PFN_PROCESS_REST_CRUD)(
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse,
     uint32_t                         paramsCount
@@ -55,10 +34,10 @@ typedef uint32_t(
 typedef struct _REST_PROCESSOR
 {
     PFN_PROCESS_HTTP_REQUEST         pfnHandleRequest;
-    PFN_PROCESS_REST_CREATE          pfnHandleCreate;
-    PFN_PROCESS_REST_READ            pfnHandleRead;
-    PFN_PROCESS_REST_UPDATE          pfnHandleUpdate;
-    PFN_PROCESS_REST_DELETE          pfnHandleDelete;
+    PFN_PROCESS_REST_CRUD            pfnHandleCreate;
+    PFN_PROCESS_REST_CRUD            pfnHandleRead;
+    PFN_PROCESS_REST_CRUD            pfnHandleUpdate;
+    PFN_PROCESS_REST_CRUD            pfnHandleDelete;
 
 } REST_PROCESSOR, *PREST_PROCESSOR;
 
