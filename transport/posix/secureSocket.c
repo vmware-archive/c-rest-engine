@@ -353,7 +353,7 @@ VmSockPosixServerListenThread(
     acceptData.ssl = NULL;
 
     ev.data.ptr = &acceptData;
-    ev.events = EPOLLIN | EPOLLET;
+    ev.events = EPOLLIN;
 
     control_fd = epoll_ctl(
                      epoll_fd,
@@ -495,13 +495,15 @@ VmSockPosixHandleEventsFromQueue(
                           );
             BAIL_ON_VMREST_ERROR(dwError);
 
-            dwError = VmRESTProcessIncomingData(
-                          appBuffer,
-                          bytesRead,
-                          acceptData->index
-                          );
-            BAIL_ON_VMREST_ERROR(dwError);
-
+            if (bytesRead > 0)
+            {
+                dwError = VmRESTProcessIncomingData(
+                              appBuffer,
+                              bytesRead,
+                              acceptData->index
+                              );
+                BAIL_ON_VMREST_ERROR(dwError);
+            }
         }
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -588,7 +590,7 @@ retry:
     acceptData->index = clientIndex;
 
     ev.data.ptr = (void *)acceptData;
-    ev.events = EPOLLIN | EPOLLET;
+    ev.events = EPOLLIN;
 
     control_fd = epoll_ctl(pQueue->epoll_fd, EPOLL_CTL_ADD, accept_fd, &ev);
     if (control_fd == -1)

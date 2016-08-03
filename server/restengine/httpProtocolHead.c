@@ -459,8 +459,6 @@ VmRESTParseAndPopulateHTTPHeaders(
                           );
             BAIL_ON_VMREST_ERROR(dwError);
             bytesRead = bytesRead + 2;
-            VMREST_LOG_DEBUG("DEBUG:: Added Request Line\n%s\n", local);
-
             if((*(temp+2) == '\r') && (*(temp+3) == '\n'))
             {
                 bytesRead = bytesRead + 2;
