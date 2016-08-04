@@ -232,10 +232,12 @@ error:
 
 uint32_t
 VmRESTSetSuccessResponse(
+    PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char*                            connection = NULL;
 
     dwError = VmRESTSetHttpStatusCode(
                   ppResponse,
@@ -255,17 +257,36 @@ VmRESTSetSuccessResponse(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTSetHttpHeader(
-                  ppResponse,
+    dwError = VmRESTGetHttpHeader(
+                  pRequest,
                   "Connection",
-                  "close"
+                  &connection
                   );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if ((connection != NULL) && (strcmp(connection, " keep-alive") == 0))
+    {
+        dwError = VmRESTSetHttpHeader(
+                      ppResponse,
+                      "Connection",
+                      "keep-alive"
+                      );
+    }
+    else
+    {
+        dwError = VmRESTSetHttpHeader(
+                      ppResponse,
+                      "Connection",
+                      "close"
+                      );
+    }
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     return dwError;
 error:
     goto cleanup;
+
 }
 
 uint32_t

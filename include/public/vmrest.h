@@ -174,10 +174,12 @@ VmRESTSetDataLength(
  *        This will populate 200 OK HTTP status code in response object.
  *
  * @param[in]                        Reference to HTTP Request object.
+ * @param[in]                        Reference to HTTP Response object.
  * @return                           Returns 0 for success
  */
 uint32_t
 VmRESTSetSuccessResponse(
+    PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     );
 

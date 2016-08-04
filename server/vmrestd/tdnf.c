@@ -58,6 +58,7 @@ VmHandleTDNFVersionGet(
     /*** Return hardcoded tdnf version v1.0.5 ****/
 
     dwError = VmRESTSetSuccessResponse(
+                  pRequest,
                   ppResponse
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -144,6 +145,7 @@ VmHandleTDNFVersionSet(
     write(1,value, 6);
 
     dwError = VmRESTSetSuccessResponse(
+                  pRequest,
                   ppResponse
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -240,6 +242,7 @@ VmHandlePackageRead(
     done = 0;
 
     dwError = VmRESTSetSuccessResponse(
+                  pRequest,
                   ppResponse
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -284,6 +287,7 @@ VmHandlePackageWrite(
     write(1,"\nPackage Write operation: ",26);
 
     dwError = VmRESTSetSuccessResponse(
+                  pRequest,
                   ppResponse
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -322,6 +326,7 @@ VmHandlePackageUpdate(
     write(1,"\nPackage UPDATE operation:",26);
 
     dwError = VmRESTSetSuccessResponse(
+                  pRequest,
                   ppResponse
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -359,6 +364,7 @@ VmHandlePackageDelete(
     write(1,"\nPackage DELETE operation:",26);
 
     dwError = VmRESTSetSuccessResponse(
+                  pRequest,
                   ppResponse
                   );
     BAIL_ON_VMREST_ERROR(dwError);

@@ -957,11 +957,42 @@ VmRESTCloseClient(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    /**** Closing the connection all the time. TODO:: check based close of connection ****/
-    dwError = VmSockPosixCloseConnection(
+    char*                            connection = NULL;
+    uint32_t                         closeSocket = 1;
+    char*                            statusStartChar = NULL;
+
+    /**** Look for response status ****/
+    statusStartChar = pResPacket->statusLine->statusCode;
+
+    if(statusStartChar != NULL && (*statusStartChar == '4' || *statusStartChar == '5'))
+    {
+        /**** Failure response sent, must close client ****/
+        closeSocket = 1;
+    }
+    else
+    {
+        /**** Non failure response sent, respect client say on connection close ****/
+        if (pResPacket->requestPacket != NULL)
+        {
+            dwError = VmRESTGetHttpHeader(
+                          pResPacket->requestPacket,
+                          "Connection",
+                          &connection
+                          );
+        }
+
+        if ((connection != NULL) && (strcmp(connection, " keep-alive") == 0))
+        {
+            closeSocket = 0;
+        }
+    }
+    if (closeSocket == 1)
+    {
+        dwError = VmSockPosixCloseConnection(
                   pResPacket->clientIndex
                   );
-    BAIL_ON_VMREST_ERROR(dwError);
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
 
     /**** Free all associcated request and response object memory ****/
     if (pResPacket->requestPacket)

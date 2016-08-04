@@ -353,7 +353,7 @@ VmSockPosixServerListenThread(
     acceptData.ssl = NULL;
 
     ev.data.ptr = &acceptData;
-    ev.events = EPOLLIN;
+    ev.events = EPOLLIN | EPOLLET;
 
     control_fd = epoll_ctl(
                      epoll_fd,
@@ -544,13 +544,25 @@ VmsockPosixAcceptNewConnection(
     BAIL_ON_VMREST_ERROR(dwError);    
 
     sin_size  = sizeof(client_addr);
+tryagain:
     accept_fd = accept(server_fd, (struct sockaddr *)&client_addr, &sin_size);
     if (accept_fd == -1)
     {
-        VMREST_LOG_DEBUG("VmsockPosixAcceptNewConnection():Accept connection failed");
+        VMREST_LOG_DEBUG("VmsockPosixAcceptNewConnection():Accept connection failed, %d", errno);
+        if (errno == 11)
+        {
+            if (cntRty <= try )
+            {
+                cntRty++;
+                sleep(1);
+                goto tryagain;
+            }
+        }
         dwError = VMREST_TRANSPORT_ACCEPT_CONN_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+    cntRty = 0;
+    VMREST_LOG_DEBUG("DEBUG: Accept connection success, new client socket %d", accept_fd);
 
     dwError = VmSockPosixSetSocketNonBlocking(
                   accept_fd
@@ -590,7 +602,7 @@ retry:
     acceptData->index = clientIndex;
 
     ev.data.ptr = (void *)acceptData;
-    ev.events = EPOLLIN;
+    ev.events = EPOLLIN | EPOLLET;
 
     control_fd = epoll_ctl(pQueue->epoll_fd, EPOLL_CTL_ADD, accept_fd, &ev);
     if (control_fd == -1)
@@ -603,6 +615,12 @@ retry:
 cleanup:
     return dwError;
 error:
+    if (acceptData != NULL)
+    {
+        VmRESTFreeMemory(acceptData);
+        acceptData = NULL;
+        dwError = REST_ENGINE_SUCCESS;
+    }
     goto cleanup;
 }
 
@@ -631,7 +649,8 @@ VmSockPosixCloseConnection(
     }
     else
     {
-        close(gServerSocketInfo.clients[clientIndex].fd);
+        shutdown(gServerSocketInfo.clients[clientIndex].fd, SHUT_WR);
+        ctlFd = close(gServerSocketInfo.clients[clientIndex].fd);
     }
     VmRESTFreeMemory(
         gServerSocketInfo.clients[clientIndex].self
@@ -761,7 +780,7 @@ VmsockPosixGetXBytes(
             VMREST_LOG_DEBUG("VmsockPosixGetXBytes() WARNING::\
              Requested %u bytes, available only %u bytes",
              bytesRequested,
-             (dataAvailableInCache + remainingBytes - 1));
+             (dataAvailableInCache + remainingBytes));
         }
         memcpy((appBuffer + dataAvailableInCache),
               &(gServerSocketInfo.clients[clientIndex].streamDataBuffer[dataIndex]),
@@ -788,14 +807,14 @@ VmsockPosixReadDataAtOnce(
     if ((gServerSocketInfo.isSecure == 1) &&
         (gServerSocketInfo.clients[clientIndex].ssl == NULL))
     {
-        VMREST_LOG_DEBUG("VmsockPosixReadDataAtOnce(): Invalid ssl params");
-        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+         VMREST_LOG_DEBUG("WARNING: Trying to read closed or invalid SSL socket");
+         goto cleanup;
     }
     else if ((gServerSocketInfo.isSecure == 0)
              && ( gServerSocketInfo.clients[clientIndex].fd <= 0))
     {
-        VMREST_LOG_DEBUG("VmsockPosixReadDataAtOnce(): Invalid params");
-        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+         VMREST_LOG_DEBUG("WARNING: Trying to read closed or invalid socket");
+         goto cleanup;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -812,7 +831,7 @@ VmsockPosixReadDataAtOnce(
         read_cnt = read(gServerSocketInfo.clients[clientIndex].fd,
                    &(gServerSocketInfo.clients[clientIndex].streamDataBuffer),
                    MAX_DATA_BUFFER_LEN);
-        VMREST_LOG_DEBUG("KK:: STREAM READ>>\n %s",&(gServerSocketInfo.clients[clientIndex].streamDataBuffer));
+        VMREST_LOG_DEBUG("DEBUG: STREAM READ>>\n%s\n",&(gServerSocketInfo.clients[clientIndex].streamDataBuffer));
     }
     if (read_cnt == -1 || read_cnt == 0)
     {
@@ -827,6 +846,8 @@ socket or no data to read, bytes read %d",read_cnt);
 
     gServerSocketInfo.clients[clientIndex].dataProcessed = 0;
     gServerSocketInfo.clients[clientIndex].dataRead = read_cnt;
+
+    BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     return dwError;
