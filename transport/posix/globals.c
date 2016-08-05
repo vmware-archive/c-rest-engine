@@ -99,6 +99,11 @@ VmRemoveAllClientsFromGlobal(
             {
                 close(gServerSocketInfo.clients[index].fd);
             }
+            if (gServerSocketInfo.clients[index].self != NULL)
+            {
+                free(gServerSocketInfo.clients[index].self);
+                gServerSocketInfo.clients[index].self = NULL;
+            }
         }
         gServerSocketInfo.clients[index].fd = -1;
         gServerSocketInfo.clients[index].notStale = 0;

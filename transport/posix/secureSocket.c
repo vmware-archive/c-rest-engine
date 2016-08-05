@@ -506,16 +506,15 @@ VmSockPosixHandleEventsFromQueue(
             }
         }
         BAIL_ON_VMREST_ERROR(dwError);
+        if (temp)
+        {
+            free(temp);
+            temp = NULL;
+        }
     }
 cleanup:
-    if (temp)
-    {
-        free(temp);
-    }
     return dwError;
-
 error:
-    temp = NULL;
     goto cleanup;
 }
 

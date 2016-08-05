@@ -111,7 +111,7 @@ VmRESTFreeHTTPRequestPacket(
 {
     PVM_REST_HTTP_REQUEST_PACKET     pReqPacket = NULL;
     pReqPacket = *ppReqPacket;
-    if (!pReqPacket)
+    if (pReqPacket)
     {
         if (pReqPacket->requestLine)
         {

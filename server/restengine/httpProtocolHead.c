@@ -997,12 +997,16 @@ VmRESTCloseClient(
     /**** Free all associcated request and response object memory ****/
     if (pResPacket->requestPacket)
     {
-        VmRESTFreeMemory(pResPacket->requestPacket);
+        VmRESTFreeHTTPRequestPacket(
+            &(pResPacket->requestPacket)
+            );
         pResPacket->requestPacket = NULL;
     }
     if (pResPacket)
     {
-        VmRESTFreeMemory(pResPacket);
+        VmRESTFreeHTTPResponsePacket(
+            &pResPacket
+            );
     }
 
 cleanup:
@@ -1133,8 +1137,8 @@ error:
     VMREST_LOG_DEBUG("ERROR:: Something failed");
     if (pReqPacket)
     {
-        VmRESTFreeMemory(
-            pReqPacket
+        VmRESTFreeHTTPRequestPacket(
+            &pReqPacket
             );
         if (pResPacket)
         {
