@@ -80,6 +80,7 @@ VmsockPosixGetXBytes(
     uint32_t                         bytesRequested,
     char*                            appBuffer,
     uint32_t                         clientIndex,
-    uint32_t*                        bytesRead
+    uint32_t*                        bytesRead,
+    uint8_t                          shouldBlock
     );
 

@@ -49,6 +49,7 @@ VmInitGlobalServerSocket(
         gServerSocketInfo.clients[index].notStale = 0;
         gServerSocketInfo.clients[index].ssl = NULL;
         gServerSocketInfo.clients[index].dataRead = 0;
+        gServerSocketInfo.clients[index].connInProgress = 0;
         gServerSocketInfo.clients[index].dataProcessed = 0;
         gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].self = NULL;
         memset(gServerSocketInfo.clients[index].streamDataBuffer,
@@ -104,6 +105,8 @@ VmRemoveAllClientsFromGlobal(
                 free(gServerSocketInfo.clients[index].self);
                 gServerSocketInfo.clients[index].self = NULL;
             }
+            pthread_mutex_destroy(&(gServerSocketInfo.clients[index].mtxWaitForData));
+            pthread_cond_destroy(&(gServerSocketInfo.clients[index].condDataAvaialble));
         }
         gServerSocketInfo.clients[index].fd = -1;
         gServerSocketInfo.clients[index].notStale = 0;
@@ -160,6 +163,8 @@ VmRESTInsertClientFromGlobal(
     gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].notStale = 1;
     gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].ssl = data->ssl;
     gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].self = data;
+    pthread_mutex_init(&(gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].mtxWaitForData), NULL);
+    pthread_cond_init(&(gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].condDataAvaialble), NULL);
     temp = gServerSocketInfo.emptyIndex;
 
     while (count < MAX_CONNECTIONS)
@@ -212,9 +217,12 @@ VmRESTRemoveClientFromGlobal(
     pthread_mutex_lock(&(gServerSocketInfo.lock));
 
     gServerSocketInfo.clients[index].fd = -1;
+    gServerSocketInfo.clients[index].connInProgress = 0;
     gServerSocketInfo.clients[index].notStale = 0;
     gServerSocketInfo.clients[index].ssl = NULL;
     gServerSocketInfo.clients[index].self = NULL;
+    pthread_mutex_destroy(&(gServerSocketInfo.clients[index].mtxWaitForData));
+    pthread_cond_destroy(&(gServerSocketInfo.clients[index].condDataAvaialble));
     gServerSocketInfo.clientCount--;
 
     pthread_mutex_unlock(&(gServerSocketInfo.lock));

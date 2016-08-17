@@ -427,7 +427,8 @@ VmRESTParseAndPopulateHTTPHeaders(
                               MAX_DATA_BUFFER_LEN,
                               appBuffer,
                               pReqPacket->clientIndex,
-                              &bytesReadInBuffer
+                              &bytesReadInBuffer,
+                              1
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
                 temp = appBuffer;

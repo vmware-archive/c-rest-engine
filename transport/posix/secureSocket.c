@@ -461,9 +461,8 @@ VmSockPosixHandleEventsFromQueue(
 
         if (!temp)
         {
-            dwError = VMREST_TRANSPORT_QUEUE_EMPTY;
+            continue;
         }
-        BAIL_ON_VMREST_ERROR(dwError);
 
         acceptData = &(temp->data);
 
@@ -486,23 +485,35 @@ VmSockPosixHandleEventsFromQueue(
         }
         else
         {
+            VMREST_LOG_DEBUG("DEBUG: Data read request");
             memset(appBuffer,'\0',MAX_DATA_BUFFER_LEN);
-            dwError = VmsockPosixGetXBytes(
-                          MAX_DATA_BUFFER_LEN,
-                          appBuffer,
-                          acceptData->index,
-                          &bytesRead
-                          );
-            BAIL_ON_VMREST_ERROR(dwError);
-
-            if (bytesRead > 0)
+            if (gServerSocketInfo.clients[acceptData->index].connInProgress == 1)
             {
-                dwError = VmRESTProcessIncomingData(
+                VMREST_LOG_DEBUG("DEBUG: Signaling blocked client with index %d",acceptData->index);
+                pthread_cond_signal(&(gServerSocketInfo.clients[acceptData->index].condDataAvaialble));
+            }
+            else
+            {
+                dwError = VmsockPosixGetXBytes(
+                              MAX_DATA_BUFFER_LEN,
                               appBuffer,
-                              bytesRead,
-                              acceptData->index
+                              acceptData->index,
+                              &bytesRead,
+                              0
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
+
+                if (bytesRead > 0)
+                {
+                    gServerSocketInfo.clients[acceptData->index].connInProgress = 1;
+                    dwError = VmRESTProcessIncomingData(
+                                  appBuffer,
+                                  bytesRead,
+                                  acceptData->index
+                                  );
+                    BAIL_ON_VMREST_ERROR(dwError);
+                    gServerSocketInfo.clients[acceptData->index].connInProgress = 0;
+                }
             }
         }
         BAIL_ON_VMREST_ERROR(dwError);
@@ -717,7 +728,8 @@ VmsockPosixGetXBytes(
     uint32_t                         bytesRequested,
     char*                            appBuffer,
     uint32_t                         clientIndex,
-    uint32_t*                        bytesRead
+    uint32_t*                        bytesRead,
+    uint8_t                          shouldBlock
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -765,11 +777,20 @@ VmsockPosixGetXBytes(
             dataAvailableInCache);
             gServerSocketInfo.clients[clientIndex].dataProcessed += dataAvailableInCache;
         }
-
+readAgain:
         dwError = VmsockPosixReadDataAtOnce(
                       clientIndex
                       );
         BAIL_ON_VMREST_ERROR(dwError);
+
+        if ((gServerSocketInfo.clients[clientIndex].dataRead == 0) && (shouldBlock == 1))
+        {
+            VMREST_LOG_DEBUG("DEBUG: Read returned 0 or -1, will block client with index %d unless data arrives", clientIndex);
+            pthread_mutex_lock(&(gServerSocketInfo.clients[clientIndex].mtxWaitForData));
+            pthread_cond_wait(&(gServerSocketInfo.clients[clientIndex].condDataAvaialble), &(gServerSocketInfo.clients[clientIndex].mtxWaitForData));
+            pthread_mutex_unlock(&(gServerSocketInfo.clients[clientIndex].mtxWaitForData));
+            goto readAgain;
+        }
 
         remainingBytes = bytesRequested - dataAvailableInCache;
         dataIndex = 0;

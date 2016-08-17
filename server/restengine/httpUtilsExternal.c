@@ -218,12 +218,13 @@ VmRESTGetHttpPayload(
         {
             readXBytes = MAX_DATA_BUFFER_LEN;
         }
-
+        VMREST_LOG_DEBUG("DEBUG: Get Payload, Requesting %u bytes to read", readXBytes);
         dwError = VmsockPosixGetXBytes(
                       readXBytes,
                       localAppBuffer,
                       pRequest->clientIndex,
-                      &bytesRead
+                      &bytesRead,
+                      1
                       );
         BAIL_ON_VMREST_ERROR(dwError);
 
@@ -272,7 +273,8 @@ VmRESTGetHttpPayload(
                       readXBytes,
                       localAppBuffer,
                       pRequest->clientIndex,
-                      &bytesRead
+                      &bytesRead,
+                      1
                       );
         BAIL_ON_VMREST_ERROR(dwError);
 
@@ -316,7 +318,8 @@ VmRESTGetHttpPayload(
                               readXBytes,
                               localAppBuffer,
                               pRequest->clientIndex,
-                              &bytesRead
+                              &bytesRead,
+                              1
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
 
@@ -328,14 +331,19 @@ VmRESTGetHttpPayload(
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
                 pRequest->dataRemaining = pRequest->dataRemaining - actualBytesCopied;
+
                 /**** Read the /r/n succeeding the chunk ****/
-                dwError = VmsockPosixGetXBytes(
-                              2,
-                              localAppBuffer,
-                              pRequest->clientIndex,
-                              &bytesRead
-                              );
+                if (pRequest->dataRemaining == 0)
+                {
+                    dwError = VmsockPosixGetXBytes(
+                                  2,
+                                  localAppBuffer,
+                                  pRequest->clientIndex,
+                                  &bytesRead,
+                                  0
+                                  );
                 BAIL_ON_VMREST_ERROR(dwError);
+                }
             }
         }
     }

@@ -30,6 +30,9 @@ typedef struct _CONNECTION
     uint32_t                         dataRead;
     char                             streamDataBuffer[MAX_DATA_BUFFER_LEN];
     PVM_EVENT_DATA                   self;
+    pthread_mutex_t                  mtxWaitForData;
+    pthread_cond_t                   condDataAvaialble;
+    uint8_t                          connInProgress;
 } VM_CONNECTION, *PVM_CONNECTION;
 
 typedef struct _VM_SOCKET
