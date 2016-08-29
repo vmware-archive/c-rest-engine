@@ -518,6 +518,7 @@ VMRESTWriteChunkedMessageInResponseStream(
         curr = curr + 1;
         memcpy(curr,"\r\n\r\n",4);
         curr = curr + 4;
+        *bytes = 5;
     }
     else
     {
@@ -533,8 +534,8 @@ VMRESTWriteChunkedMessageInResponseStream(
         curr = curr + srcSize;
         memcpy(curr,"\r\n",2);
         curr = curr + 2;
+        *bytes = srcSize + chunkLen + 4;
     }
-    *bytes = srcSize + chunkLen + 4;
 
 cleanup:
     return dwError;
