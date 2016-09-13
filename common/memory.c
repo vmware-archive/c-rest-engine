@@ -16,12 +16,12 @@
 
 uint32_t
 VmRESTAllocateMemory(
-    size_t   dwSize,
-    void**   ppMemory
+    size_t                           dwSize,
+    void**                           ppMemory
     )
 {
-    uint32_t dwError = 0;
-    void* pMemory = NULL;
+    uint32_t                         dwError = 0;
+    void*                            pMemory = NULL;
 
     if (!ppMemory || !dwSize)
     {
@@ -51,7 +51,7 @@ error:
 
 void
 VmRESTFreeMemory(
-    void*  pMemory
+    void*                            pMemory
     )
 {
     if (pMemory)
@@ -60,6 +60,4 @@ VmRESTFreeMemory(
     }
 
 }
-
-
 

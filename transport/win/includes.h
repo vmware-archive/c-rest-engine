@@ -13,38 +13,34 @@
  */
 
 
-#include "includes.h"
+/*
+* Module Name: REST engine socket library
+*
+* Filename: includes.h
+*
+* Abstract:
+*
+* REST Engine main module include file
+*
+*/
 
-DWORD
-VmwSockInitialize(
-    VOID
-    )
-{
-    DWORD dwError = 0;
+#pragma once
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#include <windows.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <tchar.h>
+#include <errno.h>
+#include <assert.h>
+#include <Ws2tcpip.h>
 
-    if (!gpVmSockPackage)
-    {
-#ifdef _WIN32
-        dwError = VmWinSockInitialize(&gpVmSockPackage);
-#else
-        dwError = VmSockPosixInitialize(&gpVmSockPackage);
-#endif
-    }
+//#include <vmresttypes.h>
+//#include <vmrestcommon.h>
+#include <vmsock.h>
+#include <vmsockapi.h>
 
-    return dwError;
-}
-
-VOID
-VmwSockShutdown(
-    VOID
-    )
-{
-    if (gpVmSockPackage)
-    {
-#ifdef _WIN32
-        VmWinSockShutdown(gpVmSockPackage);
-#else
-        VmSockPosixShutdown(gpVmSockPackage);
-#endif
-    }
-}
+#include "defines.h"
+#include "structs.h"
+#include "externs.h"
+#include "prototypes.h"

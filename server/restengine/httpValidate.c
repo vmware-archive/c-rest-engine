@@ -23,9 +23,9 @@ VmRESTRemovePreSpace(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            temp = NULL;
 
-    if (src == NULL || dest == NULL)
+    if (!src  || !dest)
     {
-        VMREST_LOG_DEBUG("VmRESTRemovePreSpace(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -61,9 +61,9 @@ VmRESTRemovePostSpace(
     uint32_t                         len = 0;
     uint32_t                         skip = 0;
 
-    if (src == NULL || dest == NULL)
+    if (!src || !dest)
     {
-        VMREST_LOG_DEBUG("VmRESTRemovePostSpace(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -101,9 +101,9 @@ VmRESTConverUpperToLower(
     char*                            temp = NULL;
     char*                            tempDes = NULL;
 
-    if (src == NULL || dest == NULL)
+    if (!src || !dest)
     {
-        VMREST_LOG_DEBUG("VmRESTConverUpperToLower(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -268,9 +268,9 @@ VmRESTValidateHTTPVersion(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
 
-    if ( pRequest == NULL || result == NULL || err == NULL )
+    if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_DEBUG("VmRESTValidateHTTPVersion(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -307,9 +307,9 @@ VmRESTValidateHTTPRequestURI(
     char*                            temp = NULL;
     char*                            host = NULL;
 
-    if ( pRequest == NULL || result == NULL || err == NULL )
+    if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_DEBUG("VmRESTValidateHTTPRequestURI(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -379,9 +379,9 @@ VmRESTValidateHTTPContentType(
     char*                            temp = NULL;
     char*                            contentType = NULL;
 
-    if ( pRequest == NULL || result == NULL || err == NULL )
+    if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_DEBUG("VmRESTValidateHTTPContentType(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -435,9 +435,9 @@ VmRESTValidateAccept(
     char*                            temp = NULL;
     char*                            accept = NULL;
 
-    if ( pRequest == NULL || result == NULL || err == NULL )
+    if ( !pRequest || !result  || !err )
     {
-        VMREST_LOG_DEBUG("VmRESTValidateAccept(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -491,9 +491,9 @@ VmRESTValidateAcceptCharSet(
     char*                            temp = NULL;
     char*                            acceptCharSet = NULL;
 
-    if ( pRequest == NULL || result == NULL || err == NULL )
+    if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_DEBUG("VmRESTValidateAcceptCharSet(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);

@@ -17,8 +17,9 @@
 #include <vmrestsys.h>
 #include <vmrestdefines.h>
 #include <vmrest.h>
+#include <vmsock.h>
 #include <vmrestcommon.h>
-#include <vmrestsock.h>
+//#include <vmrestsock.h>
 #include "defines.h"
 #include "structs.h"
 #include "externs.h"

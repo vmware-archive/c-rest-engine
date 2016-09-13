@@ -560,6 +560,32 @@ void readOptionServer(int argc, char *argv[])
     optind = 1;
 }
 
+#if 0
+
+int main(int argc, char *argv[])
+{
+    uint32_t                         dwError = 0;
+
+    dwError = VmRESTInit(NULL,"/tmp/restconfig.txt");
+
+    VmRegisterHandler("/v1/pkg", 0);
+
+    VmRESTStart();
+
+    sleep(20);
+
+    dwError = VmRESTStop();
+
+    dwError = VmRESTUnRegisterHandler("/v1/pkg");
+
+    VmRESTShutdown();
+    
+return dwError;
+
+}
+
+#endif
+#if 1
 int
 main (int argc, char *argv[])
 {
@@ -654,3 +680,5 @@ clean:
   
 return 0;
 }
+
+#endif

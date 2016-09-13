@@ -63,13 +63,13 @@ VmRESTRegisterHandler(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PREST_PROCESSOR                  pzHandler = NULL;
 
-    if (pHandler == NULL)
+    if (!pHandler)
     {
         dwError = REST_ENGINE_INVALID_REST_PROCESSER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (pszEndpoint == NULL )
+    if (!pszEndpoint)
     {
         /**** Interact directly with HTTP ****/
         pzHandler = pHandler;
@@ -91,7 +91,7 @@ VmRESTRegisterHandler(
         pzHandler = &(gRESTEngGlobals.internalHandler);
 
     }
-    if (gpHttpHandler == NULL)
+    if (!gpHttpHandler)
     {
         dwError = VmHTTPRegisterHandler(
                       pzHandler
@@ -132,7 +132,7 @@ VmRESTUnRegisterHandler(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (pzEndPointURI == NULL)
+    if (!pzEndPointURI)
     {
         dwError = VmHTTPUnRegisterHandler(
                       );
@@ -305,7 +305,7 @@ VmRESTSetFailureResponse(
 
     /**** If error code and message is not provided, send internal server error ****/
 
-    if (pErrorCode == NULL)
+    if (!pErrorCode)
     {
         strcpy(errorCode,"500");
     }
@@ -314,7 +314,7 @@ VmRESTSetFailureResponse(
         strcpy(errorCode, pErrorCode);
     }
 
-    if (pErrorMessage == NULL)
+    if (!pErrorMessage)
     {
         strcpy(errorMessage, "Internal Server Error");
     }

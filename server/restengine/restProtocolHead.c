@@ -29,7 +29,7 @@ VmRestEngineHandler(
     uint32_t                         paramsCount = 0;
     PREST_ENDPOINT                   pEndPoint = NULL;
 
-    VMREST_LOG_DEBUG("DEBUG: Internal Handler called");
+    VMREST_LOG_DEBUG("Internal Handler called");
 
     /**** 1. Init all the funcition variables *****/
 
@@ -48,7 +48,7 @@ VmRestEngineHandler(
     strcpy(httpMethod,ptr);
     ptr = NULL;
 
-    VMREST_LOG_DEBUG("DEBUG: HTTP method %s", httpMethod);
+    VMREST_LOG_DEBUG("HTTP method %s", httpMethod);
 
     /**** 3. Get the URI ****/
 
@@ -60,7 +60,7 @@ VmRestEngineHandler(
     strcpy(httpURI,ptr);
     ptr = NULL;
 
-    VMREST_LOG_DEBUG("DEBUG: HTTP URI %s", httpURI);
+    VMREST_LOG_DEBUG("HTTP URI %s", httpURI);
 
     /**** 4. Get the End point from URI ****/
     dwError = VmRestGetEndPointURIfromRequestURI(
@@ -69,7 +69,7 @@ VmRestEngineHandler(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VMREST_LOG_DEBUG("DEBUG: EndPoint URI %s", endPointURI);
+    VMREST_LOG_DEBUG("EndPoint URI %s", endPointURI);
 
     dwError = VmRestEngineGetEndPoint(
                   endPointURI,
@@ -77,7 +77,7 @@ VmRestEngineHandler(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VMREST_LOG_DEBUG("DEBUG: EndPoint found for URI %s",endPointURI);
+    VMREST_LOG_DEBUG("EndPoint found for URI %s",endPointURI);
 
     /**** 5. Get Params count ****/
   
@@ -87,7 +87,7 @@ VmRestEngineHandler(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VMREST_LOG_DEBUG("DEBUG: Params count %u", paramsCount);
+    VMREST_LOG_DEBUG("Params count %u", paramsCount);
 
     /**** 6. Parse and populate all params in request URL ****/
 
@@ -98,7 +98,7 @@ VmRestEngineHandler(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VMREST_LOG_DEBUG("DEBUG: Params parsing done, returned code %u", dwError);
+    VMREST_LOG_DEBUG("Params parsing done, returned code %u", dwError);
            
 
     /**** 7. Give App CB based on HTTP method and registered endpoint ****/
@@ -111,7 +111,7 @@ VmRestEngineHandler(
         }
         else
         {
-            VMREST_LOG_DEBUG("ERROR: Read on resource %s not allowed",endPointURI);
+            VMREST_LOG_ERROR("Read on resource %s not allowed",endPointURI);
             dwError = VMREST_HTTP_INVALID_PARAMS;
         }
     }
@@ -123,7 +123,7 @@ VmRestEngineHandler(
         }
         else
         {
-            VMREST_LOG_DEBUG("ERROR: Create on resource %s not allowed",endPointURI);
+            VMREST_LOG_ERROR("Create on resource %s not allowed",endPointURI);
             dwError = VMREST_HTTP_INVALID_PARAMS;
         }
     }
@@ -135,7 +135,7 @@ VmRestEngineHandler(
         }
         else
         {
-            VMREST_LOG_DEBUG("ERROR: Update on resource %s not allowed",endPointURI);
+            VMREST_LOG_ERROR("Update on resource %s not allowed",endPointURI);
             dwError = VMREST_HTTP_INVALID_PARAMS;
         }
     }
@@ -147,13 +147,13 @@ VmRestEngineHandler(
         }
         else
         {
-            VMREST_LOG_DEBUG("ERROR: Delete on resource %s not allowed",endPointURI);
+            VMREST_LOG_ERROR("Delete on resource %s not allowed",endPointURI);
             dwError = VMREST_HTTP_INVALID_PARAMS;
         }
     }
     else
     {
-        VMREST_LOG_DEBUG("ERROR: CRUD on resource %s not allowed",endPointURI);
+        VMREST_LOG_ERROR("CRUD on resource %s not allowed",endPointURI);
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -235,9 +235,9 @@ VmRestEngineAddEndpoint(
 
     /**** TODO: Add check to perform this only when engine is not running ****/
 
-    if (pEndPointURI == NULL || pHandler == NULL)
+    if (!pEndPointURI || !pHandler)
     {
-        VMREST_LOG_DEBUG("ERROR: Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -297,9 +297,9 @@ VmRestEngineRemoveEndpoint(
 
     /**** TODO: Add check to perform this only when engine is not running ****/
 
-    if (pEndPointURI == NULL)
+    if (!pEndPointURI)
     {
-        VMREST_LOG_DEBUG("ERROR: Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -323,7 +323,7 @@ VmRestEngineRemoveEndpoint(
        }
        if (temp == NULL)
        {
-           VMREST_LOG_DEBUG("ERROR: Requested endpoint %s not registered", pEndPointURI);
+           VMREST_LOG_ERROR("Requested endpoint %s not registered", pEndPointURI);
        }
        else
        {
@@ -352,9 +352,9 @@ VmRestEngineGetEndPoint(
 
     PREST_ENDPOINT                   temp = NULL;
 
-    if (pEndPointURI == NULL)
+    if (!pEndPointURI)
     {
-        VMREST_LOG_DEBUG("ERROR: Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -388,9 +388,9 @@ VmRestGetEndPointURIfromRequestURI(
     char*                            foundCharacter = NULL;
     uint32_t                         copyBytes = 0;
     
-    if (pRequestURI == NULL || endPointURI == NULL)
+    if (!pRequestURI || !endPointURI)
     {
-        VMREST_LOG_DEBUG("Error: Request URI is NULL");
+        VMREST_LOG_ERROR("Request URI is NULL");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -424,9 +424,9 @@ VmRestGetParamsCountInReqURI(
     uint32_t                         eqCnt = 0;
     char*                            temp = NULL;
 
-    if (pRequestURI == NULL || paramCount == NULL)
+    if (!pRequestURI || !paramCount)
     {
-        VMREST_LOG_DEBUG("Error: Request URI or result pointer is NULL");
+        VMREST_LOG_ERROR("Request URI or result pointer is NULL");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -482,16 +482,16 @@ VmRestParseParams(
     
 
     
-    if (pRequestURI == NULL || pRequest == NULL)
+    if (!pRequestURI || !pRequest)
     {
-        VMREST_LOG_DEBUG("Error: Request URI or Request is NULL");
+        VMREST_LOG_ERROR("Request URI or Request is NULL");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     if (paramsCount > MAX_URL_PARAMS_ARR_SIZE)
     {
-        VMREST_LOG_DEBUG("Error: More than allowed limit of 10 params found in URL");
+        VMREST_LOG_ERROR("More than allowed limit of 10 params found in URL");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -533,13 +533,13 @@ VmRestParseParams(
             }
             else
             {
-                VMREST_LOG_DEBUG("ERROR : Param %u has no data",i);
+                VMREST_LOG_ERROR("Param %u has no data",i);
                 dwError = VMREST_HTTP_INVALID_PARAMS;
             }
         }
         else
         {
-             VMREST_LOG_DEBUG("ERROR : URI  has no Params or ? character");
+             VMREST_LOG_ERROR("URI  has no Params or ? character");
              dwError = VMREST_HTTP_INVALID_PARAMS;
         }
         BAIL_ON_VMREST_ERROR(dwError);
@@ -573,14 +573,14 @@ VmRESTGetParamsByIndex(
 
     if (paramIndex > paramsCount || paramIndex == 0) 
     {
-        VMREST_LOG_DEBUG("ERROR : Param Index %u is wrong", paramIndex);
+        VMREST_LOG_ERROR("Param Index %u is wrong", paramIndex);
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (pszKey == NULL || pszValue == NULL)
+    if (!pszKey || !pszValue)
     {
-        VMREST_LOG_DEBUG("ERROR : result variables are NULL");
+        VMREST_LOG_ERROR("Result variables are NULL");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -593,7 +593,7 @@ VmRESTGetParamsByIndex(
     }
     else
     {
-        VMREST_LOG_DEBUG("ERROR : Key Not Found for index %u", paramIndex);
+        VMREST_LOG_ERROR("Key Not Found for index %u", paramIndex);
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
 
@@ -603,7 +603,7 @@ VmRESTGetParamsByIndex(
     }
     else
     {
-        VMREST_LOG_DEBUG("ERROR : Value Not Found for index %u", paramIndex);
+        VMREST_LOG_ERROR("Value Not Found for index %u", paramIndex);
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     

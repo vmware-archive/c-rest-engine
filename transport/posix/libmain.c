@@ -16,35 +16,18 @@
 #include "includes.h"
 
 DWORD
-VmwSockInitialize(
-    VOID
+VmSockPosixInitialize(
+    PVM_SOCK_PACKAGE*                ppPackage
     )
 {
-    DWORD dwError = 0;
+    *ppPackage = gpVmSockPosixPackage;
 
-    if (!gpVmSockPackage)
-    {
-#ifdef _WIN32
-        dwError = VmWinSockInitialize(&gpVmSockPackage);
-#else
-        dwError = VmSockPosixInitialize(&gpVmSockPackage);
-#endif
-    }
-
-    return dwError;
+    return 0;
 }
 
 VOID
-VmwSockShutdown(
-    VOID
+VmSockPosixShutdown(
+    PVM_SOCK_PACKAGE                 pPackage
     )
 {
-    if (gpVmSockPackage)
-    {
-#ifdef _WIN32
-        VmWinSockShutdown(gpVmSockPackage);
-#else
-        VmSockPosixShutdown(gpVmSockPackage);
-#endif
-    }
 }

@@ -13,38 +13,10 @@
  */
 
 
-#include "includes.h"
+#define BAIL_ON_VMSOCK_ERROR(dwError) \
+        if (dwError) \
+           goto error;
 
-DWORD
-VmwSockInitialize(
-    VOID
-    )
-{
-    DWORD dwError = 0;
-
-    if (!gpVmSockPackage)
-    {
-#ifdef _WIN32
-        dwError = VmWinSockInitialize(&gpVmSockPackage);
-#else
-        dwError = VmSockPosixInitialize(&gpVmSockPackage);
+#ifdef WIN32
+#define inet_pton(x, y, z) InetPtonA(x, y, z)
 #endif
-    }
-
-    return dwError;
-}
-
-VOID
-VmwSockShutdown(
-    VOID
-    )
-{
-    if (gpVmSockPackage)
-    {
-#ifdef _WIN32
-        VmWinSockShutdown(gpVmSockPackage);
-#else
-        VmSockPosixShutdown(gpVmSockPackage);
-#endif
-    }
-}

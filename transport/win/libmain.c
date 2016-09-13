@@ -16,35 +16,33 @@
 #include "includes.h"
 
 DWORD
-VmwSockInitialize(
-    VOID
+VmWinSockInitialize(
+    PVM_SOCK_PACKAGE* ppPackage
     )
 {
     DWORD dwError = 0;
+    WSADATA wsaData = { 0 };
 
-    if (!gpVmSockPackage)
-    {
-#ifdef _WIN32
-        dwError = VmWinSockInitialize(&gpVmSockPackage);
-#else
-        dwError = VmSockPosixInitialize(&gpVmSockPackage);
-#endif
-    }
+    dwError = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    *ppPackage = gpVmWinSockPackage;
+
+cleanup:
 
     return dwError;
+
+error:
+
+    *ppPackage = NULL;
+
+    goto cleanup;
 }
 
 VOID
-VmwSockShutdown(
-    VOID
+VmWinSockShutdown(
+    PVM_SOCK_PACKAGE pPackage
     )
 {
-    if (gpVmSockPackage)
-    {
-#ifdef _WIN32
-        VmWinSockShutdown(gpVmSockPackage);
-#else
-        VmSockPosixShutdown(gpVmSockPackage);
-#endif
-    }
+    WSACleanup();
 }

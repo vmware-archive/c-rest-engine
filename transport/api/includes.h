@@ -12,8 +12,34 @@
  * under the License.
  */
 
+#ifndef _WIN32
 #include <config.h>
+#else
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#include <windows.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <assert.h>
+#include <stddef.h>
+#include <Ws2tcpip.h>
+#endif
+
 
 #include <vmrestsys.h>
 #include <vmrestdefines.h>
+//#include <vmrestsock.h>
+#include <vmsock.h>
+#include <vmrestcommon.h>
+#include <vmsockapi.h>
 
+#ifdef _WIN32
+#include <vmwinsock.h>
+#else
+#include <vmsockposix.h>
+#include <arpa/inet.h>
+#endif
+
+
+
+#include "defines.h"
+#include "externs.h"

@@ -23,9 +23,9 @@ VmRESTCopyString(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         headerValLen = 0;
 
-    if (src == NULL || des == NULL)
+    if ( !src  || !des )
     {
-        VMREST_LOG_DEBUG("VmRESTCopyString(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_APPLICATION_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -37,7 +37,7 @@ VmRESTCopyString(
     }
     else
     {
-        VMREST_LOG_DEBUG("VmRESTCopyString(): Bad source length");
+        VMREST_LOG_ERROR("Bad source length");
         dwError = VMREST_APPLICATION_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -58,9 +58,9 @@ VmRESTGetHttpResponseHeader(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         headerValLen = 0;
 
-    if (pResponse == NULL || header == NULL || response == NULL)
+    if (!pResponse || !header || !response )
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpResponseHeader(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_APPLICATION_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -102,9 +102,9 @@ VmRESTMapStatusCodeToEnumAndReasonPhrase(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (statusCode == NULL || result == NULL || reasonPhrase == NULL)
+    if (!statusCode || !result || !reasonPhrase)
     {
-        VMREST_LOG_DEBUG("VmRESTMapStatusCodeToEnumAndReasonPhrase(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_APPLICATION_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -332,9 +332,9 @@ VmRESTSetHttpRequestHeader(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (pRequest == NULL || header == NULL || value == NULL || *resStatus != OK)
+    if (!pRequest || !header || !value || (*resStatus != OK))
     {
-        VMREST_LOG_DEBUG("VmRESTSetHttpRequestHeader(): Invalid Params");
+        VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
         *resStatus = BAD_REQUEST;
     }
@@ -366,9 +366,9 @@ VmRESTParseAndPopulateConfigFile(
     VM_REST_CONFIG*                  pRESTConfig = NULL;
     uint32_t                         resultLen = 0;
 
-    if (configFile == NULL)
+    if (!configFile)
     {
-        VMREST_LOG_DEBUG("VmRESTParseAndPopulateConfigFile(): No Config file found");
+        VMREST_LOG_ERROR("No Config file found");
         dwError = REST_ENGINE_MISSING_CONFIG;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -384,7 +384,7 @@ VmRESTParseAndPopulateConfigFile(
          );
     if (fp == NULL)
     {
-        VMREST_LOG_DEBUG("VmRESTParseAndPopulateConfigFile(): Unable to open config file");
+        VMREST_LOG_ERROR("Unable to open config file");
         dwError = REST_ENGINE_INVALID_CONFIG;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -479,15 +479,15 @@ VmRESTValidateConfig(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    if (pRESTConfig == NULL)
+    if (!pRESTConfig)
     {
         dwError = REST_ENGINE_FAILURE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (pRESTConfig->server_port == NULL)
+    if (!(pRESTConfig->server_port))
     {
-        VMREST_LOG_DEBUG("VmRESTValidateConfig(): Configuration Validation failed: Port not specified");
+        VMREST_LOG_ERROR("Configuration Validation failed: Port not specified");
         dwError = REST_ENGINE_FAILURE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -507,9 +507,9 @@ VmRESTCopyConfig(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_CONFIG                  pRESTConfig = NULL;
 
-    if (pConfig == NULL)
+    if (!pConfig)
     {
-        VMREST_LOG_DEBUG("VmRESTCopyConfig(): No Config found");
+        VMREST_LOG_ERROR("No Config found");
         dwError = REST_ENGINE_MISSING_CONFIG;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -575,9 +575,9 @@ VmRESTSetHTTPMiscHeader(
     uint32_t                         headerLen = 0;
     uint32_t                         valueLen = 0;
 
-    if (miscHeaderQueue == NULL || header == NULL || value == NULL)
+    if (!miscHeaderQueue || !header || !value)
     {
-        VMREST_LOG_DEBUG("VmRESTSetHTTPMiscHeader: Invalid Params");
+        VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -587,7 +587,7 @@ VmRESTSetHTTPMiscHeader(
 
     if (headerLen >= MAX_HTTP_HEADER_ATTR_LEN || valueLen >= MAX_HTTP_HEADER_VAL_LEN)
     {
-        VMREST_LOG_DEBUG("VmRESTSetHTTPMiscHeader: Header or value length too long");
+        VMREST_LOG_ERROR("Header or value length too long");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -661,9 +661,9 @@ VmRESTGetHTTPMiscHeader(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_HEADER_NODE        temp = NULL;
 
-    if (miscHeaderQueue == NULL)
+    if (!miscHeaderQueue)
     {
-        VMREST_LOG_DEBUG("VmRESTGetHTTPMiscHeader: Invalid Params");
+        VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -701,9 +701,9 @@ VmRESTGetChunkSize(
     uint32_t                         done = 0;
     long int                         hexToDec = 0;
 
-    if (lineStart == NULL || skipBytes == NULL || chunkSize == NULL)
+    if (!lineStart || !skipBytes || !chunkSize)
     {
-        VMREST_LOG_DEBUG("VmRESTGetChunkSize(): Invalid Params");
+        VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -732,7 +732,7 @@ VmRESTGetChunkSize(
     }
     else
     {
-        VMREST_LOG_DEBUG("VmRESTGetChunkSize(): Error in parsing content length");
+        VMREST_LOG_ERROR("Error in parsing content length");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -758,9 +758,9 @@ VmRESTCopyDataWithoutCRLF(
     char*                            res = NULL;
     uint32_t                         skip = 0;
 
-    if (src == NULL || des == NULL || actualBytes == NULL)
+    if (!src || !des || !actualBytes)
     {
-        VMREST_LOG_DEBUG("VmRESTCopyDataWithoutCRLF(): Invalid Params");
+        VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);

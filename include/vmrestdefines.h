@@ -27,6 +27,7 @@
 #define MAX_WORKER_COUNT_LEN                            6
 #define MAX_LINE_LEN                                    256
 #define MAX_STATUS_LENGTH                               6
+#define MAX_DATA_BUFFER_LEN                             4096
 
 #define PASS                                            1
 #define FAIL                                            0
@@ -80,6 +81,17 @@
 
 #define ERROR_TRANSPORT_INVALID_PARAMS                  61040
 #define ERROR_TRANSPORT_VALIDATION_FAILED               61041
+
+
+#define TRUE                             1
+#define FALSE                            0
+#define ERROR_SUCCESS                    0
+#define ERROR_INVALID_PARAMETER          101
+#define ERROR_CONNECTION_UNAVAIL         102
+#define ERROR_INVALID_STATE              103
+#define ERROR_INTERNAL_ERROR             104
+
+
 
 
 

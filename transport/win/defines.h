@@ -13,38 +13,5 @@
  */
 
 
-#include "includes.h"
-
-DWORD
-VmwSockInitialize(
-    VOID
-    )
-{
-    DWORD dwError = 0;
-
-    if (!gpVmSockPackage)
-    {
-#ifdef _WIN32
-        dwError = VmWinSockInitialize(&gpVmSockPackage);
-#else
-        dwError = VmSockPosixInitialize(&gpVmSockPackage);
-#endif
-    }
-
-    return dwError;
-}
-
-VOID
-VmwSockShutdown(
-    VOID
-    )
-{
-    if (gpVmSockPackage)
-    {
-#ifdef _WIN32
-        VmWinSockShutdown(gpVmSockPackage);
-#else
-        VmSockPosixShutdown(gpVmSockPackage);
-#endif
-    }
-}
+#define VM_SOCK_WINDOWS_DEFAULT_LISTEN_QUEUE_SIZE       (5)
+#define VM_SOCK_WINDOWS_DEFAULT_QUEUE_SIZE              (64)

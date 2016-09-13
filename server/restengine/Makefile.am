@@ -9,7 +9,6 @@ librestengine_la_SOURCES = \
     globals.c \
     httpValidate.c \
     libmain.c \
-    thread.c \
     httpProtocolHead.c \
     httpAllocStruct.c \
     httpUtilsInternal.c \
@@ -19,7 +18,7 @@ librestengine_la_SOURCES = \
 
 librestengine_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
-    @top_builddir@/transport/posix/libvmsockposix.la \
+    @top_builddir@/transport/api/libvmsock.la \
     @UUID_LIBS@ \
     @CRYPTO_LIBS@ \
     @PTHREAD_LIBS@

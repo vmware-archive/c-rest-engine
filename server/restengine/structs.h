@@ -12,36 +12,6 @@
  * under the License.
  */
 
-
-/*********** REST engine Configuration struct *************/
-typedef struct _REST_CONFIG
-{
-    char                             ssl_certificate[MAX_PATH_LEN];
-    char                             ssl_key[MAX_PATH_LEN];
-    char                             server_port[MAX_SERVER_PORT_LEN];
-    char                             debug_log_file[MAX_PATH_LEN];
-    char                             client_count[MAX_CLIENT_ALLOWED_LEN];
-    char                             worker_thread_count[MAX_WORKER_COUNT_LEN];
-} VM_REST_CONFIG, *PVM_REST_CONFIG;
-
-typedef struct _REST_ENG_THREAD_DATA
-{
-    pthread_mutex_t                  mutex;
-    pthread_mutex_t*                 pMutex;
-    pthread_cond_t                   cond;
-    pthread_cond_t*                  pCond;
-    uint32_t                         bShutdown;
-
-} VMREST_THREAD_DATA, *PVMREST_THREAD_DATA;
-
-typedef struct _REST_ENG_THREAD
-{
-    pthread_t                        thr;
-    pthread_t*                       pThread;
-    PVMREST_THREAD_DATA              data;
-
-} VMREST_THREAD, *PVMREST_THREAD;
-
 typedef struct _REST_ENG_GLOBALS
 {
     PVMREST_THREAD                   pThreadpool;
@@ -103,7 +73,7 @@ typedef struct _VM_REST_HTTP_REQUEST_PACKET
 {
     PVM_REST_HTTP_REQUEST_LINE       requestLine;
     PMISC_HEADER_QUEUE               miscHeader;
-    uint32_t                         clientIndex;
+    PVM_SOCKET                       pSocket;
     uint32_t                         dataRemaining;
     VM_REST_URL_PARAMS               paramArray[MAX_URL_PARAMS_ARR_SIZE];    
 
@@ -114,7 +84,7 @@ typedef struct _VM_REST_HTTP_RESPONSE_PACKET
     PVM_REST_HTTP_STATUS_LINE        statusLine;
     PVM_REST_HTTP_MESSAGE_BODY       messageBody;
     PMISC_HEADER_QUEUE               miscHeader;
-    uint32_t                         clientIndex;
+    PVM_SOCKET                       pSocket;
     PVM_REST_HTTP_REQUEST_PACKET     requestPacket;
     uint32_t                         headerSent;
 

@@ -16,11 +16,11 @@
 
 uint32_t
 VmRESTUtilsConvertInttoString(
-    int    num,
-    char*  str
+    int                              num,
+    char*                            str
     )
 {
-    uint32_t dwError = 0;
+    uint32_t                         dwError = 0;
     if(str == NULL)
     {
         dwError = 1;

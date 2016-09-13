@@ -80,9 +80,7 @@ VmHTTPInit(
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Init Transport ****/
-    dwError = VmRestTransportInit(
-                  restConfig->server_port
-                  );
+    dwError = VmwSockInitialize();
     BAIL_ON_VMREST_ERROR(dwError);
 
     isTransportInit = 1;
@@ -90,6 +88,9 @@ VmHTTPInit(
     /**** Update the global context for this lib instance ****/
     gRESTEngGlobals.config = restConfig;
     gRESTEngGlobals.useEndPoint = 0;
+
+    /**** Set the config at Global level ****/
+    VmRESTSetConfig(restConfig);
 
 cleanup:
     return dwError;
@@ -100,11 +101,11 @@ error:
                 restConfig
                 );
         gRESTEngGlobals.config = NULL;
+        VmRESTUnSetConfig();
     }
     if (isTransportInit == 1)
     {
-        VmRESTTransportShutdown(
-            );
+        VmwSockShutdown();
         isTransportInit = 0;
     }
     goto cleanup;
@@ -116,45 +117,14 @@ VmHTTPStart(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         isTransportStarted = 0;
-    PVMREST_THREAD                   pThreadpool = NULL;
 
-    /**** Start Transport ****/
-    dwError = VmRestTransportStart(
-                  gRESTEngGlobals.config->server_port,
-                  gRESTEngGlobals.config->ssl_certificate,
-                  gRESTEngGlobals.config->ssl_key,
-                  atoi(gRESTEngGlobals.config->client_count)
-                  );
+    dwError = VmRESTInitProtocolServer();
     BAIL_ON_VMREST_ERROR(dwError);
-    isTransportStarted = 1;
-
-    /*************************************
-    *  Adding test code - will remove
-    *  dwError = VmRESTTestHTTPResponse();
-    *************************************/
-    
-    /**** Create the thread pool of worker threads ****/
-    dwError = VmRestSpawnThreads(
-                    &VmRestWorkerThread,
-                    &pThreadpool,
-                    atoi(gRESTEngGlobals.config->worker_thread_count)
-                    );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    /**** Update the global context for this lib instance ****/
-    gRESTEngGlobals.pThreadpool = pThreadpool;
-    gRESTEngGlobals.nThreads = atoi(gRESTEngGlobals.config->worker_thread_count);
 
 cleanup:
+
     return dwError;
 error:
-    if (isTransportStarted == 1)
-    {
-        VmRESTTransportStop(
-            );
-        isTransportStarted = 0;
-    }
     goto cleanup;
 }
 
@@ -205,20 +175,7 @@ VmHTTPStop(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    /**** Stop transport ****/
-    VmRESTTransportStop(
-        );
-
-    /**** Stop and free the thread pool of worker thread ****/
-    if (gRESTEngGlobals.nThreads)
-    {
-        VmRestFreeThreadpool(
-            gRESTEngGlobals.pThreadpool,
-            gRESTEngGlobals.nThreads
-            );
-        gRESTEngGlobals.pThreadpool = NULL;
-        gRESTEngGlobals.nThreads = 0;
-    }
+    VmRESTShutdownProtocolServer();
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -232,9 +189,7 @@ VmHTTPShutdown(
     void
     )
 {
-    /**** Shutdown transport ****/
-    VmRESTTransportShutdown(
-        );
+    VmwSockShutdown();
 
     if (gRESTEngGlobals.config)
     {
@@ -245,4 +200,3 @@ VmHTTPShutdown(
     VmRESTLogTerminate(
         );
 }
-

@@ -14,9 +14,30 @@
 
 
 /**
+ * @brief  initialize windows socket package
+ *
+ * @param[in] ppPackage pointer to socket package
+ *
+ * @return DWORD - 0 on success
+ */
+DWORD
+VmWinSockInitialize(
+    PVM_SOCK_PACKAGE* ppPackage
+    );
+
+/**
+ * @brief  shutdown windows socket package
+ *
+ */
+VOID
+VmWinSockShutdown(
+    PVM_SOCK_PACKAGE pPackage
+    );
+
+/**
  * @brief Opens a client socket
  *
- * @param[in]  pszHost  Target hostname or IP Address.
+ * @param[in]  pszHost  Target host name or IP Address.
  *                      An empty string will imply the localhost.
  * @param[in]  usPort   16 bit port number
  * @param[in]  dwFlags  32 bit flags specifying socket creation preferences
@@ -25,11 +46,11 @@
  * @return 0 on success
  */
 DWORD
-VmSockPosixOpenClient(
-    PCSTR                            pszHost,
-    USHORT                           usPort,
-    VM_SOCK_CREATE_FLAGS             dwFlags,
-    PVM_SOCKET*                      ppSocket
+VmSockWinOpenClient(
+    PCSTR                   pszHost,
+    USHORT                  usPort,
+    VM_SOCK_CREATE_FLAGS    dwFlags,
+    PVM_SOCKET*             ppSocket
     );
 
 /**
@@ -46,27 +67,41 @@ VmSockPosixOpenClient(
  * @return 0 on success
  */
 DWORD
-VmSockPosixOpenServer(
-    USHORT                           usPort,
-    int                              iListenQueueSize,
-    VM_SOCK_CREATE_FLAGS             dwFlags,
-    PVM_SOCKET*                      ppSocket
+VmSockWinOpenServer(
+    USHORT               usPort,
+    int                  iListenQueueSize,
+    VM_SOCK_CREATE_FLAGS dwFlags,
+    PVM_SOCKET*          ppSocket
+    );
+
+/**
+ * @brief Starts socket listener
+ *
+ * @param[in] pSocket Pointer to Socket
+ * @param[in,optional] iListenQueueSize
+ *
+ * @return 0 on success
+ */
+DWORD
+VmSockWinStartListening(
+    PVM_SOCKET           pSocket,
+    int                  iListenQueueSize
     );
 
 /**
  * @brief Creates a Event queue to be used for detecting events on sockets
  *
  * @param[in,optional] iEventQueueSize
- *       specifies the event queue size.
+ *       specifies the event queue size
  *       This value can be (-1) to use the default value
  * @param[out] ppQueue Pointer to accept created event queue
  *
  * @return 0 on success
  */
 DWORD
-VmSockPosixCreateEventQueue(
-    int                              iEventQueueSize,
-    PVM_SOCK_EVENT_QUEUE*            ppQueue
+VmSockWinCreateEventQueue(
+    int                     iEventQueueSize,
+    PVM_SOCK_EVENT_QUEUE*   ppQueue
     );
 
 /**
@@ -78,9 +113,9 @@ VmSockPosixCreateEventQueue(
  * @return 0 on success
  */
 DWORD
-VmSockPosixEventQueueAdd(
-    PVM_SOCK_EVENT_QUEUE             pQueue,
-    PVM_SOCKET                       pSocket
+VmSockWinEventQueueAdd(
+    PVM_SOCK_EVENT_QUEUE pQueue,
+    PVM_SOCKET           pSocket
     );
 
 /**
@@ -88,7 +123,7 @@ VmSockPosixEventQueueAdd(
  *
  * @param[in] pQueue   Pointer to event queue
  * @param[in,optional] iTimeoutMS
- *       Timeout in milliseconds.
+ *       Timeout in milliseconds
  *       Waits forever if (-1) is passed in.
  * @param[out]    ppSocket   Pointer to socket that has an event
  * @param[in,out] pEventType Event type detected on socket
@@ -96,12 +131,12 @@ VmSockPosixEventQueueAdd(
  * @return 0 on success
  */
 DWORD
-VmSockPosixWaitForEvent(
-    PVM_SOCK_EVENT_QUEUE             pQueue,
-    int                              iTimeoutMS,
-    PVM_SOCKET*                      ppSocket,
-    PVM_SOCK_EVENT_TYPE              pEventType,
-    PVM_SOCK_IO_BUFFER*              ppIoBuffer
+VmSockWinWaitForEvent(
+    PVM_SOCK_EVENT_QUEUE pQueue,
+    int                  iTimeoutMS,
+    PVM_SOCKET*          ppSocket,
+    PVM_SOCK_EVENT_TYPE  pEventType,
+    PVM_SOCK_IO_BUFFER*  ppIoEvent
     );
 
 /**
@@ -113,8 +148,8 @@ VmSockPosixWaitForEvent(
  */
 
 VOID
-VmSockPosixCloseEventQueue(
-    PVM_SOCK_EVENT_QUEUE             pQueue
+VmSockWinCloseEventQueue(
+    PVM_SOCK_EVENT_QUEUE pQueue
     );
 
 /**
@@ -126,8 +161,8 @@ VmSockPosixCloseEventQueue(
  */
 
 DWORD
-VmSockPosixSetNonBlocking(
-    PVM_SOCKET                       pSocket
+VmSockWinSetNonBlocking(
+    PVM_SOCKET           pSocket
     );
 
 /**
@@ -138,9 +173,9 @@ VmSockPosixSetNonBlocking(
  *                            This will be one of { SOCK_STREAM, SOCK_DGRAM... }
  */
 DWORD
-VmSockPosixGetProtocol(
-    PVM_SOCKET                       pSocket,
-    PDWORD                           pdwProtocol
+VmSockWinGetProtocol(
+    PVM_SOCKET           pSocket,
+    PDWORD               pdwProtocol
     );
 
 /**
@@ -153,10 +188,10 @@ VmSockPosixGetProtocol(
  * @return 0 on success
  */
 DWORD
-VmSockPosixSetData(
-    PVM_SOCKET                       pSocket,
-    PVOID                            pData,
-    PVOID*                           ppOldData
+VmSockWinSetData(
+    PVM_SOCKET           pSocket,
+    PVOID                pData,
+    PVOID*               ppOldData
     );
 
 /**
@@ -165,12 +200,12 @@ VmSockPosixSetData(
  * @param[in]     pSocket Pointer to socket
  * @param[in,out] ppData  Pointer to receive data
  *
- * @return Pointer to current data associated with the socket
+ * @return 0 on success
  */
 DWORD
-VmSockPosixGetData(
-    PVM_SOCKET                       pSocket,
-    PVOID*                           ppData
+VmSockWinGetData(
+    PVM_SOCKET          pSocket,
+    PVOID*              ppData
     );
 
 /**
@@ -186,9 +221,9 @@ VmSockPosixGetData(
  * @return 0 on success
  */
 DWORD
-VmSockPosixRead(
-    PVM_SOCKET                       pSocket,
-    PVM_SOCK_IO_BUFFER               pIoBuffer
+VmSockWinRead(
+    PVM_SOCKET          pSocket,
+    PVM_SOCK_IO_BUFFER  pIoBuffer
     );
 
 /**
@@ -207,11 +242,11 @@ VmSockPosixRead(
  * @return 0 on success
  */
 DWORD
-VmSockPosixWrite(
-    PVM_SOCKET                       pSocket,
-    const struct sockaddr*           pClientAddress,
-    socklen_t                        addrLength,
-    PVM_SOCK_IO_BUFFER               pIoBuffer
+VmSockWinWrite(
+    PVM_SOCKET          pSocket,
+    struct sockaddr*    pClientAddress,
+    socklen_t           addrLength,
+    PVM_SOCK_IO_BUFFER  pIoBuffer
     );
 
 /**
@@ -221,8 +256,8 @@ VmSockPosixWrite(
  */
 
 PVM_SOCKET
-VmSockPosixAcquireSocket(
-    PVM_SOCKET                       pSocket
+VmSockWinAcquire(
+    PVM_SOCKET          pSocket
     );
 
 /**
@@ -230,8 +265,8 @@ VmSockPosixAcquireSocket(
  *
  */
 VOID
-VmSockPosixReleaseSocket(
-    PVM_SOCKET                       pSocket
+VmSockWinRelease(
+    PVM_SOCKET          pSocket
     );
 
 /**
@@ -239,37 +274,52 @@ VmSockPosixReleaseSocket(
  *        This call does not release the reference to the socket or free it.
  */
 DWORD
-VmSockPosixCloseSocket(
-    PVM_SOCKET                       pSocket
+VmSockWinClose(
+    PVM_SOCKET          pSocket
+    );
+
+/**
+ * @brief Checks if the string forms a valid IPV4 or IPV6 Address
+ *
+ * @return TRUE(1) if the string is a valid IP Address, 0 otherwise.
+ */
+BOOLEAN
+VmSockWinIsValidIPAddress(
+    PCSTR               pszAddress
+    );
+
+/**
+ * @brief  VmwSockGetAddress
+ *
+ * @param[in] pSocket
+ * @param[in] pAddress
+ * @param[in] pAddresLen
+ *
+ * @return DWORD - 0 on success
+ */
+DWORD
+VmSockWinGetAddress(
+    PVM_SOCKET                  pSocket,
+    struct sockaddr_storage*    pAddress,
+    socklen_t*                  pAddresLen
     );
 
 DWORD
-VmSockPosixGetAddress(
-    PVM_SOCKET                       pSocket,
-    struct sockaddr_storage*         pAddress,
-    socklen_t*                       pAddresLen
+VmSockWinAllocateIoBuffer(
+    VM_SOCK_EVENT_TYPE      eventType,
+    DWORD                   dwSize,
+    PVM_SOCK_IO_BUFFER*     ppIoContext
     );
 
-DWORD
-VmSockPosixAllocateIoBuffer(
-    VM_SOCK_EVENT_TYPE               eventType,
-    DWORD                            dwSize,
-    PVM_SOCK_IO_BUFFER*              ppIoBuffer
-    );
-
+/**
+ * @brief  Free socket IO Buffer
+ *
+ * @param[in] pIoBuffer
+ *
+ * @return VOID - 0 on success
+ */
 VOID
-VmSockPosixFreeIoBuffer(
-    PVM_SOCK_IO_BUFFER               pIoBuffer
+VmSockWinFreeIoBuffer(
+    PVM_SOCK_IO_BUFFER  pIoBuffer
     );
 
-VOID
-VmSockPosixGetStreamBuffer(
-    PVM_SOCKET                       pSocket,
-    PVM_STREAM_BUFFER*               ppStreamBuffer
-    );
-
-VOID
-VmSockPosixSetStreamBuffer(
-    PVM_SOCKET                       pSocket,
-    PVM_STREAM_BUFFER                pStreamBuffer
-    );

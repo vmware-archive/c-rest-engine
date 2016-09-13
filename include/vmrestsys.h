@@ -12,9 +12,6 @@
  * under the License.
  */
 
-
-
-
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
@@ -113,4 +110,8 @@
 
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
+#endif
+
+#ifndef WIN32
+#include <sys/socket.h>
 #endif

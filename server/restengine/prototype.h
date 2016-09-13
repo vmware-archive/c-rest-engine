@@ -13,26 +13,6 @@
  * under the License.
  */
 
-/***************** Thread.c ***********************/
-uint32_t
-VmRestSpawnThreads(
-    PFN_VMREST_THR_ROUTINE           pThrRoutine,
-    PVMREST_THREAD*                  ppThreadpool,
-    uint32_t                         maxWorkerThread
-    );
-
-void *
-VmRestWorkerThread(
-    void*                            pArgs
-    );
-
-void
-VmRestFreeThreadpool(
-    PVMREST_THREAD                   pThreadpool,
-    uint32_t                         threadcount
-    );
-
-
 /***************** httpProtocolHead.c *************/
 
 uint32_t
