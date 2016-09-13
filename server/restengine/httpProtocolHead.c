@@ -88,6 +88,10 @@ VmRESTHTTPGetReqMethod(
     {
         strcpy(result,"CONNECT");
     }
+    else if (strcmp(local,"OPTIONS") == 0)
+    {
+        strcpy(result,"OPTIONS");
+    }
     else
     {
         dwError = VMREST_HTTP_VALIDATION_FAILED;

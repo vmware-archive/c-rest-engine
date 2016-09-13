@@ -104,6 +104,13 @@ VmHandleTDNFVersionSet(
 
 /***** Package related operation ****/
 uint32_t
+VmHandlePackageOTHERS(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+
+uint32_t
 VmHandlePackageRead(
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse,

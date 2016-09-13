@@ -176,6 +176,79 @@ error:
 *
 ****************************************/
 
+/**** Modify any package related data ****/
+uint32_t
+VmHandlePackageOTHERS(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    )
+{
+    uint32_t                         dwError = 0;
+    uint32_t                         done = 0;
+    char*                            httpMethod = NULL;
+
+    write(1,"\nPackage OTHERS operation:",26);
+
+    dwError = VmRESTGetHttpMethod(
+                  pRequest,
+                  &httpMethod
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    write(1,httpMethod, strlen(httpMethod));
+
+    if (strcmp(httpMethod, "OPTIONS") == 0)
+    {
+        dwError = VmRESTSetHttpHeader(
+                      ppResponse,
+                      "Access-Control-Allow-Headers",
+                      "Content-Type"
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+        dwError = VmRESTSetHttpHeader(
+                      ppResponse,
+                      "Access-Control-Allow-Methods",
+                      "POST, GET, OPTIONS, PUT"
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        dwError = VmRESTSetHttpHeader(
+                      ppResponse,
+                      "Access-Control-Allow-Origin",
+                      "*"
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+
+    dwError = VmRESTSetSuccessResponse(
+                  pRequest,
+                  ppResponse
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTSetDataLength(
+                  ppResponse,
+                  "0"
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTSetData(
+                  ppResponse,
+                  "",
+                  0,
+                  &done
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+
 /**** Read any package related data ****/
 uint32_t
 VmHandlePackageRead(
@@ -233,7 +306,7 @@ VmHandlePackageRead(
 
         write(1,"\nParams.....:", 14);
         write(1,key, strlen(key));
-        write(1,value, strlen(value));
+        write(1,value, 4);
 
         key = NULL;
         value = NULL;

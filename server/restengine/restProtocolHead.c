@@ -151,6 +151,19 @@ VmRestEngineHandler(
             dwError = VMREST_HTTP_INVALID_PARAMS;
         }
     }
+    else if ((strcmp(httpMethod,"OPTIONS") == 0) || (strcmp(httpMethod,"PATCH") == 0))
+    {
+        /**** Add all allowed HTTP methods ****/
+        if (pEndPoint && pEndPoint->pHandler && pEndPoint->pHandler->pfnHandleDelete)
+        {
+            dwError = pEndPoint->pHandler->pfnHandleOthers(pRequest, ppResponse, paramsCount);
+        }
+        else
+        {
+            VMREST_LOG_ERROR(" %s Not a valid HTTP method for resource %s", httpMethod,endPointURI);
+            dwError = VMREST_HTTP_INVALID_PARAMS;
+        }
+    }
     else
     {
         VMREST_LOG_ERROR("CRUD on resource %s not allowed",endPointURI);
@@ -186,6 +199,7 @@ VmRestEngineInitEndPointRegistration(
     gRESTEngGlobals.internalHandler.pfnHandleDelete = NULL;
     gRESTEngGlobals.internalHandler.pfnHandleUpdate = NULL;
     gRESTEngGlobals.internalHandler.pfnHandleRead = NULL;
+    gRESTEngGlobals.internalHandler.pfnHandleOthers = NULL;
 
 cleanup:
     return dwError;
@@ -258,6 +272,7 @@ VmRestEngineAddEndpoint(
         pEndPoint->pHandler->pfnHandleDelete = pHandler->pfnHandleDelete;
         pEndPoint->pHandler->pfnHandleUpdate = pHandler->pfnHandleUpdate;
         pEndPoint->pHandler->pfnHandleRead = pHandler->pfnHandleRead;
+        pEndPoint->pHandler->pfnHandleOthers = pHandler->pfnHandleOthers;
         pEndPoint->next = NULL;
     }
 
@@ -603,8 +618,8 @@ VmRESTGetParamsByIndex(
     }
     else
     {
-        VMREST_LOG_ERROR("Value Not Found for index %u", paramIndex);
-        dwError = VMREST_HTTP_INVALID_PARAMS;
+        VMREST_LOG_DEBUG("WARNING: Value Not Found for index %u", paramIndex);
+        *pszValue = NULL;
     }
     
 cleanup:

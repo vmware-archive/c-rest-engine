@@ -25,7 +25,8 @@ REST_PROCESSOR gVmRestHandlers =
     .pfnHandleCreate = NULL,
     .pfnHandleRead = NULL,
     .pfnHandleUpdate = NULL,
-    .pfnHandleDelete = NULL
+    .pfnHandleDelete = NULL,
+    .pfnHandleOthers = NULL
 };
 
 PREST_PROCESSOR gpVmRestHandlers = &gVmRestHandlers;
@@ -47,5 +48,6 @@ VmAppStoreEndpoint(
     gVmEndPointHandler[index].pfnHandleRead = pfnRead;
     gVmEndPointHandler[index].pfnHandleUpdate = pfnUpdate;
     gVmEndPointHandler[index].pfnHandleDelete = pfnDelete;
+    gVmEndPointHandler[index].pfnHandleOthers = &VmHandlePackageOTHERS;
 }
 

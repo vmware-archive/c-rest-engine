@@ -38,6 +38,7 @@ typedef struct _REST_PROCESSOR
     PFN_PROCESS_REST_CRUD            pfnHandleRead;
     PFN_PROCESS_REST_CRUD            pfnHandleUpdate;
     PFN_PROCESS_REST_CRUD            pfnHandleDelete;
+    PFN_PROCESS_REST_CRUD            pfnHandleOthers;
 
 } REST_PROCESSOR, *PREST_PROCESSOR;
 

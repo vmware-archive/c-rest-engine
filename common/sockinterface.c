@@ -116,8 +116,6 @@ VmRESTInitProtocolServer(
 
     dwError = VmwSockOpenServer(
                         ((unsigned short)atoi(gpRESTConfig->server_port)),
-                       // VMW_REST_PORT,
-                      //  VMW_REST_DEFAULT_THREAD_COUNT,
                         ((int)atoi(gpRESTConfig->worker_thread_count)),
                         dwFlags | VM_SOCK_CREATE_FLAGS_TCP |
                                   VM_SOCK_CREATE_FLAGS_IPV4,
@@ -129,9 +127,7 @@ VmRESTInitProtocolServer(
 
     dwError = VmwSockOpenServer(
                   ((unsigned short)atoi(gpRESTConfig->server_port)),
-                       // VMW_REST_PORT,
-                      //  VMW_REST_DEFAULT_THREAD_COUNT,
-                        ((int)atoi(gpRESTConfig->worker_thread_count)),
+                  ((int)atoi(gpRESTConfig->worker_thread_count)),
                   dwFlags | VM_SOCK_CREATE_FLAGS_TCP |
                           VM_SOCK_CREATE_FLAGS_IPV6,
                   &pSockContext->pListenerTCP6
