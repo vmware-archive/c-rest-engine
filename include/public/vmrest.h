@@ -24,9 +24,21 @@ typedef uint32_t(
     PREST_RESPONSE*                  ppResponse
     );
 
+typedef uint32_t(
+*PFN_PROCESS_REST_CRUD)(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
+
 typedef struct _REST_PROCESSOR
 {
     PFN_PROCESS_HTTP_REQUEST         pfnHandleRequest;
+    PFN_PROCESS_REST_CRUD            pfnHandleCreate;
+    PFN_PROCESS_REST_CRUD            pfnHandleRead;
+    PFN_PROCESS_REST_CRUD            pfnHandleUpdate;
+    PFN_PROCESS_REST_CRUD            pfnHandleDelete;
+    PFN_PROCESS_REST_CRUD            pfnHandleOthers;
 
 } REST_PROCESSOR, *PREST_PROCESSOR;
 
@@ -42,7 +54,9 @@ typedef struct _REST_CONF
 
 typedef struct _REST_ENDPOINT
 {
-    char*                             junk;
+    char*                             pszEndPointURI;
+    PREST_PROCESSOR                   pHandler;
+    struct _REST_ENDPOINT*            next;
 } REST_ENDPOINT, *PREST_ENDPOINT;
 
 /*
@@ -50,13 +64,17 @@ typedef struct _REST_ENDPOINT
  *
  * @param[in]                        Rest engine configuration.
  *                                   For default behaviour call this with NULL
- *                                   This will read config from file /root/restConfig.txt
+ *                                   to read config params from file.
+ * @param[in]                        Config file Path.
+ *                                   If this is NULL, restengine will try
+ *                                   reading config from /root/restconfig.txt.
  * @return                           Returns 0 for success.
  */
 
 uint32_t
 VmRESTInit(
-    PREST_CONF                       pConfig
+    PREST_CONF                       pConfig,
+    char*                            file
     );
 
 /**
@@ -101,17 +119,130 @@ VmRESTFindEndpoint(
  * @return                           Returns 0 for success
  */
 uint32_t
-VmRESTUnregisterHandler(
-    PREST_ENDPOINT                   pEndpoint
+VmRESTUnRegisterHandler(
+    char*                            pEndpointURI
+    );
+
+/*
+ * @brief Get Data received from client.
+ *
+ * @param[in]                        Reference to HTTP Request object.
+ * @param[out]                       Payload buffer(must be allocated by caller).
+ * @param[out]                       Identier to denote no more data to read.
+ * @return                           Returns 0 for success
+ */
+uint32_t
+VmRESTGetData(
+    PREST_REQUEST                    pRequest,
+    char*                            response,
+    uint32_t*                        done
+    );
+
+/*
+ * @brief Get the params associated in URI of HTTP req object.
+ *
+ * @param[in]                        Reference to HTTP Request object.
+ * @param[in]                        Total params found in URL.
+ * @param[in]                        Params number for this index.
+ * @param[out]                       Pointer to result key .
+ * @param[out]                       Pointer to result Value.
+ * @return Returns 0 for success
+ */
+uint32_t
+VmRESTGetParamsByIndex(
+    PREST_REQUEST                    pRequest,
+    uint32_t                         paramsCount,
+    uint32_t                         paramIndex,
+    char**                           pszKey,
+    char**                           pszValue
+    );
+
+/*
+ * @brief Set length of data in response object(< 4096 bytes) or NULL for chunked.
+ *
+ * @param[in]                        Reference to HTTP Request object.
+ * @param[in]                        Data Length if less than 4096 else NULL.
+ * @return                           Returns 0 for success
+ */
+uint32_t
+VmRESTSetDataLength(
+    PREST_RESPONSE*                  ppResponse,
+    char*                            dataLen
+    );
+
+/*
+ * @brief Prepare response object for successful app processing.
+ *        This will populate 200 OK HTTP status code in response object.
+ *
+ * @param[in]                        Reference to HTTP Request object.
+ * @param[in]                        Reference to HTTP Response object.
+ * @return                           Returns 0 for success
+ */
+uint32_t
+VmRESTSetSuccessResponse(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse
+    );
+
+/*
+ * @brief Prepare response object for errored app processing.
+ *        This will populate 500 Internal Server Error
+ *        in  HTTP response object if no error code is specified.
+ *
+ * @param[in]                        Reference to HTTP Request object.
+ * @param[in]                        Error code (NULL is default has to sent).
+ * @param[in]                        Reason Phrase (NULL is default has to sent).
+ * @return                           Returns 0 for success
+ */
+uint32_t
+VmRESTSetFailureResponse(
+    PREST_RESPONSE*                  ppResponse,
+    char*                            pErrorCode,
+    char*                            pErrorMessage
+    );
+
+/*
+ * @brief Set data in response object to be send back to client.
+ *
+ * @param[in]                        Reference to HTTP Response object.
+ * @param[in]                        Payload data.
+ * @param[in]                        Payload data length.
+ * @param[in]                        Identifier to denote all data chunks sent.
+ * @return                           Returns 0 for success
+ */
+uint32_t
+VmRESTSetData(
+    PREST_RESPONSE*                  ppResponse,
+    char*                            buffer,
+    uint32_t                         dataLen,
+    uint32_t*                        done
     );
 
 /**
- * @brief Release the memory associated with the endpoint
+ * @brief Stop the REST Engine
+ * @return                           Returns 0 for success
+ */
+uint32_t
+VmRESTStop(
+    void
+    );
+
+/*
+ * @brief Shutdown the REST Library
  */
 void
-VmRESTReleaseEndpoint(
-    PREST_ENDPOINT                   pEndpoint
+VmRESTShutdown(
+    void
     );
+
+
+/****************************************************************************
+* 
+* Following are the exposed API to interact with HTTP engine directly I would
+* highly recommend services not to interact with HTTP directly. In Future
+* releases, these will be depricated.
+*
+*****************************************************************************/
 
 /*
  * @brief Retrieve method name associated with request http object.
@@ -232,7 +363,8 @@ VmRESTSetHttpReasonPhrase(
 uint32_t
 VmRESTGetHttpPayload(
     PREST_REQUEST                    pRequest,
-    char*                            response
+    char*                            response,
+    uint32_t*                        done
     );
 
 
@@ -241,28 +373,16 @@ VmRESTGetHttpPayload(
  *
  * @param[in]                        Reference to HTTP Response object.
  * @param[in]                        Payload data.
+ * @param[in]                        Payload data length.
+ * @param[out]                       Status after all data chunks sent.
  * @return Returns 0 for success
  */
 uint32_t
 VmRESTSetHttpPayload(
     PREST_RESPONSE*                  ppResponse,
-    char*                            buffer
-    );
-
-/**
- * @brief Stop the REST Engine
- */
-uint32_t
-VmRESTStop(
-    void
-    );
-
-/*
- * @brief Shutdown the REST Library
- */
-void
-VmRESTShutdown(
-    void
+    char*                            buffer,
+    uint32_t                         dataLen,
+    uint32_t*                        done
     );
 
 #endif /* __VMREST_H__ */

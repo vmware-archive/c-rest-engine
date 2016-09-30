@@ -12,205 +12,31 @@
  * under the License.
  */
 
+
 #include "includes.h"
 
-VM_SOCKET gServerSocketInfo = {0};
-
-QUEUE *pQueue = NULL;
-
-
-uint32_t
-VmInitGlobalServerSocket(
-    char*                            port
-    )
+VM_SOCK_PACKAGE gVmSockPosixPackage =
 {
-    uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         len = 0;
-    uint32_t                         index = 0;
+    .pfnOpenClientSocket = &VmSockPosixOpenClient,
+    .pfnOpenServerSocket = &VmSockPosixOpenServer,
+    .pfnCreateEventQueue = &VmSockPosixCreateEventQueue,
+    .pfnAddEventQueue = &VmSockPosixEventQueueAdd,
+    .pfnWaitForEvent = &VmSockPosixWaitForEvent,
+    .pfnCloseEventQueue = &VmSockPosixCloseEventQueue,
+    .pfnSetNonBlocking = &VmSockPosixSetNonBlocking,
+    .pfnGetProtocol = &VmSockPosixGetProtocol,
+    .pfnSetData = &VmSockPosixSetData,
+    .pfnGetData = &VmSockPosixGetData,
+    .pfnRead = &VmSockPosixRead,
+    .pfnWrite = &VmSockPosixWrite,
+    .pfnAcquireSocket = &VmSockPosixAcquireSocket,
+    .pfnReleaseSocket = &VmSockPosixReleaseSocket,
+    .pfnCloseSocket = &VmSockPosixCloseSocket,
+    .pfnGetAddress = &VmSockPosixGetAddress,
+    .pfnAllocateIoBuffer = &VmSockPosixAllocateIoBuffer,
+    .pfnReleaseIoBuffer = &VmSockPosixFreeIoBuffer,
+    .pfnGetStreamBuffer = &VmSockPosixGetStreamBuffer,
+    .pfnSetStreamBuffer = &VmSockPosixSetStreamBuffer
+};
 
-    if (port == NULL)
-    {
-        VMREST_LOG_DEBUG("VmInitGlobalServerSocket(): Invalid params");
-        dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    len = strlen(port);
-    if (len > MAX_PORT_LEN)
-    {
-        VMREST_LOG_DEBUG("VmInitGlobalServerSocket(): Invalid port length");
-        dwError = ERROR_TRANSPORT_VALIDATION_FAILED;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    for (index = 0; index < MAX_CONNECTIONS; index++)
-    {
-        gServerSocketInfo.clients[index].fd = -1;
-        gServerSocketInfo.clients[index].notStale = 0;
-        gServerSocketInfo.clients[index].ssl = NULL;
-        gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].self = NULL;
-    }
-
-    gServerSocketInfo.clientCount = 0;
-    gServerSocketInfo.emptyIndex  = 0;
-
-    memset(gServerSocketInfo.clients, 0 , (sizeof(VM_CONNECTION) * MAX_CONNECTIONS));
-
-    strcpy(gServerSocketInfo.port, port);
-
-    if (pthread_mutex_init(&(gServerSocketInfo.lock), NULL) != 0)
-    {
-        VMREST_LOG_DEBUG("VmInitGlobalServerSocket(): Mutex init failed");
-        dwError = VMREST_TRANSPORT_MUTEX_INIT_FAILED;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    gServerSocketInfo.keepOpen = 1;
-    gServerSocketInfo.ServerAlive = 1;
-
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
-}
-
-void
-VmRemoveAllClientsFromGlobal(
-    void
-    )
-{
-    uint32_t                         index = 0;
-
-    pthread_mutex_lock(&(gServerSocketInfo.lock));
-    for (index = 0; index < MAX_CONNECTIONS; index++)
-    {
-        if (gServerSocketInfo.clients[index].notStale == 1)
-        {
-            if (gServerSocketInfo.isSecure && gServerSocketInfo.clients[index].ssl != NULL)
-            {
-                SSL_shutdown(gServerSocketInfo.clients[index].ssl);
-                SSL_free(gServerSocketInfo.clients[index].ssl);
-            }
-            else if (gServerSocketInfo.clients[index].fd > 0)
-            {
-                close(gServerSocketInfo.clients[index].fd);
-            }
-        }
-        gServerSocketInfo.clients[index].fd = -1;
-        gServerSocketInfo.clients[index].notStale = 0;
-        gServerSocketInfo.clients[index].ssl = NULL;
-        gServerSocketInfo.clientCount--;
-    }
-    pthread_mutex_unlock(&(gServerSocketInfo.lock));
-}
-
-void
-VmShutdownGlobalServerSocket(
-    void
-    )
-{
-    VmRemoveAllClientsFromGlobal();
-    gServerSocketInfo.clientCount = 0;
-    memset(gServerSocketInfo.port, '\0', MAX_PORT_LEN);
-    gServerSocketInfo.fd = -1;
-    pthread_mutex_destroy(&(gServerSocketInfo.lock));
-
-}
-
-uint32_t
-VmRESTInsertClientFromGlobal(
-    PVM_EVENT_DATA                   data,
-    uint32_t*                        index
-    )
-{
-    uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         count = 0;
-    uint32_t                         temp = 0;
-    uint32_t                         success = 0;
-
-    if (data == NULL)
-    {
-        VMREST_LOG_DEBUG("VmRESTInsertClientFromGlobal(): Invalid data");
-        dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    if ((data->ssl == NULL && data->fd < 0) || (index == NULL))
-    {
-        VMREST_LOG_DEBUG("VmRESTInsertClientFromGlobal(): Invalid params");
-        dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    pthread_mutex_lock(&(gServerSocketInfo.lock));
-
-    gServerSocketInfo.clientCount++;
-    gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].fd = data->fd;
-    gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].notStale = 1;
-    gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].ssl = data->ssl;
-    gServerSocketInfo.clients[gServerSocketInfo.emptyIndex].self = data;
-    temp = gServerSocketInfo.emptyIndex;
-
-    while (count < MAX_CONNECTIONS)
-    {
-        temp++;
-        if (temp >= MAX_CONNECTIONS)
-        {
-            temp = 0;
-        }
-        if (gServerSocketInfo.clients[temp].notStale == 0)
-        {
-            success = 1;
-            break;
-        }
-        count++;
-    }
-    if (success)
-    {
-        *index = gServerSocketInfo.emptyIndex;
-        gServerSocketInfo.emptyIndex = temp;
-    }
-    else
-    {
-        dwError = VMREST_TRANSPORT_INSERT_CLIENT_INGLOBAL_ERROR;
-    }
-    pthread_mutex_unlock(&(gServerSocketInfo.lock));
-    BAIL_ON_VMREST_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-uint32_t
-VmRESTRemoveClientFromGlobal(
-    uint32_t                         index
-    )
-{
-    uint32_t                         dwError = REST_ENGINE_SUCCESS;
-
-    if (index >= MAX_CONNECTIONS)
-    {
-        VMREST_LOG_DEBUG("VmRESTRemoveClientFromGlobal(): Invalid params");
-        dwError =  ERROR_TRANSPORT_INVALID_PARAMS;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    pthread_mutex_lock(&(gServerSocketInfo.lock));
-
-    gServerSocketInfo.clients[index].fd = -1;
-    gServerSocketInfo.clients[index].notStale = 0;
-    gServerSocketInfo.clients[index].ssl = NULL;
-    gServerSocketInfo.clients[index].self = NULL;
-    gServerSocketInfo.clientCount--;
-
-    pthread_mutex_unlock(&(gServerSocketInfo.lock));
-
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
-}
-
+PVM_SOCK_PACKAGE gpVmSockPosixPackage = &gVmSockPosixPackage;

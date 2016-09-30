@@ -13,15 +13,47 @@
  */
 
 
-/* provide port and ip information here for the time being */
-#define PORT                         61001
-#define SERVERIP                     127.0.0.1
-#define MAX_EVENT                    64
-#define MAX_ADDRESS_LEN              128
-#define MAX_PORT_LEN                 6
-#define MAX_CONNECTIONS              1000
-#define MAX_RETRY_ATTEMPTS           5000
-#define MAX_DATA_BUFFER_LEN          4096
+#define VM_SOCK_POSIX_DEFAULT_LISTEN_QUEUE_SIZE (5)
 
-#define ERROR_NOT_SUPPORTED          100
+#define VM_SOCK_POSIX_DEFAULT_QUEUE_SIZE        (64)
+
+#define BAIL_ON_POSIX_SOCK_ERROR(dwError) \
+        if (dwError) \
+            goto error;
+
+#ifndef PopEntryList
+#define PopEntryList(ListHead) \
+    (ListHead)->Next;\
+        {\
+        PSINGLE_LIST_ENTRY FirstEntry;\
+        FirstEntry = (ListHead)->Next;\
+        if (FirstEntry != NULL) {     \
+            (ListHead)->Next = FirstEntry->Next;\
+                }                             \
+        }
+#endif
+
+#ifndef PushEntryList
+#define PushEntryList(ListHead,Entry) \
+    (Entry)->Next = (ListHead)->Next; \
+    (ListHead)->Next = (Entry)
+#endif
+
+#ifndef CONTAINING_RECORD
+#define CONTAINING_RECORD(address, type, field) ((type *)( \
+                                                  (PCHAR)(address) - \
+                                                  (uint64_t)(&((type *)0)->field)))
+
+#endif
+
+typedef enum
+{
+    VM_SOCK_POSIX_EVENT_STATE_UNKNOWN = 0,
+    VM_SOCK_POSIX_EVENT_STATE_WAIT,
+    VM_SOCK_POSIX_EVENT_STATE_PROCESS
+} VM_SOCK_POSIX_EVENT_STATE;
+
+/**** Transport internal error codes ****/
+#define VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED    5100
+
 

@@ -45,17 +45,11 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %{_sbindir}/vmrestd
-%{_bindir}/rest-cli
-%{_lib64dir}/libvmrestclient.so*
 %{_lib64dir}/librestengine.*
 %{_lib64dir}/libvmsock.*
-%{_lib64dir}/libvmsockposix.*
 
 %exclude %{_includedir}/vmrest.h
-%exclude %{_lib64dir}/libvmrestclient.la
-%exclude %{_lib64dir}/libvmrestclient.a
 
-# %doc ChangeLog README COPYING
 
 %changelog
 

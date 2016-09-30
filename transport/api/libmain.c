@@ -12,12 +12,39 @@
  * under the License.
  */
 
-# include "includes.h"
 
-uint32_t vmsockInit(
-    void
+#include "includes.h"
+
+DWORD
+VmwSockInitialize(
+    VOID
     )
 {
-    return 0;
+    DWORD dwError = 0;
 
+    if (!gpVmSockPackage)
+    {
+#ifdef _WIN32
+        dwError = VmWinSockInitialize(&gpVmSockPackage);
+#else
+        dwError = VmSockPosixInitialize(&gpVmSockPackage);
+#endif
+    }
+
+    return dwError;
+}
+
+VOID
+VmwSockShutdown(
+    VOID
+    )
+{
+    if (gpVmSockPackage)
+    {
+#ifdef _WIN32
+        VmWinSockShutdown(gpVmSockPackage);
+#else
+        VmSockPosixShutdown(gpVmSockPackage);
+#endif
+    }
 }

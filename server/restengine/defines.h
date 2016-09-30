@@ -24,38 +24,18 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define MAX_VERSION_LEN            32
 #define MAX_STATUS_LEN              4
 #define MAX_REA_PHRASE_LEN         32
-#define MAX_ACCEPT_LEN             32
-#define MAX_ACCEPT_CHARSET_LEN     32
-#define MAX_ACCEPT_ENCODING_LEN    32
-#define MAX_ACCEPT_LANGUAGE_LEN    32
-#define MAX_AUTH_LEN               32
-#define MAX_FROM_LEN               32
-#define MAX_HOST_LEN               32
-#define MAX_REFERER_LEN            32
-#define MAX_ACCEPT_RANGE_LEN       32
-#define MAX_LOCATION_LEN           32
-#define MAX_PROXY_AUTH_LEN         32
-#define MAX_SERVER_LEN             32
-#define MAX_CACHE_CONTROL_LEN      32
-#define MAX_CONN_LEN               32
-#define MAX_TRAILER_LEN            32
-#define MAX_TRANSFER_ENCODING_LEN  32
-#define MAX_ALLOW_LEN              32
-#define MAX_CONTENT_ENCODING_LEN   32
-#define MAX_CONTENT_LANGUAGE_LEN   32
-#define MAX_CONTENT_LENGTH_LEN     32
-#define MAX_CONTENT_LOCATION_LEN   32
-#define MAX_CONTENT_MD5_LEN        32
-#define MAX_CONTENT_RANGE_LEN      32
-#define MAX_CONTENT_TYPE_LEN       32
 #define HTTP_VER_LEN                8
+#define HTTP_CHUNCKED_DATA_LEN      6
+#define HTTP_MIN_CHUNK_DATA_LEN     3
 
+#define MAX_KEY_VAL_PARAM_LEN      256
+#define MAX_URL_PARAMS_ARR_SIZE    10
+#define MAX_EXTRA_CRLF_BUF_SIZE    10
 #define MAX_DATA_BUFFER_LEN        4096
 #define MAX_REQ_LIN_LEN            1024
 
-#define MAX_HTTP_HEADER_ATTR_LEN   32
-#define MAX_HTTP_HEADER_VAL_LEN    1024
-#define MAX_HTTP_PAYLOAD_LEN       2048
+#define MAX_HTTP_HEADER_ATTR_LEN   64
+#define MAX_HTTP_HEADER_VAL_LEN    2048
 
 #define DEFAULT_WORKER_THR_CNT     "5"
 #define DEFAULT_CLIENT_CNT         "5"

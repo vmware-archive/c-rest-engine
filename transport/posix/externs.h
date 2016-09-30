@@ -12,6 +12,5 @@
  * under the License.
  */
 
-extern VM_SOCKET gServerSocketInfo;
 
-extern QUEUE *pQueue;
+extern PVM_SOCK_PACKAGE gpVmSockPosixPackage;

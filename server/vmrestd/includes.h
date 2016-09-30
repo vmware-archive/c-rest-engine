@@ -19,6 +19,7 @@
 
 #include <vmrest.h>
 
+#include "defines.h"
 #include "structs.h"
 #include "prototypes.h"
 #include "externs.h"

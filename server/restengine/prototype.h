@@ -13,26 +13,6 @@
  * under the License.
  */
 
-/***************** Thread.c ***********************/
-uint32_t
-VmRestSpawnThreads(
-    PFN_VMREST_THR_ROUTINE           pThrRoutine,
-    PVMREST_THREAD*                  ppThreadpool,
-    uint32_t                         maxWorkerThread
-    );
-
-void *
-VmRestWorkerThread(
-    void*                            pArgs
-    );
-
-void
-VmRestFreeThreadpool(
-    PVMREST_THREAD                   pThreadpool,
-    uint32_t                         threadcount
-    );
-
-
 /***************** httpProtocolHead.c *************/
 
 uint32_t
@@ -106,7 +86,26 @@ VMRESTWriteMessageBodyInResponseStream(
     );
 
 uint32_t
-VmRESTSendResponsePacket(
+VMRESTWriteChunkedMessageInResponseStream(
+    char*                            src,
+    uint32_t                         srcSize,
+    char*                            buffer,
+    uint32_t*                        bytes
+);
+
+uint32_t
+VmRESTSendHeader(
+    PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
+    );
+
+uint32_t
+VmRESTSendChunkedPayload(
+    PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket,
+    uint32_t                         dataLen
+    );
+
+uint32_t
+VmRESTSendHeaderAndPayload(
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
@@ -119,6 +118,11 @@ VmRESTTriggerAppCb(
 uint32_t
 VmRESTTestHTTPResponse(
     PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
+    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
+    );
+
+uint32_t
+VmRESTCloseClient(
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
     );
 
@@ -144,6 +148,15 @@ VmRESTFreeHTTPResponsePacket(
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
+uint32_t
+VmRESTAllocateEndPoint(
+     PREST_ENDPOINT*                 ppEndPoint
+     );
+
+void
+VmRESTFreeEndPoint(
+    PREST_ENDPOINT                   pEndPoint
+    );
 
 /***************** httpUtilsInternal.c ************/
 
@@ -171,7 +184,7 @@ uint32_t
 VmRESTGetHttpResponseHeader(
     PVM_REST_HTTP_RESPONSE_PACKET    pResponse,
     char*                            header,
-    char*                            response
+    char**                           response
     );
 
 uint32_t
@@ -227,5 +240,105 @@ VmRESTGetHTTPMiscHeader(
     PMISC_HEADER_QUEUE               miscHeaderQueue,
     char const*                      header,
     char**                           ppResponse
+    );
+
+uint32_t
+VmRESTGetChunkSize(
+    char*                            lineStart,
+    uint32_t*                        skipBytes,
+    uint32_t*                        chunkSize
+    );
+
+uint32_t
+VmRESTCopyDataWithoutCRLF(
+    uint32_t                         maxBytes,
+    char*                            src,
+    char*                            des,
+    uint32_t*                        actualBytes
+    );
+
+/***************** restProtocolHead.c  ************/
+
+uint32_t
+VmRestEngineHandler(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse
+    );
+
+uint32_t
+VmRestEngineInitEndPointRegistration(
+    );
+
+void
+VmRestEngineShutdownEndPointRegistration(
+    );
+
+uint32_t
+VmRestEngineAddEndpoint(
+    char*                            pEndPointURI,
+    PREST_PROCESSOR                  pHandler
+    );
+
+uint32_t
+VmRestEngineRemoveEndpoint(
+    char*                            pEndPointURI
+    );
+
+uint32_t
+VmRestEngineGetEndPoint(
+    char*                            pEndPointURI,
+    PREST_ENDPOINT*                  ppEndPoint
+    );
+
+uint32_t
+VmRestGetEndPointURIfromRequestURI(
+    char*                            pRequestURI,
+    char*                            endPointURI
+    );
+
+uint32_t
+VmRestGetParamsCountInReqURI(
+    char*                            pRequestURI,
+    uint32_t*                        paramCount
+    );
+
+uint32_t
+VmRestParseParams(
+    char*                            pRequestURI,
+    uint32_t                         paramsCount,
+    PREST_REQUEST                    pRequest
+    );
+
+/***************** httpMain.c  ************/
+
+uint32_t
+VmHTTPInit(
+    PREST_CONF                       pConfig,
+    char*                            file
+    );
+
+uint32_t
+VmHTTPStart(
+    void
+    );
+
+uint32_t
+VmHTTPRegisterHandler(
+    PREST_PROCESSOR                  pHandler
+    );
+
+uint32_t
+VmHTTPUnRegisterHandler(
+    void
+    );
+
+uint32_t
+VmHTTPStop(
+    void
+    );
+
+void
+VmHTTPShutdown(
+    void
     );
 

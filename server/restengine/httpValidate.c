@@ -23,9 +23,9 @@ VmRESTRemovePreSpace(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            temp = NULL;
 
-    if (src == NULL || dest == NULL)
+    if (!src  || !dest)
     {
-        VMREST_LOG_DEBUG("VmRESTRemovePreSpace(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -61,9 +61,9 @@ VmRESTRemovePostSpace(
     uint32_t                         len = 0;
     uint32_t                         skip = 0;
 
-    if (src == NULL || dest == NULL)
+    if (!src || !dest)
     {
-        VMREST_LOG_DEBUG("VmRESTRemovePostSpace(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -101,9 +101,9 @@ VmRESTConverUpperToLower(
     char*                            temp = NULL;
     char*                            tempDes = NULL;
 
-    if (src == NULL || dest == NULL)
+    if (!src || !dest)
     {
-        VMREST_LOG_DEBUG("VmRESTConverUpperToLower(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -268,9 +268,9 @@ VmRESTValidateHTTPVersion(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
 
-    if ( pRequest == NULL || result == NULL || err == NULL )
+    if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_DEBUG("VmRESTValidateHTTPVersion(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -305,10 +305,11 @@ VmRESTValidateHTTPRequestURI(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         len = 0;
     char*                            temp = NULL;
+    char*                            host = NULL;
 
-    if ( pRequest == NULL || result == NULL || err == NULL )
+    if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_DEBUG("VmRESTValidateHTTPRequestURI(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -338,8 +339,13 @@ VmRESTValidateHTTPRequestURI(
 
     if ((memcmp((void*)temp, "http", 4) != 0))
     {
-        len = strlen(pRequest->requestHeader->host);
-        if (len == 0)
+        dwError = VmRESTGetHttpHeader(
+                      pRequest,
+                      "Host",
+                      &host
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+        if (host == NULL || (strlen(host)) == 0)
         {
             /* No host name found on request */
             *err = BAD_REQUEST;
@@ -370,12 +376,12 @@ VmRESTValidateHTTPContentType(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         len = 0;
     char*                            temp = NULL;
+    char*                            contentType = NULL;
 
-    if ( pRequest == NULL || result == NULL || err == NULL )
+    if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_DEBUG("VmRESTValidateHTTPContentType(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -383,13 +389,19 @@ VmRESTValidateHTTPContentType(
     *result = PASS;
     *err = 0;
 
-    len = strlen(pRequest->entityHeader->contentType);
+    dwError = VmRESTGetHttpHeader(
+                  pRequest,
+                  "Content-Type",
+                  &contentType
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
 
-    if (len > 0)
+    if ((contentType != NULL) && (strlen(contentType) > 0 ))
     {
-        temp = strtok(strdup(pRequest->entityHeader->contentType), ",");
+        temp = strtok(strdup(contentType), ",");
         while (temp != NULL)
         {
+            /**** TODO: Add all other supported media type ****/
             if(strcmp(temp, "application/json") == 0)
             {
                 *err = 0;
@@ -420,12 +432,12 @@ VmRESTValidateAccept(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         len = 0;
     char*                            temp = NULL;
+    char*                            accept = NULL;
 
-    if ( pRequest == NULL || result == NULL || err == NULL )
+    if ( !pRequest || !result  || !err )
     {
-        VMREST_LOG_DEBUG("VmRESTValidateAccept(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -433,11 +445,16 @@ VmRESTValidateAccept(
     *result = PASS;
     *err = 0;
 
-    len = strlen(pRequest->requestHeader->accept);
+    dwError = VmRESTGetHttpHeader(
+                  pRequest,
+                  "Accept",
+                  &accept
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
 
-    if (len > 0)
+    if ((accept != NULL) && (strlen(accept) > 0))
     {
-        temp = strtok(strdup(pRequest->requestHeader->accept), ",");
+        temp = strtok(strdup(accept), ",");
         while (temp != NULL)
         {
             if(strcmp(temp, "application/json") == 0)
@@ -471,12 +488,12 @@ VmRESTValidateAcceptCharSet(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         len = 0;
     char*                            temp = NULL;
+    char*                            acceptCharSet = NULL;
 
-    if ( pRequest == NULL || result == NULL || err == NULL )
+    if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_DEBUG("VmRESTValidateAcceptCharSet(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -484,10 +501,16 @@ VmRESTValidateAcceptCharSet(
     *result = PASS;
     *err = 0;
 
-    len = strlen(pRequest->requestHeader->acceptCharSet);
-    if (len > 0)
+    dwError = VmRESTGetHttpHeader(
+                  pRequest,
+                  "Accept-Charset",
+                  &acceptCharSet
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if ((acceptCharSet != NULL) && (strlen(acceptCharSet) > 0))
     {
-        temp = strtok(strdup(pRequest->requestHeader->acceptCharSet), ",");
+        temp = strtok(strdup(acceptCharSet), ",");
         while (temp != NULL)
         {
             if(strcmp(temp, "utf-8") == 0)

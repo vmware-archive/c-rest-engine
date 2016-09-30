@@ -134,6 +134,271 @@ VmRESTUtilsConvertInttoString(
     char*                            str
     );
 
+#ifndef WIN32
+typedef pthread_t VMREST_THREAD;
+#endif
+
+typedef VMREST_THREAD* PVMREST_THREAD;
+
+
+typedef struct _VMREST_MUTEX
+{
+    uint8_t                          bInitialized;
+    pthread_mutex_t                  critSect;
+
+} VMREST_MUTEX, *PVMREST_MUTEX;
+
+typedef struct _VMREST_COND
+{
+    uint8_t                          bInitialized;
+    pthread_cond_t                   cond;
+
+} VMREST_COND, *PVMREST_COND;
+
+/**** TODO: This is not proper place for this struct ****/
+typedef struct _VMREST_RWLOCK
+{
+    pthread_key_t                    readKey;
+    pthread_key_t                    writeKey;
+    pthread_rwlock_t                 rwLock;
+
+} VMREST_RWLOCK, *PVMREST_RWLOCK;
+
+
+typedef struct _VMREST_SOCK_CONTEXT
+{
+    PVMREST_MUTEX                    pMutex;
+    uint8_t                          bShutdown;
+    PVM_SOCKET                       pListenerUDP;
+    PVM_SOCKET                       pListenerUDP6;
+    PVM_SOCKET                       pListenerTCP;
+    PVM_SOCKET                       pListenerTCP6;
+    PVM_SOCK_EVENT_QUEUE             pEventQueue;
+    PVMREST_THREAD*                  pWorkerThreads;
+    uint32_t                         dwNumThreads;
+
+} VMREST_SOCK_CONTEXT, *PVMREST_SOCK_CONTEXT;
+
+/*********** REST engine Configuration struct *************/
+typedef struct _REST_CONFIG
+{
+    char                             ssl_certificate[MAX_PATH_LEN];
+    char                             ssl_key[MAX_PATH_LEN];
+    char                             server_port[MAX_SERVER_PORT_LEN];
+    char                             debug_log_file[MAX_PATH_LEN];
+    char                             client_count[MAX_CLIENT_ALLOWED_LEN];
+    char                             worker_thread_count[MAX_WORKER_COUNT_LEN];
+} VM_REST_CONFIG, *PVM_REST_CONFIG;
+
+
+#define VMW_REST_PORT                 (81)
+
+#define VMW_REST_DEFAULT_THREAD_COUNT (5)
+
+#define ERROR_BUSY                    200
+#define ERROR_POSSIBLE_DEADLOCK       201
+#define VMREST_UDP_PACKET_SIZE        512 
+#define ERROR_IO_PENDING              300
+#define ERROR_INVALID_MESSAGE         301
+#define WSAECONNRESET                 10054
+
+typedef DWORD (VmRESTStartRoutine)(PVOID);
+typedef VmRESTStartRoutine* PVMREST_START_ROUTINE;
+
+typedef struct _VMREST_THREAD_START_INFO
+{
+    VmRESTStartRoutine*              pStartRoutine;
+    PVOID                            pArgs;
+
+} VMREST_THREAD_START_INFO, *PVMREST_THREAD_START_INFO;
+
+/**** sockInterface.c Exposed API's ****/
+
+DWORD
+VmRESTInitProtocolServer(
+    VOID
+    );
+
+VOID
+VmRESTShutdownProtocolServer(
+    VOID
+    );
+
+uint32_t
+VmsockPosixGetXBytes(
+    uint32_t                         bytesRequested,
+    char*                            appBuffer,
+    PVM_SOCKET                       pSocket,
+    uint32_t*                        bytesRead,
+    uint8_t                          shouldBlock
+    );
+
+uint32_t
+VmSockPosixAdjustProcessedBytes(
+    PVM_SOCKET                       pSocket,
+    uint32_t                         dataSeen
+    );
+
+uint32_t
+VmsockPosixWriteDataAtOnce(
+    PVM_SOCKET                       pSocket,
+    char*                            buffer,
+    uint32_t                         bytes
+    );
+
+uint32_t
+VmRESTProcessIncomingData(
+    char*                            buffer,
+    uint32_t                         byteRead,
+    PVM_SOCKET                       pSocket
+    );
+
+void
+VmRESTSetConfig(
+   PVM_REST_CONFIG                   pRESTConfig         
+   );
+
+void
+VmRESTUnSetConfig(
+    void
+    );
+
+/************ threads.c API's ****************/
+
+DWORD
+VmRESTAllocateMutex(
+    PVMREST_MUTEX*                   ppMutex
+    );
+
+DWORD
+VmRESTInitializeMutexContent(
+    PVMREST_MUTEX                    pMutex
+    );
+
+VOID
+VmRESTFreeMutex(
+    PVMREST_MUTEX                    pMutex
+    );
+
+VOID
+VmRESTFreeMutexContent(
+    PVMREST_MUTEX                    pMutex
+    );
+
+DWORD
+VmRESTLockMutex(
+    PVMREST_MUTEX                    pMutex
+    );
+
+DWORD
+VmRESTUnlockMutex(
+    PVMREST_MUTEX                    pMutex
+    );
+
+BOOLEAN
+VmRESTIsMutexInitialized(
+    PVMREST_MUTEX                    pMutex
+    );
+
+DWORD
+VmRESTAllocateCondition(
+    PVMREST_COND*                    ppCondition
+    );
+
+DWORD
+VmRESTInitializeConditionContent(
+    PVMREST_COND                     pCondition
+    );
+
+VOID
+VmRESTFreeCondition(
+    PVMREST_COND                     pCondition
+    );
+
+VOID
+VmRESTFreeConditionContent(
+    PVMREST_COND                     pCondition
+    );
+
+DWORD
+VmRESTConditionWait(
+    PVMREST_COND                     pCondition,
+    PVMREST_MUTEX                    pMutex
+    );
+
+DWORD
+VmRESTConditionTimedWait(
+    PVMREST_COND                     pCondition,
+    PVMREST_MUTEX                    pMutex,
+    DWORD                            dwMilliseconds
+    );
+
+DWORD
+VmRESTConditionSignal(
+    PVMREST_COND                     pCondition
+    );
+
+DWORD
+VmRESTCreateThread(
+    PVMREST_THREAD                   pThread,
+    BOOLEAN                          bDetached,
+    VmRESTStartRoutine*              pStartRoutine,
+    PVOID                            pArgs
+    );
+
+DWORD
+VmRESTThreadJoin(
+    PVMREST_THREAD                   pThread,
+    PDWORD                           pRetVal
+    );
+
+VOID
+VmRESTFreeThread(
+    PVMREST_THREAD                   pThread
+    );
+
+DWORD
+VmRESTAllocateRWLock(
+    PVMREST_RWLOCK*                  ppLock
+    );
+
+VOID
+VmRESTFreeRWLock(
+    PVMREST_RWLOCK                   pLock
+    );
+
+void
+VmRESTLockRead(
+    PVMREST_RWLOCK                   pLock
+    );
+
+int
+VmRESTTryLockRead(
+    PVMREST_RWLOCK                   pLock
+    );
+
+void
+VmRESTUnlockRead(
+    PVMREST_RWLOCK                   pLock
+    );
+
+void
+VmRESTLockWrite(
+    PVMREST_RWLOCK                   pLock
+    );
+
+int
+VmRESTTryLockWrite(
+    PVMREST_RWLOCK                   pLock
+    );
+
+void
+VmRESTUnlockWrite(
+    PVMREST_RWLOCK                   pLock
+    );
+
+/************ threads.c API's End ****************/
+
 
 #ifdef __cplusplus
 }

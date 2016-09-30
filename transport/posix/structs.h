@@ -12,62 +12,37 @@
  * under the License.
  */
 
-#include "defines.h"
-
-typedef struct _EVENT_DATA
-{
-    int                              fd;
-    SSL*                             ssl;
-    int                              index;
-} VM_EVENT_DATA, *PVM_EVENT_DATA;
-
-typedef struct _CONNECTION
-{
-    int                              fd;
-    int                              notStale;
-    SSL*                             ssl;
-    PVM_EVENT_DATA                   self;
-} VM_CONNECTION, *PVM_CONNECTION;
-
 typedef struct _VM_SOCKET
 {
+    LONG                             refCount;
+    VM_SOCK_TYPE                     type;
+    VM_SOCK_PROTOCOL                 protocol;
+    struct sockaddr                  addr;
+    socklen_t                        addrLen;
+    PVM_STREAM_BUFFER                pStreamBuffer;
+    struct sockaddr*                 pAddr;
+    PVMREST_MUTEX                    pMutex;
     int                              fd;
-    SSL_CTX*                         sslContext;
-    VM_CONNECTION                    clients[MAX_CONNECTIONS];
-    uint32_t                         clientCount;
-    uint32_t                         emptyIndex;
-    pthread_mutex_t                  lock;
-    uint32_t                         keepOpen;
-    uint32_t                         ServerAlive;
-    char                             address[MAX_ADDRESS_LEN];
-    char                             port[MAX_PORT_LEN];
-    uint32_t                         isSecure;
+    PVOID                            pData;
 } VM_SOCKET;
 
-typedef struct _QUEUE_NODE
+typedef struct _VM_SOCK_EVENT_QUEUE
 {
-    VM_EVENT_DATA                    data;
-    uint32_t                         flag;
-    struct _QUEUE_NODE*              next;
-}EVENT_NODE;
+    PVMREST_MUTEX                    pMutex;
+    PVM_SOCKET                       pSignalReader;
+    PVM_SOCKET                       pSignalWriter;
+    VM_SOCK_POSIX_EVENT_STATE        state;
+    int                              epollFd;
+    struct epoll_event *             pEventArray;
+    DWORD                            dwSize;
+    int                              nReady;
+    int                              iReady;
+} VM_SOCK_EVENT_QUEUE;
 
-typedef struct _VM_EVENT_QUEUE
+typedef struct _VM_SOCK_IO_CONTEXT
 {
-    EVENT_NODE*                      head;
-    EVENT_NODE*                      tail;
-    uint32_t                         count;
-    pthread_mutex_t                  lock;
-    pthread_cond_t                   signal;
-    int                              epoll_fd;
-    int                              server_fd;
-    pthread_t*                       server_thread;
-}QUEUE;
-
-typedef struct _VM_SERVER_THR_PARAMS
-{
-    char                             sslCert[MAX_PATH_LEN];
-    char                             sslKey[MAX_PATH_LEN];
-    char                             serverPort[MAX_SERVER_PORT_LEN];
-    uint32_t                         clientCount;
-} VM_SERVER_THR_PARAMS, *PVM_SERVER_THR_PARAMS;
+    VM_SOCK_EVENT_TYPE               eventType;
+    VM_SOCK_IO_BUFFER                IoBuffer;
+    CHAR                             DataBuffer[1];
+} VM_SOCK_IO_CONTEXT, *PVM_SOCK_IO_CONTEXT;
 

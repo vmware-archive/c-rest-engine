@@ -22,40 +22,22 @@ VmRESTGetHttpMethod(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         methodLen = 0;
-    uint32_t                         methodNo  = 0;
 
-    if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (ppResponse == NULL))
+    if (!(pRequest) || !(pRequest->requestLine) || !(ppResponse))
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpMethod(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     methodLen = strlen(pRequest->requestLine->method);
-    if (methodLen == 0 || methodLen > MAX_METHOD_LEN)
+    if (methodLen == 0)
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpMethod(): Method seems invalid");
+        VMREST_LOG_ERROR("Method seems invalid");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTMapMethodToEnum(
-                  pRequest->requestLine->method,
-                  &methodNo
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    if ((methodNo >= HTTP_METHOD_GET) && (methodNo <= HTTP_METHOD_CONNECT))
-    {
-        *ppResponse = pRequest->requestLine->method;
-    }
-    else
-    {
-        VMREST_LOG_DEBUG("VmRESTGetHttpMethod(): Method name in request object invalid");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
+    *ppResponse = pRequest->requestLine->method;
 cleanup:
     return dwError;
 error:
@@ -72,9 +54,9 @@ VmRESTGetHttpURI(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         uriLen = 0;
 
-    if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (ppResponse == NULL))
+    if (!(pRequest) || !(pRequest->requestLine) || !(ppResponse))
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpURI(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -82,7 +64,7 @@ VmRESTGetHttpURI(
     uriLen = strlen(pRequest->requestLine->uri);
     if (uriLen == 0 || uriLen > MAX_URI_LEN)
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpURI(): URI seems invalid in request object");
+        VMREST_LOG_ERROR("URI seems invalid in request object");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -104,9 +86,9 @@ VmRESTGetHttpVersion(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         versionLen = 0;
 
-    if ((pRequest == NULL) || (pRequest->requestLine == NULL) || (ppResponse == NULL))
+    if (!(pRequest) || !(pRequest->requestLine) || !(ppResponse))
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpVersion(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -114,7 +96,7 @@ VmRESTGetHttpVersion(
     versionLen = strlen(pRequest->requestLine->version);
     if (versionLen == 0 || versionLen > MAX_VERSION_LEN)
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpVersion(): Version info invalid in request object");
+        VMREST_LOG_ERROR("Version info invalid in request object");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -135,285 +117,32 @@ VmRESTGetHttpHeader(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         headerNo = 0;
     uint32_t                         headerValLen = 0;
-    uint32_t                         resStatus = 0;
 
-    if ((pRequest == NULL) || (header == NULL) || (ppResponse == NULL))
+    if (!(pRequest) || !(header) || !(ppResponse))
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpHeader(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTMapHeaderToEnum(
+    dwError = VmRESTGetHTTPMiscHeader(
+                  pRequest->miscHeader,
                   header,
-                  &headerNo,
-                  &resStatus
+                  ppResponse
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-
-    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_MISC_HEADER_ALL))
+    if (*ppResponse)
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpHeader: Seems like invalid header in request object");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
+         headerValLen = strlen(*ppResponse);
+         if (headerValLen < 0 || headerValLen > MAX_HTTP_HEADER_VAL_LEN)
+         {
+             dwError = VMREST_HTTP_VALIDATION_FAILED;
+         }
     }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    /* No response header data is returned */
-    if ((headerNo >= HTTP_RESPONSE_HEADER_ACCEPT_RANGE) && (headerNo <= HTTP_RESPONSE_HEADER_SERVER))
+    else
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpHeader: Not a request header, its a response header");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    switch (headerNo)
-    {
-        case HTTP_REQUEST_HEADER_ACCEPT:
-                 headerValLen = strlen(pRequest->requestHeader->accept);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->requestHeader->accept;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_REQUEST_HEADER_ACCEPT_CHARSET:
-                 headerValLen = strlen(pRequest->requestHeader->acceptCharSet);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->requestHeader->acceptCharSet;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_REQUEST_HEADER_ACCEPT_ENCODING:
-                 headerValLen = strlen(pRequest->requestHeader->acceptEncoding);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->requestHeader->acceptEncoding;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_REQUEST_HEADER_ACCEPT_LANGUAGE:
-                 headerValLen = strlen(pRequest->requestHeader->acceptLanguage);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->requestHeader->acceptLanguage;
-                 }
-                 else
-                 {
-                     dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_REQUEST_HEADER_ACCEPT_AUTHORIZATION:
-                 headerValLen = strlen(pRequest->requestHeader->authorization);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->requestHeader->authorization;
-                 }
-                 else
-                 {
-                     dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-       case HTTP_REQUEST_HEADER_FROM:
-                 headerValLen = strlen(pRequest->requestHeader->from);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->requestHeader->from;
-                 }
-                 else
-                 {
-                     dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-       case HTTP_REQUEST_HEADER_HOST:
-                 headerValLen = strlen(pRequest->requestHeader->host);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->requestHeader->host;
-                 }
-                 else
-                 {
-                     dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-       case HTTP_REQUEST_HEADER_REFERER:
-                 headerValLen = strlen(pRequest->requestHeader->referer);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->requestHeader->referer;
-                 }
-                 else
-                 {
-                     dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-       case HTTP_GENERAL_HEADER_CACHE_CONTROL:
-                 headerValLen = strlen(pRequest->generalHeader->cacheControl);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->generalHeader->cacheControl;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_GENERAL_HEADER_CONNECTION:
-                 headerValLen = strlen(pRequest->generalHeader->connection);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->generalHeader->connection;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-         case HTTP_GENERAL_HEADER_TRAILER:
-                 headerValLen = strlen(pRequest->generalHeader->trailer);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->generalHeader->trailer;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_GENERAL_HEADER_TRANSFER_ENCODING:
-                 headerValLen = strlen(pRequest->generalHeader->transferEncoding);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->generalHeader->transferEncoding;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_ENTITY_HEADER_ALLOW:
-                 headerValLen = strlen(pRequest->entityHeader->allow);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->entityHeader->allow;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-       case HTTP_ENTITY_HEADER_CONTENT_ENCODING:
-                 headerValLen = strlen(pRequest->entityHeader->contentEncoding);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->entityHeader->contentEncoding;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_ENTITY_HEADER_CONTENT_LANGUAGE:
-                 headerValLen = strlen(pRequest->entityHeader->contentLanguage);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->entityHeader->contentLanguage;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_ENTITY_HEADER_CONTENT_LENGTH:
-                 headerValLen = strlen(pRequest->entityHeader->contentLength);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->entityHeader->contentLength;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_ENTITY_HEADER_CONTENT_LOCATION:
-                 headerValLen = strlen(pRequest->entityHeader->contentLocation);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->entityHeader->contentLocation;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_ENTITY_HEADER_CONTENT_MD5:
-                 headerValLen = strlen(pRequest->entityHeader->contentMD5);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->entityHeader->contentMD5;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_ENTITY_HEADER_CONTENT_RANGE:
-                 headerValLen = strlen(pRequest->entityHeader->contentRange);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->entityHeader->contentRange;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_ENTITY_HEADER_CONTENT_TYPE:
-                 headerValLen = strlen(pRequest->entityHeader->contentType);
-                 if (headerValLen > 0 && headerValLen < MAX_HTTP_HEADER_VAL_LEN)
-                 {
-                     *ppResponse = pRequest->entityHeader->contentType;
-                 }
-                 else
-                 {
-                      dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 }
-                 break;
-        case HTTP_MISC_HEADER_ALL:
-                dwError = VmRESTGetHTTPMiscHeader(
-                               pRequest->miscHeader,
-                               header,
-                               ppResponse
-                               );
-                 BAIL_ON_VMREST_ERROR(dwError);
-                 if (*ppResponse)
-                 {
-                     headerValLen = strlen(*ppResponse);
-                     if (headerValLen < 0 || headerValLen > MAX_HTTP_HEADER_VAL_LEN)
-                     {
-                         dwError = VMREST_HTTP_VALIDATION_FAILED;
-                     }
-                 }
-                 else
-                 {
-                     VMREST_LOG_DEBUG("VmRESTGetHttpHeader(): Header %s not found in request object", header);
-                 }
-                 break;
-        default:
-                 dwError = VMREST_HTTP_VALIDATION_FAILED;
-                 break;
-
+        VMREST_LOG_DEBUG("WARNING :: Header %s not found in request object", header);
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -427,38 +156,201 @@ error:
 uint32_t
 VmRESTGetHttpPayload(
     PREST_REQUEST                    pRequest,
-    char*                            response
+    char*                            response,
+    uint32_t*                        done
     )
 {
 
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         contentLen = 0;
+    uint32_t                         dataRemaining = 0;
+    char                             localAppBuffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         chunkLenBytes = 0;
+    uint32_t                         chunkLen = 0;
+    uint32_t                         bytesRead = 0;
+    uint32_t                         readXBytes = 0;
+    uint32_t                         actualBytesCopied = 0;
+    uint32_t                         newChunk = 0;
+    uint32_t                         extraRead = 0;
+    char*                            res = NULL;
+    char*                            contentLength = NULL;
+    char*                            transferEncoding = NULL;
 
-    if (pRequest == NULL || pRequest->entityHeader == NULL || response == NULL)
+    if (!pRequest || !response  || !done)
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpPayload(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+    *done = 0;
 
-    /* Valid Content Length must be present in header for this API to success */
-    if (strlen(pRequest->entityHeader->contentLength) > 0)
+    if (sizeof(response) > MAX_DATA_BUFFER_LEN)
     {
-        contentLen = atoi(pRequest->entityHeader->contentLength);
-        if ((contentLen > 0) && (contentLen <= MAX_HTTP_PAYLOAD_LEN))
+        VMREST_LOG_ERROR("Response buffer size %u not large enough",sizeof(response));
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+    memset(localAppBuffer,'\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTGetHttpHeader(
+                  pRequest,
+                  "Content-Length",
+                  &contentLength
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTGetHttpHeader(
+                  pRequest,
+                  "Transfer-Encoding",
+                  &transferEncoding
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (contentLength != NULL && strlen(contentLength) > 0)
+    {
+       /**** Content-Length based packets ****/
+
+        dataRemaining = pRequest->dataRemaining;
+        if ((dataRemaining > 0) && (dataRemaining <= MAX_DATA_BUFFER_LEN))
         {
-            memcpy(response, pRequest->messageBody->buffer, contentLen);
+            readXBytes = dataRemaining;
         }
-        else
+        else if (dataRemaining > MAX_DATA_BUFFER_LEN)
         {
-            VMREST_LOG_DEBUG("VmRESTGetHttpPayload(): Not a valid content length");
+            readXBytes = MAX_DATA_BUFFER_LEN;
+        }
+        VMREST_LOG_DEBUG("Get Payload, Requesting %u bytes to read", readXBytes);
+        dwError = VmsockPosixGetXBytes(
+                      readXBytes,
+                      localAppBuffer,
+                      pRequest->pSocket,
+                      &bytesRead,
+                      1
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        dwError = VmRESTCopyDataWithoutCRLF(
+                      bytesRead,
+                      localAppBuffer,
+                      response,
+                      &actualBytesCopied
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+        pRequest->dataRemaining = pRequest->dataRemaining - actualBytesCopied;
+
+        if (pRequest->dataRemaining == 0)
+        {
+            *done = 1;
+        }
+        if (bytesRead == 0 && readXBytes != 0)
+        {
             dwError = VMREST_HTTP_VALIDATION_FAILED;
+            VMREST_LOG_ERROR("No data available over socket to read");
+            *done = 1;
+        }
+    }
+    else if((transferEncoding != NULL) && (strcmp(transferEncoding,"chunked")) == 0)
+    {
+        res = response;
+        dataRemaining = pRequest->dataRemaining;
+        if (dataRemaining == 0)
+        {
+            readXBytes = HTTP_CHUNCKED_DATA_LEN;
+            newChunk = 1;
+        }
+        else if (dataRemaining > MAX_DATA_BUFFER_LEN)
+        {
+            readXBytes = MAX_DATA_BUFFER_LEN;
+            newChunk = 0;
+        }
+        else if (dataRemaining < MAX_DATA_BUFFER_LEN)
+        {
+            readXBytes = dataRemaining;
+            newChunk = 0;
+        }
+
+        /**** This is chunked encoded packet ****/
+        dwError = VmsockPosixGetXBytes(
+                      readXBytes,
+                      localAppBuffer,
+                      pRequest->pSocket,
+                      &bytesRead,
+                      1
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+
+        if (newChunk)
+        {
+            dwError = VmRESTGetChunkSize(
+                          localAppBuffer,
+                          &chunkLenBytes,
+                          &chunkLen
+                          );
+            BAIL_ON_VMREST_ERROR(dwError);
+            pRequest->dataRemaining = chunkLen;
+
+            if (chunkLen == 0)
+            {
+                *done = 1;
+            }
+            if (*done == 0)
+            {
+                /**** Copy the extra data from last read if it exists ****/
+                extraRead = bytesRead - chunkLenBytes;
+                if (extraRead > 0)
+                {
+                    memcpy(res, (localAppBuffer + chunkLenBytes), extraRead);
+                    res = res + extraRead;
+                    pRequest->dataRemaining = pRequest->dataRemaining - extraRead;
+                }
+
+                memset(localAppBuffer,'\0',MAX_DATA_BUFFER_LEN);
+
+                if (pRequest->dataRemaining > (MAX_DATA_BUFFER_LEN - extraRead))
+                {
+                    readXBytes = MAX_DATA_BUFFER_LEN -extraRead;
+                }
+                else if (pRequest->dataRemaining <= (MAX_DATA_BUFFER_LEN - extraRead))
+                {
+                    readXBytes = pRequest->dataRemaining;
+                }
+                dwError = VmsockPosixGetXBytes(
+                              readXBytes,
+                              localAppBuffer,
+                              pRequest->pSocket,
+                              &bytesRead,
+                              1
+                              );
+                BAIL_ON_VMREST_ERROR(dwError);
+
+                dwError = VmRESTCopyDataWithoutCRLF(
+                              bytesRead,
+                              localAppBuffer,
+                              res,
+                              &actualBytesCopied
+                              );
+                BAIL_ON_VMREST_ERROR(dwError);
+                pRequest->dataRemaining = pRequest->dataRemaining - actualBytesCopied;
+
+                /**** Read the /r/n succeeding the chunk ****/
+                if (pRequest->dataRemaining == 0)
+                {
+                     dwError = VmsockPosixGetXBytes(
+                                  2,
+                                  localAppBuffer,
+                                  pRequest->pSocket,
+                                  &bytesRead,
+                                  0
+                                  );
+                BAIL_ON_VMREST_ERROR(dwError);
+                }
+            }
         }
     }
     else
     {
-        VMREST_LOG_DEBUG("VmRESTGetHttpPayload(): Content length not specified");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
+        VMREST_LOG_DEBUG("WARNING: Data length Specific Header not set");
+        *done = 1;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -472,39 +364,95 @@ error:
 uint32_t
 VmRESTSetHttpPayload(
     PREST_RESPONSE*                  ppResponse,
-    char*                            buffer
+    char*                            buffer,
+    uint32_t                         dataLen,
+    uint32_t*                        done
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         contentLen = 0;
     PREST_RESPONSE                   pResponse = NULL;
+    char*                            contentLength = NULL;
+    char*                            transferEncoding = NULL;
 
-    if (ppResponse == NULL || *ppResponse == NULL || buffer == NULL)
+
+    if (!ppResponse  || (*ppResponse == NULL) || !buffer || !done)
     {
-        VMREST_LOG_DEBUG("VmRESTSetHttpPayload(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     pResponse = *ppResponse;
+    *done = 0;
 
-    /* Valid Content Length must be present in header for this API to success */
-    if (strlen(pResponse->entityHeader->contentLength) > 0)
+    dwError = VmRESTGetHttpResponseHeader(
+                  pResponse,
+                  "Content-Length",
+                  &contentLength
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTGetHttpResponseHeader(
+                  pResponse,
+                  "Transfer-Encoding",
+                  &transferEncoding
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** Either of Content-Length or chunked-Encoding header must be set ****/
+    if ((contentLength != NULL) && (strlen(contentLength) > 0))
     {
-        contentLen = atoi(pResponse->entityHeader->contentLength);
-        if ((contentLen > 0) && (contentLen <= MAX_HTTP_PAYLOAD_LEN))
+        contentLen = atoi(contentLength);
+        if ((contentLen >= 0) && (contentLen <= MAX_DATA_BUFFER_LEN))
         {
             memcpy(pResponse->messageBody->buffer, buffer, contentLen);
         }
         else
         {
-            VMREST_LOG_DEBUG("VmRESTSetHttpPayload(): Invalid content length");
+            VMREST_LOG_ERROR("Invalid content length %u", contentLen);
             dwError = VMREST_HTTP_VALIDATION_FAILED;
         }
+        dwError = VmRESTSendHeaderAndPayload(
+                      ppResponse
+                      );
+        VMREST_LOG_DEBUG("Sending Header and Payload done, returned code %u", dwError);
+        BAIL_ON_VMREST_ERROR(dwError);
+        pResponse->headerSent = 1;
+        *done = 1;
+    }
+    else if ((transferEncoding != NULL) && (strcmp(transferEncoding, "chunked") == 0))
+    {
+         if (dataLen > MAX_DATA_BUFFER_LEN)
+         {
+             VMREST_LOG_ERROR("Chunked data length %u not allowed", dataLen);
+             dwError = VMREST_HTTP_VALIDATION_FAILED;
+         }
+         BAIL_ON_VMREST_ERROR(dwError);
+
+         memcpy(pResponse->messageBody->buffer, buffer, dataLen);
+         if (pResponse->headerSent == 0)
+         {
+             /**** Send Header first ****/
+             dwError = VmRESTSendHeader(
+                           ppResponse
+                           );
+             BAIL_ON_VMREST_ERROR(dwError);
+             pResponse->headerSent = 1;
+         }
+         dwError = VmRESTSendChunkedPayload(
+                       ppResponse,
+                       dataLen
+                       );
+         BAIL_ON_VMREST_ERROR(dwError);
+         if (dataLen == 0)
+         {
+             *done = 1;
+         }
     }
     else
     {
-        VMREST_LOG_DEBUG("VmRESTSetHttpPayload(): Content length not specified");
+        VMREST_LOG_ERROR("Both Content length and TransferEncoding missing");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -512,6 +460,7 @@ VmRESTSetHttpPayload(
 cleanup:
     return dwError;
 error:
+    VMREST_LOG_ERROR("Set Payload Failed");
     goto cleanup;
 }
 
@@ -524,135 +473,23 @@ VmRESTSetHttpHeader(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         headerNo = 0;
-    uint32_t                         valLen   = 0;
-    uint32_t                         resStatus = 0;
     PREST_RESPONSE                   pResponse = NULL;
 
-    if (ppResponse == NULL || *ppResponse == NULL || header == NULL || value == NULL)
+    if (!ppResponse  || (*ppResponse == NULL) || !header  || !value)
     {
-        VMREST_LOG_DEBUG("VmRESTSetHttpHeader(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     pResponse = *ppResponse;
 
-    if ((pResponse->responseHeader == NULL) || (pResponse->entityHeader == NULL) || (pResponse->generalHeader == NULL))
-    {
-        VMREST_LOG_DEBUG("VmRESTSetHttpHeader(): Null sub structures in response object");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTMapHeaderToEnum(
+    dwError = VmRESTSetHTTPMiscHeader(
+                  pResponse->miscHeader,
                   header,
-                  &headerNo,
-                  &resStatus
+                  value
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-
-    if ((headerNo < HTTP_REQUEST_HEADER_ACCEPT) || (headerNo > HTTP_MISC_HEADER_ALL))
-    {
-        VMREST_LOG_DEBUG("VmRESTSetHttpHeader(): Not a valid HTTP header");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    /* No request header data will be set */
-    if ((headerNo >= HTTP_REQUEST_HEADER_ACCEPT) && (headerNo <= HTTP_REQUEST_HEADER_REFERER))
-    {
-        VMREST_LOG_DEBUG("VmRESTSetHttpHeader(): Not a valid http response header");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    valLen = strlen(value);
-    if (valLen >= MAX_HTTP_HEADER_VAL_LEN)
-    {
-        VMREST_LOG_DEBUG("VmRESTSetHttpHeader(): Bad value to be set");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    switch (headerNo)
-    {
-        case HTTP_RESPONSE_HEADER_ACCEPT_RANGE:
-                     strcpy(pResponse->responseHeader->acceptRange, value);
-                     break;
-
-        case HTTP_RESPONSE_HEADER_LOCATION:
-                     strcpy(pResponse->responseHeader->location, value);
-                     break;
-
-        case HTTP_RESPONSE_HEADER_PROXY_AUTH:
-                     strcpy(pResponse->responseHeader->proxyAuth, value);
-                     break;
-
-        case HTTP_RESPONSE_HEADER_SERVER:
-                     strcpy(pResponse->responseHeader->server, value);
-                     break;
-
-        case HTTP_GENERAL_HEADER_CACHE_CONTROL:
-                     strcpy(pResponse->generalHeader->cacheControl, value);
-                     break;
-
-        case HTTP_GENERAL_HEADER_CONNECTION:
-                     strcpy(pResponse->generalHeader->connection, value);
-                     break;
-
-        case HTTP_GENERAL_HEADER_TRAILER:
-                     strcpy(pResponse->generalHeader->trailer, value);
-                     break;
-
-        case HTTP_GENERAL_HEADER_TRANSFER_ENCODING:
-                     strcpy(pResponse->generalHeader->transferEncoding, value);
-                     break;
-
-        case HTTP_ENTITY_HEADER_ALLOW:
-                     strcpy(pResponse->entityHeader->allow, value);
-                     break;
-
-        case HTTP_ENTITY_HEADER_CONTENT_ENCODING:
-                     strcpy(pResponse->entityHeader->contentEncoding, value);
-                     break;
-
-        case HTTP_ENTITY_HEADER_CONTENT_LANGUAGE:
-                     strcpy(pResponse->entityHeader->contentLanguage, value);
-                     break;
-
-        case HTTP_ENTITY_HEADER_CONTENT_LENGTH:
-                     strcpy(pResponse->entityHeader->contentLength, value);
-                     break;
-
-        case HTTP_ENTITY_HEADER_CONTENT_LOCATION:
-                     strcpy(pResponse->entityHeader->contentLocation, value);
-                     break;
-
-        case HTTP_ENTITY_HEADER_CONTENT_MD5:
-                     strcpy(pResponse->entityHeader->contentMD5, value);
-                     break;
-
-        case HTTP_ENTITY_HEADER_CONTENT_RANGE:
-                     strcpy(pResponse->entityHeader->contentRange, value);
-                     break;
-
-        case HTTP_ENTITY_HEADER_CONTENT_TYPE:
-                     strcpy(pResponse->entityHeader->contentType, value);
-                     break;
-        case HTTP_MISC_HEADER_ALL:
-                    dwError = VmRESTSetHTTPMiscHeader(
-                               pResponse->miscHeader,
-                               header,
-                               value
-                               );
-                     BAIL_ON_VMREST_ERROR(dwError);
-                     break;
-        default:
-                     dwError = VMREST_HTTP_VALIDATION_FAILED;
-                     BAIL_ON_VMREST_ERROR(dwError);
-                     break;
-    }
 cleanup:
     return dwError;
 error:
@@ -669,10 +506,10 @@ VmRESTSetHttpStatusCode(
     uint32_t                         statusLen = 0;
     PREST_RESPONSE    pResponse = NULL;
 
-    if (ppResponse == NULL || *ppResponse == NULL || statusCode == NULL)
+    if (!ppResponse || (*ppResponse == NULL) || !statusCode)
     {
         /* Response object not allocated any memory */
-        VMREST_LOG_DEBUG("VmRESTSetHttpStatusCode(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -682,7 +519,7 @@ VmRESTSetHttpStatusCode(
 
     if (statusLen >= MAX_STATUS_LEN)
     {
-        VMREST_LOG_DEBUG("VmRESTSetHttpStatusCode(): Status length too large");
+        VMREST_LOG_ERROR("Status length too large");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -707,9 +544,9 @@ VmRESTSetHttpStatusVersion(
     PREST_RESPONSE                   pResponse = NULL;
 
 
-    if (ppResponse == NULL || *ppResponse == NULL || version == NULL)
+    if (!ppResponse || (*ppResponse == NULL) || !version)
     {
-        VMREST_LOG_DEBUG("VmRESTSetHttpStatusVersion(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -720,7 +557,7 @@ VmRESTSetHttpStatusVersion(
 
     if (versionLen > MAX_VERSION_LEN)
     {
-        VMREST_LOG_DEBUG("VmRESTSetHttpStatusVersion(): Bad version length");
+        VMREST_LOG_ERROR("Bad version length");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -743,9 +580,9 @@ VmRESTSetHttpReasonPhrase(
     PREST_RESPONSE                   pResponse = NULL;
 
 
-    if (ppResponse == NULL || *ppResponse == NULL || reasonPhrase == NULL)
+    if (!ppResponse  || (*ppResponse == NULL) || !reasonPhrase)
     {
-        VMREST_LOG_DEBUG("VmRESTSetHttpReasonPhrase(): Invalid params");
+        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
