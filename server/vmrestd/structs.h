@@ -12,6 +12,10 @@
  * under the License.
  */
 
+
+#include <pthread.h>
+
+
 typedef struct _VMREST_GLOBALS
 {
     pthread_mutex_t mutex;

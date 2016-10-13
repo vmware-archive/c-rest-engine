@@ -18,20 +18,29 @@
 * properply.
 ***************************************/
 
+#ifdef WIN32
+#include <winsock2.h>
+#include <windows.h>
+typedef int socklen_t;
+#else
+#include <vmrestsys.h>
+#endif
+
 typedef uint32_t                         UINT32;
-typedef char*                            PBYTE;
-typedef uint32_t                         DWORD;
 typedef char*                            PSTR;
 typedef char*                            PCHAR;
 typedef uint16_t                         USHORT;
+#ifndef WIN32
 typedef void                             VOID;
+typedef uint64_t                         LONG;
 typedef uint32_t*                        PDWORD;
+typedef uint32_t                         DWORD; 
+typedef char*                            PBYTE;
+#endif
 typedef const char*                      PCSTR;
 typedef void*                            PVOID;
 typedef uint8_t                          BOOLEAN;
-typedef uint64_t                         LONG;
 typedef char                             CHAR;
-
 typedef UINT32                           VM_SOCK_CREATE_FLAGS;
 
 #define VM_SOCK_CREATE_FLAGS_NONE        0x00000000
@@ -45,36 +54,47 @@ typedef UINT32                           VM_SOCK_CREATE_FLAGS;
 typedef struct _VM_SOCKET*               PVM_SOCKET;
 typedef struct _VM_SOCK_EVENT_QUEUE*     PVM_SOCK_EVENT_QUEUE;
 
+
+
 typedef struct _VM_SOCK_IO_BUFFER
 {
-    PBYTE                                pData;
-    DWORD                                dwExpectedSize;
-    DWORD                                dwCurrentSize;
-    DWORD                                dwBytesTransferred;
+    char*                                pData;
+    uint32_t                             dwExpectedSize;
+    uint32_t                             dwCurrentSize;
+    uint32_t                             dwBytesTransferred;
+	uint32_t                             dwTotalBytesTransferred;
     struct sockaddr_storage              clientAddr;
     socklen_t                            addrLen;
-
 } VM_SOCK_IO_BUFFER, *PVM_SOCK_IO_BUFFER;
 
 typedef struct _VM_STREAM_BUFFER
 {
     uint32_t                             dataProcessed;
     uint32_t                             dataRead;
-    char                                 pData[MAX_DATA_BUFFER_LEN];
+    char                                 pData[4096];
 } VM_STREAM_BUFFER, *PVM_STREAM_BUFFER;
 
 typedef enum
 {
     VM_SOCK_EVENT_TYPE_UNKNOWN = 0,
-    VM_SOCK_EVENT_TYPE_NEW_CONNECTION,
     VM_SOCK_EVENT_TYPE_DATA_AVAILABLE,
-    VM_SOCK_EVENT_TYPE_TCP_SIZE_READ_COMPLETED,
-    VM_SOCK_EVENT_TYPE_TCP_DATA_READ_COMPLETED,
-    VM_SOCK_EVENT_TYPE_TCP_SIZE_WRITE_COMPLETED,
-    VM_SOCK_EVENT_TYPE_TCP_DATA_WRITE_COMPLETED,
-    VM_SOCK_EVENT_TYPE_UDP_DATA_READ_COMPLETED,
-    VM_SOCK_EVENT_TYPE_UDP_DATA_WRITE_COMPLETED,
-    VM_SOCK_EVENT_TYPE_CONNECTION_CLOSED
+    VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION,
+    VM_SOCK_EVENT_TYPE_TCP_REQUEST_SIZE_READ,
+    VM_SOCK_EVENT_TYPE_TCP_REQUEST_DATA_READ,
+    VM_SOCK_EVENT_TYPE_TCP_RESPONSE_SIZE_WRITE,
+    VM_SOCK_EVENT_TYPE_TCP_RESPONSE_DATA_WRITE,
+    VM_SOCK_EVENT_TYPE_TCP_FWD_REQUEST,
+    VM_SOCK_EVENT_TYPE_TCP_FWD_REQUEST_SIZE_WRITE,
+    VM_SOCK_EVENT_TYPE_TCP_FWD_REQUES_DATA_WRITE,
+    VM_SOCK_EVENT_TYPE_TCP_FWD_RESPONSE_SIZE_READ,
+    VM_SOCK_EVENT_TYPE_TCP_FWD_RESPONSE_DATA_READ,
+    VM_SOCK_EVENT_TYPE_UDP_REQUEST_DATA_READ,
+    VM_SOCK_EVENT_TYPE_UDP_RESPONSE_DATA_WRITE,
+    VM_SOCK_EVENT_TYPE_UDP_FWD_REQUEST,
+    VM_SOCK_EVENT_TYPE_UDP_FWD_REQUEST_DATA_WRITE,
+    VM_SOCK_EVENT_TYPE_UDP_FWD_RESPONSE_DATA_READ,
+    VM_SOCK_EVENT_TYPE_CONNECTION_CLOSED,
+    VM_SOCK_EVENT_TYPE_MAX,
 } VM_SOCK_EVENT_TYPE, *PVM_SOCK_EVENT_TYPE;
 
 

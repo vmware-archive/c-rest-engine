@@ -34,7 +34,7 @@ VmHandleTDNFVersionGet(
 
     memset(buffer, '\0', MAX_DATA_LEN);
 
-    write(1,"\nPayload for tdnf version GET: ", 31);
+  //  write(1,"\nPayload for tdnf version GET: ", 31);
 
     /**** Read the data if present ****/
 
@@ -47,7 +47,7 @@ VmHandleTDNFVersionGet(
                       );
         if (strlen(buffer) > 0)
         {
-            write(1,buffer,strlen(buffer));
+            //write(1,buffer,strlen(buffer));
         }
         memset(buffer, '\0', MAX_DATA_LEN);
     }
@@ -100,7 +100,7 @@ VmHandleTDNFVersionSet(
 
     memset(buffer, '\0', MAX_DATA_LEN);
 
-    write(1,"\nPayload for tdnf version SET: ", 31);
+  //  write(1,"\nPayload for tdnf version SET: ", 31);
 
     /**** Get the payload ****/
     while(done != 1)
@@ -112,7 +112,7 @@ VmHandleTDNFVersionSet(
                       );
         if (strlen(buffer) > 0)
         {
-            write(1,buffer,strlen(buffer));
+//            write(1,buffer,strlen(buffer));
         }
         memset(buffer, '\0', MAX_DATA_LEN);
     }
@@ -124,7 +124,8 @@ VmHandleTDNFVersionSet(
 
     if (paramsCount != 1)
     {
-        write(1, "ERROR - Invalid Param count",26);
+        
+		//write(1, "ERROR - Invalid Param count",26);
         dwError  = 100;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -141,8 +142,8 @@ VmHandleTDNFVersionSet(
 
     /**** Example Call the version set api  ****/
 
-    write(1,"\nNew Version:", 13);
-    write(1,value, 6);
+    //write(1,"\nNew Version:", 13);
+   // write(1,value, 6);
 
     dwError = VmRESTSetSuccessResponse(
                   pRequest,
@@ -188,7 +189,7 @@ VmHandlePackageOTHERS(
     uint32_t                         done = 0;
     char*                            httpMethod = NULL;
 
-    write(1,"\nPackage OTHERS operation:",26);
+    //write(1,"\nPackage OTHERS operation:",26);
 
     dwError = VmRESTGetHttpMethod(
                   pRequest,
@@ -196,7 +197,7 @@ VmHandlePackageOTHERS(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    write(1,httpMethod, strlen(httpMethod));
+    //write(1,httpMethod, strlen(httpMethod));
 
     if (strcmp(httpMethod, "OPTIONS") == 0)
     {
@@ -265,7 +266,7 @@ VmHandlePackageRead(
 
     memset(buffer, '\0', MAX_DATA_LEN);
 
-    write(1,"\nPayload for Package read operation: ", 36);
+    //write(1,"\nPayload for Package read operation: ", 36);
 
     /**** Get the payload ****/
     while(done != 1)
@@ -277,7 +278,7 @@ VmHandlePackageRead(
                       );
         if (strlen(buffer) > 0)
         {
-            write(1,buffer,strlen(buffer));
+            //write(1,buffer,strlen(buffer));
         }
         memset(buffer, '\0', MAX_DATA_LEN);
     }
@@ -287,7 +288,7 @@ VmHandlePackageRead(
 
     if (paramsCount < 1)
     {
-        write(1, "ERROR - Invalid Param count",26 );
+        //write(1, "ERROR - Invalid Param count",26 );
         dwError  = 100;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -304,9 +305,9 @@ VmHandlePackageRead(
                       );
         BAIL_ON_VMREST_ERROR(dwError);
 
-        write(1,"\nParams.....:", 14);
-        write(1,key, strlen(key));
-        write(1,value, 4);
+        //write(1,"\nParams.....:", 14);
+      //  write(1,key, strlen(key));
+      //  write(1,value, 4);
 
         key = NULL;
         value = NULL;
@@ -322,14 +323,14 @@ VmHandlePackageRead(
 
     dwError = VmRESTSetDataLength(
                   ppResponse,
-                  "42"
+                  "43"
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTSetData(
                   ppResponse,
                   "Read request on package served Successfully",
-                  42,
+                  43,
                   &done
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -357,7 +358,7 @@ VmHandlePackageWrite(
     uint32_t                         dwError = 0;
     uint32_t                         done = 0;
 
-    write(1,"\nPackage Write operation: ",26);
+   // write(1,"\nPackage Write operation: ",26);
 
     dwError = VmRESTSetSuccessResponse(
                   pRequest,
@@ -396,7 +397,7 @@ VmHandlePackageUpdate(
     uint32_t                         dwError = 0;
     uint32_t                         done = 0;
 
-    write(1,"\nPackage UPDATE operation:",26);
+    //write(1,"\nPackage UPDATE operation:",26);
 
     dwError = VmRESTSetSuccessResponse(
                   pRequest,
@@ -434,7 +435,7 @@ VmHandlePackageDelete(
     uint32_t                         dwError = 0;
     uint32_t                         done = 0;
 
-    write(1,"\nPackage DELETE operation:",26);
+    //write(1,"\nPackage DELETE operation:",26);
 
     dwError = VmRESTSetSuccessResponse(
                   pRequest,

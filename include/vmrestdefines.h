@@ -37,7 +37,9 @@
 #define REST_ENGINE_NO_MEMORY                           102
 #define REST_ENGINE_INVALID_REST_PROCESSER              103
 
+#ifndef WIN32
 #define ERROR_NOT_SUPPORTED                             100
+#endif
 
 #define VMREST_HTTP_INVALID_PARAMS                      61001
 #define VMREST_HTTP_VALIDATION_FAILED                   61002
@@ -85,15 +87,22 @@
 
 #define TRUE                             1
 #define FALSE                            0
+
+
+#ifndef WIN32
 #define ERROR_SUCCESS                    0
 #define ERROR_INVALID_PARAMETER          101
 #define ERROR_CONNECTION_UNAVAIL         102
 #define ERROR_INVALID_STATE              103
 #define ERROR_INTERNAL_ERROR             104
 
+#endif
 
-
-
+#ifndef _WIN32
+#define VMREST_SF_INIT( fieldName, fieldValue ) fieldName = fieldValue
+#else
+#define VMREST_SF_INIT( fieldName, fieldValue ) fieldValue
+#endif
 
 #ifdef __cplusplus
 extern "C" {

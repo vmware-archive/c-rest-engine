@@ -12,7 +12,7 @@
  * under the License.
  */
 
-#include <includes.h>
+#include "includes.h"
 
 uint32_t
 VmRestEngineHandler(
@@ -29,7 +29,7 @@ VmRestEngineHandler(
     uint32_t                         paramsCount = 0;
     PREST_ENDPOINT                   pEndPoint = NULL;
 
-    VMREST_LOG_DEBUG("Internal Handler called");
+    VMREST_LOG_DEBUG("1","Internal Handler called");
 
     /**** 1. Init all the funcition variables *****/
 
@@ -243,7 +243,7 @@ VmRestEngineAddEndpoint(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         endPointURILen = 0;
+    size_t                           endPointURILen = 0;
     PREST_ENDPOINT                   pEndPoint = NULL;
     PREST_ENDPOINT                   temp = NULL;
 
@@ -401,7 +401,7 @@ VmRestGetEndPointURIfromRequestURI(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            foundCharacter = NULL;
-    uint32_t                         copyBytes = 0;
+    uint64_t                         copyBytes = 0;
     
     if (!pRequestURI || !endPointURI)
     {
@@ -493,7 +493,7 @@ VmRestParseParams(
     char*                            value = NULL;
     char*                            res = NULL;
     uint32_t                         i = 0;
-    uint32_t                         diff = 0;
+    uint64_t                         diff = 0;
     
 
     

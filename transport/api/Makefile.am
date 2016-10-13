@@ -5,7 +5,7 @@
 lib_LTLIBRARIES = libvmsock.la
 
 libvmsock_la_SOURCES = \
-    api.c     \
+    api.c \
     globals.c \
     libmain.c
 
@@ -19,4 +19,3 @@ libvmsock_la_LDFLAGS =
 
 libvmsock_la_LIBADD = \
     $(top_builddir)/transport/posix/libvmsockposix.la
-

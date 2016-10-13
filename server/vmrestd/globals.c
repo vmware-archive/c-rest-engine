@@ -16,17 +16,18 @@
 
 VMREST_GLOBALS gVMRESTGlobals =
 {
-    .mutex = PTHREAD_MUTEX_INITIALIZER
+	VMREST_SF_INIT(.mutex, PTHREAD_MUTEX_INITIALIZER)
 };
 
 REST_PROCESSOR gVmRestHandlers =
 {
-    .pfnHandleRequest = &VmRESTHandleHTTP_REQUEST,
-    .pfnHandleCreate = NULL,
-    .pfnHandleRead = NULL,
-    .pfnHandleUpdate = NULL,
-    .pfnHandleDelete = NULL,
-    .pfnHandleOthers = NULL
+	
+    VMREST_SF_INIT(.pfnHandleRequest ,&VmRESTHandleHTTP_REQUEST),
+    VMREST_SF_INIT(.pfnHandleCreate , NULL),
+    VMREST_SF_INIT(.pfnHandleRead , NULL),
+    VMREST_SF_INIT(.pfnHandleUpdate , NULL),
+    VMREST_SF_INIT(.pfnHandleDelete ,NULL),
+    VMREST_SF_INIT(.pfnHandleOthers , NULL)
 };
 
 PREST_PROCESSOR gpVmRestHandlers = &gVmRestHandlers;

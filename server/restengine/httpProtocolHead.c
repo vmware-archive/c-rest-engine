@@ -13,7 +13,7 @@
  * under the License.
  */
 
-#include <includes.h>
+#include "includes.h"
 
 uint32_t
 VmRESTHTTPGetReqMethod(
@@ -117,7 +117,7 @@ VmRESTHTTPGetReqURI(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            firstSpace = NULL;
     char*                            secondSpace = NULL;
-    uint32_t                         uriLen = 0;
+    size_t                           uriLen = 0;
 
     if (lineLen > MAX_REQ_LIN_LEN || !line || !result  || (*resStatus != OK))
     {
@@ -171,7 +171,7 @@ VmRESTHTTPGetReqVersion(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char                             local[MAX_VERSION_LEN] = {0};
-    uint32_t                         verLen = 0;
+    size_t                           verLen = 0;
     char*                            firstSpace = NULL;
     char*                            secondSpace = NULL;
     char*                            endLine = NULL;
@@ -251,8 +251,8 @@ VmRESTHTTPPopulateHeader(
     char                             value[MAX_HTTP_HEADER_VAL_LEN] = {0};
     char*                            temp = NULL;
     uint32_t                         i = 0;
-    uint32_t                         attrLen = 0;
-    uint32_t                         valLen  = 0;
+    size_t                           attrLen = 0;
+    size_t                           valLen  = 0;
 
     buffer = line;
     temp = local;
@@ -267,7 +267,7 @@ VmRESTHTTPPopulateHeader(
 
     while(buffer != NULL && i <= lineLen)
     {
-        if (*buffer == ':')
+        if ((*buffer == ':') && (attrLen  == 0))
         {
             buffer++;
             *temp = '\0';
@@ -391,7 +391,7 @@ VmRESTParseAndPopulateHTTPHeaders(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         bytesRead = 0;
     uint32_t                         lineNo = 0;
-    uint32_t                         lineLen = 0;
+    size_t                           lineLen = 0;
     char                             local[MAX_REQ_LIN_LEN]={0};
     char*                            temp = buffer;
     char*                            line = local;
@@ -458,7 +458,7 @@ VmRESTParseAndPopulateHTTPHeaders(
             dwError = VmRESTParseHTTPReqLine(
                           lineNo,
                           local,
-                          lineLen,
+                          (uint32_t)lineLen,
                           pReqPacket,
                           resStatus
                           );
@@ -473,7 +473,7 @@ VmRESTParseAndPopulateHTTPHeaders(
                               bytesRead
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
-                VMREST_LOG_DEBUG("Finished all header parsing, total header bytes %u", bytesRead);
+                //VMREST_LOG_DEBUG("%s",("Finished all header parsing, total header bytes %u", bytesRead);
                 break;
             }
             temp = temp + 2;
@@ -503,7 +503,7 @@ VMRESTWriteChunkedMessageInResponseStream(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            curr = NULL;
     char                             chunkSize[HTTP_CHUNCKED_DATA_LEN] = {0};
-    uint32_t                         chunkLen = 0;
+    size_t                           chunkLen = 0;
 
     if (!buffer)
     {
@@ -538,7 +538,7 @@ VMRESTWriteChunkedMessageInResponseStream(
         curr = curr + srcSize;
         memcpy(curr,"\r\n",2);
         curr = curr + 2;
-        *bytes = srcSize + chunkLen + 4;
+        *bytes = (uint32_t)(srcSize + chunkLen + 4);
     }
 
 cleanup:
@@ -607,7 +607,7 @@ VMRESTWriteStatusLineInResponseStream(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         bytesCount = 0;
-    uint32_t                         len = 0;
+    size_t                           len = 0;
     char*                            curr = NULL;
 
     if (!pResPacket || !buffer)
@@ -625,7 +625,7 @@ VMRESTWriteStatusLineInResponseStream(
         curr = curr + len;
         memcpy(curr, " ", 1);
         curr = curr + 1;
-        bytesCount = bytesCount + len + 1;
+        bytesCount = (uint32_t)(bytesCount + len + 1);
         len = 0;
     }
 
@@ -636,7 +636,7 @@ VMRESTWriteStatusLineInResponseStream(
         curr = curr + len;
         memcpy(curr, " ", 1);
         curr = curr + 1;
-        bytesCount = bytesCount + len + 1;
+        bytesCount = (uint32_t)(bytesCount + len + 1);
         len = 0;
     }
 
@@ -645,7 +645,7 @@ VMRESTWriteStatusLineInResponseStream(
     {
         memcpy(curr, pResPacket->statusLine->reason_phrase, len);
         curr = curr + len;
-        bytesCount = bytesCount + len;
+        bytesCount = (uint32_t)(bytesCount + len);
         len = 0;
     }
 
@@ -669,8 +669,8 @@ VmRESTAddAllHeaderInResponseStream(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         headerLen = 0;
-    uint32_t                         valueLen = 0;
+    size_t                           headerLen = 0;
+    size_t                           valueLen = 0;
     uint32_t                         streamBytes = 0;
     char*                            curr = NULL;
     PVM_REST_HTTP_HEADER_NODE        miscHeaderNode = NULL;
@@ -697,7 +697,7 @@ VmRESTAddAllHeaderInResponseStream(
         curr = curr + valueLen;
         memcpy(curr, "\r\n", 2);
         curr = curr + 2;
-        streamBytes = streamBytes + headerLen + valueLen + 1 + 2;
+        streamBytes = (uint32_t)(streamBytes + headerLen + valueLen + 1 + 2);
         miscHeaderNode = miscHeaderNode->next;
     }
 
@@ -842,7 +842,7 @@ VmRESTSendChunkedPayload(
                   totalBytes
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-    VMREST_LOG_DEBUG("Sending chunked payload completed.....");
+    //VMREST_LOG_DEBUG("%s",("Sending chunked payload completed.....");
 
     VmRESTFreeMemory(
         buffer
@@ -929,16 +929,18 @@ VmRESTSendHeaderAndPayload(
     bytes = 0;
 
     /**** This is for debug purpose:: will be removed ****/
-    VMREST_LOG_DEBUG("Entire response stream\n--------\n%s\n----------", buffer);
+    //VMREST_LOG_DEBUG("%s",("Entire response stream\n--------\n%s\n----------", buffer);
 
+	VMREST_LOG_DEBUG("%s", "Start");
     dwError = VmsockPosixWriteDataAtOnce(
                   pResPacket->pSocket,
                   buffer,
                   totalBytes
                   );
+	VMREST_LOG_DEBUG("end returned %u", dwError);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VMREST_LOG_DEBUG("Writen %u bytes at socket", totalBytes);
+    //VMREST_LOG_DEBUG("%s",("Writen %u bytes at socket", totalBytes);
 
     VmRESTFreeMemory(
         buffer
@@ -1037,7 +1039,7 @@ VmRESTProcessIncomingData(
     char*                            contentLen = NULL;
     uint32_t                         done = 0;
 
-    VMREST_LOG_DEBUG("Process HTTP called with %u bytes and buffer data looks like\n%s\n", byteRead, buffer); 
+   // //VMREST_LOG_DEBUG("%s",("Process HTTP called with %u bytes and buffer data looks like\n%s\n", byteRead, buffer); 
 
     /**** 1. Allocate and init request and response objects ****/
 
@@ -1067,7 +1069,7 @@ VmRESTProcessIncomingData(
                   pReqPacket,
                   &resStatus
                   );
-    VMREST_LOG_DEBUG("Header parsing done : return code %u", dwError);
+    //VMREST_LOG_DEBUG("%s",("Header parsing done : return code %u", dwError);
 
     /**** 3. Set the total payload information in request object ****/
 
@@ -1098,7 +1100,7 @@ VmRESTProcessIncomingData(
                       pReqPacket,
                       &pResPacket
                       );
-        VMREST_LOG_DEBUG("CallBack given to App: return code %u", dwError);
+        //VMREST_LOG_DEBUG("%s",("CallBack given to App: return code %u", dwError);
     }
     else
     {
@@ -1121,7 +1123,7 @@ VmRESTProcessIncomingData(
     dwError = VmRESTCloseClient(
                   pResPacket
                   );
-    VMREST_LOG_DEBUG("Closed Client Connection: error code %u", dwError);
+    //VMREST_LOG_DEBUG("%s",("Closed Client Connection: error code %u", dwError);
     BAIL_ON_VMREST_ERROR(dwError);
     connectionClosed = 1;
 

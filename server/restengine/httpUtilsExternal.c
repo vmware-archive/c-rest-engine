@@ -12,8 +12,11 @@
  * under the License.
  */
 
-#include <includes.h>
+#include "includes.h"
 
+#ifdef WIN32
+__declspec(dllexport)
+#endif
 uint32_t
 VmRESTGetHttpMethod(
     PREST_REQUEST                    pRequest,
@@ -21,7 +24,7 @@ VmRESTGetHttpMethod(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         methodLen = 0;
+    size_t                           methodLen = 0;
 
     if (!(pRequest) || !(pRequest->requestLine) || !(ppResponse))
     {
@@ -52,7 +55,7 @@ VmRESTGetHttpURI(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         uriLen = 0;
+    size_t                           uriLen = 0;
 
     if (!(pRequest) || !(pRequest->requestLine) || !(ppResponse))
     {
@@ -84,7 +87,7 @@ VmRESTGetHttpVersion(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         versionLen = 0;
+    size_t                           versionLen = 0;
 
     if (!(pRequest) || !(pRequest->requestLine) || !(ppResponse))
     {
@@ -117,7 +120,7 @@ VmRESTGetHttpHeader(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         headerValLen = 0;
+    size_t                           headerValLen = 0;
 
     if (!(pRequest) || !(header) || !(ppResponse))
     {
@@ -142,7 +145,7 @@ VmRESTGetHttpHeader(
     }
     else
     {
-        VMREST_LOG_DEBUG("WARNING :: Header %s not found in request object", header);
+       //VMREST_LOG_DEBUG("%s","WARNING :: Header %s not found in request object", header);
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -218,7 +221,7 @@ VmRESTGetHttpPayload(
         {
             readXBytes = MAX_DATA_BUFFER_LEN;
         }
-        VMREST_LOG_DEBUG("Get Payload, Requesting %u bytes to read", readXBytes);
+       //VMREST_LOG_DEBUG("%s","Get Payload, Requesting %u bytes to read", readXBytes);
         dwError = VmsockPosixGetXBytes(
                       readXBytes,
                       localAppBuffer,
@@ -349,7 +352,7 @@ VmRESTGetHttpPayload(
     }
     else
     {
-        VMREST_LOG_DEBUG("WARNING: Data length Specific Header not set");
+       //VMREST_LOG_DEBUG("%s","WARNING: Data length Specific Header not set");
         *done = 1;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -413,10 +416,11 @@ VmRESTSetHttpPayload(
             VMREST_LOG_ERROR("Invalid content length %u", contentLen);
             dwError = VMREST_HTTP_VALIDATION_FAILED;
         }
+
         dwError = VmRESTSendHeaderAndPayload(
                       ppResponse
                       );
-        VMREST_LOG_DEBUG("Sending Header and Payload done, returned code %u", dwError);
+       VMREST_LOG_DEBUG("Sending Header and Payload done, returned code %u", dwError);
         BAIL_ON_VMREST_ERROR(dwError);
         pResponse->headerSent = 1;
         *done = 1;
@@ -503,7 +507,7 @@ VmRESTSetHttpStatusCode(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         statusLen = 0;
+    size_t                           statusLen = 0;
     PREST_RESPONSE    pResponse = NULL;
 
     if (!ppResponse || (*ppResponse == NULL) || !statusCode)
@@ -540,7 +544,7 @@ VmRESTSetHttpStatusVersion(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         versionLen = 0;
+    size_t                           versionLen = 0;
     PREST_RESPONSE                   pResponse = NULL;
 
 

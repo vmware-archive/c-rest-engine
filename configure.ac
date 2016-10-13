@@ -24,6 +24,7 @@ case "${host_os}:${host_cpu}" in
 esac
 
 CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_GNU_SOURCE -fPIC"
+CFLAGS=""
 
 AM_CPPFLAGS="$AM_CPPFLAGS -I${top_srcdir}/include"
 AM_CFLAGS="$AM_CFLAGS -Wall -Werror -fno-strict-aliasing"
@@ -67,6 +68,8 @@ AC_SUBST(OPENSSL_BASE_PATH)
 AC_SUBST(OPENSSL_INCLUDES)
 AC_SUBST(OPENSSL_LDFLAGS)
 
+CPPFLAGS="$CPPFLAGS $OPENSSL_INCLUDES"
+
 AC_CHECK_HEADERS(openssl/crypto.h openssl/ssl.h openssl/err.h)
 
 AC_HEADER_STDC
@@ -99,6 +102,9 @@ AC_SUBST(PTHREAD_LIBS)
 AC_SUBST(CRYPTO_LIBS)
 AC_SUBST(UUID_LIBS)
 
+REST_PREFIX_DIR=$prefix
+AC_SUBST(REST_PREFIX_DIR)
+
 vmrestconfdir="$datadir/config"
 AC_SUBST(vmrestconfdir)
 AS_AC_EXPAND(VMREST_CONFIG_DIR, $vmrestconfdir)
@@ -118,6 +124,7 @@ AC_CONFIG_FILES([Makefile
                  client/Makefile
                  tools/Makefile
                  tools/rest-cli/Makefile
+                 build/package/rpm/vmware-rest.spec
                 ])
 AC_OUTPUT
 

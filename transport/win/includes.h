@@ -27,17 +27,23 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
-#include <stdint.h>
+typedef __int32 int32_t;
+typedef __int64 int64_t;
+typedef unsigned __int32 uint32_t;
+typedef unsigned __int64 uint64_t;
+typedef unsigned __int16 uint16_t;
+typedef unsigned __int8 uint8_t;
 #include <stdlib.h>
 #include <stddef.h>
 #include <tchar.h>
 #include <errno.h>
 #include <assert.h>
 #include <Ws2tcpip.h>
+#include <stdio.h>
 
-//#include <vmresttypes.h>
-//#include <vmrestcommon.h>
 #include <vmsock.h>
+#include <vmrestdefines.h>
+#include <vmrestcommon.h>
 #include <vmsockapi.h>
 
 #include "defines.h"

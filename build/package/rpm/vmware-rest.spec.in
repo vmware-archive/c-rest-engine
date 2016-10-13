@@ -7,8 +7,12 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.1
-BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.1
+Requires:  openssl >= 1.0.2
+BuildRoot: %{_tmppath}
+
+%define _prefix @REST_PREFIX_DIR@
+%define _sbindir %{_prefix}/sbin
+%define _lib64dir %{_prefix}/lib64
 
 %if "%{_debug}" == "1"
 %define __strip /bin/true
@@ -19,24 +23,6 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.1
 
 %description
 VMware REST Library
-
-%build
-cd build
-autoreconf -mif ..
-../configure \
-    --prefix=%{_prefix} \
-    --libdir=%{_lib64dir} \
-    --with-ssl=/usr \
-    --enable-debug=%{_enable_debug}
-
-make
-
-%install
-
-[ %{buildroot} != "/" ] && rm -rf %{buildroot}/*
-cd build && make install DESTDIR=$RPM_BUILD_ROOT
-
-
 
 %post
 

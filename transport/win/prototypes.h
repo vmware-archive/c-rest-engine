@@ -20,6 +20,8 @@
  *
  * @return DWORD - 0 on success
  */
+
+
 DWORD
 VmWinSockInitialize(
     PVM_SOCK_PACKAGE* ppPackage
@@ -323,3 +325,14 @@ VmSockWinFreeIoBuffer(
     PVM_SOCK_IO_BUFFER  pIoBuffer
     );
 
+VOID
+VmSockPosixGetStreamBuffer(
+    PVM_SOCKET                       pSocket,
+    PVM_STREAM_BUFFER*               ppStreamBuffer
+    );
+
+VOID
+VmSockPosixSetStreamBuffer(
+    PVM_SOCKET                       pSocket,
+    PVM_STREAM_BUFFER                pStreamBuffer
+    );

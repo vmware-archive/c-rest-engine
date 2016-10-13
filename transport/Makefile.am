@@ -1,5 +1,5 @@
 #
-# Copyright (c) VMware Inc.  All rights Reserved.
+## Copyright (c) VMware Inc.  All rights Reserved.
 #
 
 SUBDIRS = \

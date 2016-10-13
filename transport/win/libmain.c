@@ -44,5 +44,5 @@ VmWinSockShutdown(
     PVM_SOCK_PACKAGE pPackage
     )
 {
-    WSACleanup();
+   // WSACleanup();
 }

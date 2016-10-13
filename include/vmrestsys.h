@@ -114,4 +114,8 @@
 
 #ifndef WIN32
 #include <sys/socket.h>
+#else
+#include <winsock2.h>
+#include <windows.h>
+#pragma comment (lib, "ws2_32.lib")
 #endif

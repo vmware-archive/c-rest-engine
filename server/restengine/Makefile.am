@@ -26,4 +26,3 @@ librestengine_la_LIBADD = \
 librestengine_la_LDFLAGS = \
     @OPENSSL_LDFLAGS@
 
-

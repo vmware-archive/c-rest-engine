@@ -14,10 +14,16 @@
 
 #ifndef _WIN32
 #include <config.h>
+#include <stdint.h>
 #else
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
-#include <stdint.h>
+typedef __int32 int32_t;
+typedef __int64 int64_t;
+typedef unsigned __int32 uint32_t;
+typedef unsigned __int64 uint64_t;
+typedef unsigned __int16 uint16_t;
+typedef unsigned __int8 uint8_t;
 #include <stdio.h>
 #include <assert.h>
 #include <stddef.h>
@@ -25,7 +31,7 @@
 #endif
 
 
-#include <vmrestsys.h>
+//#include <vmrestsys.h>
 #include <vmrestdefines.h>
 //#include <vmrestsock.h>
 #include <vmsock.h>

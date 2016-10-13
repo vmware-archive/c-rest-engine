@@ -12,7 +12,7 @@
  * under the License.
  */
 
-#include <includes.h>
+#include "includes.h"
 
 #define NSECS_PER_MSEC        1000000
 #define EXTRA_LOG_MESSAGE_LEN 128
@@ -73,9 +73,11 @@ VmRESTLog(
     time_t      ltime;
     struct      tm mytm = {0};
     char        logMessage[MAX_LOG_MESSAGE_LEN];
+	
     va_list     va;
     const char* logLevelTag = "";
 
+#if 1
     if (level <= vmrest_syslog_level)
     {
         va_start( va, fmt );
@@ -84,9 +86,14 @@ VmRESTLog(
         va_end( va );
 
         ltime = time(&ltime);
-        localtime_r(&ltime, &mytm);
         logLevelTag = logLevelToTag(level);
+		//TODO: FIX COMPILE ISSUE 
+#ifndef WIN32
+        localtime_r(&ltime, &mytm);
         snprintf(extraLogMessage, sizeof(extraLogMessage) - 1,
+#else
+        _snprintf(extraLogMessage, sizeof(extraLogMessage) - 1,
+#endif
                   "%4d%2d%2d%2d%2d%2d.%03ld:t@%lu:%-3.7s: ",
                   mytm.tm_year+1900,
                   mytm.tm_mon+1,
@@ -95,7 +102,11 @@ VmRESTLog(
                   mytm.tm_min,
                   mytm.tm_sec,
                   tspec.tv_nsec/NSECS_PER_MSEC,
+#ifndef WIN32
                   (unsigned long) pthread_self(),
+#else
+			      pthread_self(),
+#endif
                   logLevelTag? logLevelTag : "UNKNOWN");
 
          if( logFile != NULL )
@@ -109,6 +120,7 @@ VmRESTLog(
             fflush( stderr );
          }
     }
+#endif
 }  
 
 static const char *

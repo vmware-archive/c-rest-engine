@@ -175,7 +175,7 @@ VmRESTInitProtocolServer(
     {
         dwError = VmRESTAllocateMemory(
                       sizeof(VMREST_THREAD),
-                      (PVOID)&pSockContext->pWorkerThreads[iThr]
+                      (void **)&pSockContext->pWorkerThreads[iThr]
                       );
         BAIL_ON_VMREST_ERROR(dwError);
 
@@ -219,37 +219,39 @@ VmRESTShutdownProtocolServer(
 static
 PVOID
 VmRESTSockWorkerThreadProc(
-    PVOID                            pData
+    PVOID pData
     )
 {
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-    PVMREST_SOCK_CONTEXT             pSockContext = (PVMREST_SOCK_CONTEXT)pData;
-    PVM_SOCKET                       pSocket = NULL;
-    PVM_SOCK_IO_BUFFER               pIoBuffer = NULL;
+    DWORD dwError = 0;
+    PVMREST_SOCK_CONTEXT pSockContext = (PVMREST_SOCK_CONTEXT)pData;
+    PVM_SOCKET pSocket = NULL;
+    PVM_SOCK_IO_BUFFER pIoBuffer = NULL;
 
-#ifdef WIN32
-/*
-    VmRESTUdpReceiveData(pSockContext->pListenerUDP, NULL);
-*/
-#endif
 
     for(;;)
     {
         VM_SOCK_EVENT_TYPE eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
 
         dwError = VmwSockWaitForEvent(
-                      pSockContext->pEventQueue,
-                      -1,
-                      &pSocket,
-                      &eventType,
-                      &pIoBuffer);
+                        pSockContext->pEventQueue,
+                        -1,
+                        &pSocket,
+                        &eventType,
+                        &pIoBuffer);
+
+        if (dwError == ERROR_SHUTDOWN_IN_PROGRESS)
+        {
+            VMREST_LOG_INFO(
+                "%s shutdown in progress, exit sock worker loop.",
+                __FUNCTION__);
+            break;
+        }
 
         dwError = VmRESTHandleSocketEvent(
-                      pSocket,
-                      eventType,
-                      pIoBuffer,
-                      dwError
-                      );
+                        pSocket,
+                        eventType,
+                        pIoBuffer,
+                        dwError);
 
         if (dwError == ERROR_SUCCESS ||
             dwError == ERROR_IO_PENDING)
@@ -263,13 +265,11 @@ VmRESTSockWorkerThreadProc(
                 VmRESTDisconnectClient(pSocket);
                 pSocket = NULL;
             }
-            
             pIoBuffer = NULL;
-            dwError = REST_ENGINE_SUCCESS;
+            dwError = 0;
         }
         BAIL_ON_VMREST_ERROR(dwError);
     }
-
 error:
 
     if (pSocket)
@@ -279,6 +279,8 @@ error:
 
     return NULL;
 }
+
+
 
 static
 DWORD
@@ -293,12 +295,12 @@ VmRESTHandleSocketEvent(
     {
         switch (sockEvent)
         {
-        case VM_SOCK_EVENT_TYPE_NEW_CONNECTION:
+        case VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION:
 
             dwError = VmRESTOnNewConnection(pSocket, pIoBuffer);
             BAIL_ON_VMREST_ERROR(dwError);
             break;
-
+#ifndef WIN32
         case VM_SOCK_EVENT_TYPE_DATA_AVAILABLE:
 
             dwError = VmRESTOnDataAvailable(pSocket, pIoBuffer);
@@ -313,14 +315,15 @@ VmRESTHandleSocketEvent(
         default:
             dwError = ERROR_INVALID_MESSAGE;
             break;
+#endif
         }
     }
 
 cleanup:
 
-    if (pIoBuffer)
+    if (dwError != ERROR_IO_PENDING && pIoBuffer)
     {
-        VmwSockReleaseIoBuffer(pIoBuffer);
+        //VmwSockReleaseIoBuffer(pIoBuffer);
     }
 
     return dwError;
@@ -431,7 +434,7 @@ VmRESTReceiveData(
     }
     else
     {
-        VMREST_LOG_DEBUG("Not a TCP socket");
+       VMREST_LOG_DEBUG("%s","%s", "Not a TCP socket");
     }
 
 cleanup:
@@ -492,6 +495,8 @@ VmRESTTcpReceiveNewData(
     char                             appBuffer[MAX_DATA_BUFFER_LEN] = {0};
     uint32_t                         bytesRead = 0;
 
+	VMREST_LOG_DEBUG("%s","Starting HTTP Parsing.");
+
     dwError = VmsockPosixGetXBytes(
                   MAX_DATA_BUFFER_LEN,
                   appBuffer,
@@ -510,8 +515,12 @@ VmRESTTcpReceiveNewData(
                        );
          BAIL_ON_VMREST_ERROR(dwError);
      }    
+	  
 
-     VmRESTOnDisconnect(pSocket, NULL);
+	 VMREST_LOG_DEBUG("%s","Calling closed connection....");
+
+	 VmRESTDisconnectClient(pSocket);
+
 
 cleanup:
 
@@ -607,7 +616,7 @@ VmsockPosixGetXBytes(
 
     if (bytesRequested > MAX_DATA_BUFFER_LEN || appBuffer == NULL || bytesRead == NULL)
     {
-        VMREST_LOG_DEBUG("Bytes to be read %u Large or appBuffer: %s",
+       VMREST_LOG_DEBUG("%s","Bytes to be read %u Large or appBuffer: %s",
                          bytesRequested, appBuffer);
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
     }
@@ -615,7 +624,7 @@ VmsockPosixGetXBytes(
 
     if (sizeof(appBuffer) > MAX_DATA_BUFFER_LEN)
     {
-        VMREST_LOG_DEBUG("ERROR: Application buffer size too large");
+      VMREST_LOG_DEBUG("%s","ERROR: Application buffer size too large");
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -656,7 +665,7 @@ VmsockPosixGetXBytes(
 //readAgain:
 
         dwError = VmwSockAllocateIoBuffer(
-                        VM_SOCK_EVENT_TYPE_TCP_DATA_READ_COMPLETED,
+                        VM_SOCK_EVENT_TYPE_TCP_REQUEST_DATA_READ,
                         MAX_DATA_BUFFER_LEN,
                         &pIoBuffer
                         );
@@ -677,7 +686,9 @@ VmsockPosixGetXBytes(
         else if (dwError == ERROR_IO_PENDING)
         {
             // fail for linux?
+#ifndef WIN32
             pIoBuffer = NULL;
+#endif
         }
         else
         {
@@ -688,7 +699,7 @@ VmsockPosixGetXBytes(
         /*
         if ((pSocket->pStreamBuffer->dataRead == 0) && (shouldBlock == 1))
         {
-            VMREST_LOG_DEBUG("DEBUG: Read returned 0 or -1, will block client with index %d unless data arrives", clientIndex);
+           VMREST_LOG_DEBUG("%s","DEBUG: Read returned 0 or -1, will block client with index %d unless data arrives", clientIndex);
             pthread_mutex_lock(&(gServerSocketInfo.clients[clientIndex].mtxWaitForData));
             pthread_cond_wait(&(gServerSocketInfo.clients[clientIndex].condDataAvaialble), &(gServerSocketInfo.clients[clientIndex].mtxWaitForData));
             pthread_mutex_unlock(&(gServerSocketInfo.clients[clientIndex].mtxWaitForData));
@@ -739,7 +750,7 @@ VmSockPosixAdjustProcessedBytes(
 
     if (dataSeen > MAX_DATA_BUFFER_LEN)
     {
-        VMREST_LOG_DEBUG("Invalid new Processed Data Index %u", dataSeen);
+       VMREST_LOG_DEBUG("%s","Invalid new Processed Data Index %u", dataSeen);
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -773,7 +784,7 @@ VmsockPosixWriteDataAtOnce(
     PVM_SOCK_IO_BUFFER               pIoNewBuffer = NULL;
     
     dwError = VmwSockAllocateIoBuffer(
-                  VM_SOCK_EVENT_TYPE_TCP_DATA_WRITE_COMPLETED,
+                  VM_SOCK_EVENT_TYPE_TCP_RESPONSE_DATA_WRITE,
                   bytes,
                   &pIoNewBuffer);
     BAIL_ON_VMREST_ERROR(dwError);

@@ -34,35 +34,35 @@ VmRESTHandleHTTP_REQUEST(
 
 
     dwError = VmRESTGetHttpMethod(pRequest, &ptr);
-    write(1,"\nMethod: ", 9);
-    write(1,ptr,5);
+//    write(1,"\nMethod: ", 9);
+//    write(1,ptr,5);
 
     dwError = VmRESTGetHttpURI(pRequest, &ptr);
-    write(1,"\nURI: ", 6);
-    write(1,ptr,56);
+//    write(1,"\nURI: ", 6);
+//    write(1,ptr,56);
 
     dwError = VmRESTGetHttpVersion(pRequest, &ptr);
-    write(1,"\nVer: ", 6);
-    write(1,ptr,8);
+ //   write(1,"\nVer: ", 6);
+//    write(1,ptr,8);
 
     dwError = VmRESTGetHttpHeader(pRequest,"Connection", &ptr);
-    write(1,"\nConnection: ", 12);
-    write(1,ptr,11);
+  //  write(1,"\nConnection: ", 12);
+  //  write(1,ptr,11);
 
     dwError = VmRESTGetHttpHeader(pRequest,"Transfer-Encoding", &ptr);
     if ((ptr != NULL) && (strlen(ptr) > 0))
     {
-        write(1,"\nTransfer-Encoding: ", 20);
-        write(1,ptr,8);
+      //  write(1,"\nTransfer-Encoding: ", 20);
+      //  write(1,ptr,8);
     }
     else
     {
         dwError = VmRESTGetHttpHeader(pRequest,"Content-Length", &ptr);
-        write(1,"\nContent-Length: ", 17);
-        write(1,ptr,3);
+       // write(1,"\nContent-Length: ", 17);
+      //  write(1,ptr,3);
     }
 
-    write(1,"\nPayload: ", 9);
+   // write(1,"\nPayload: ", 9);
     /**** Get the payload ****/
     while(done != 1)
     {
@@ -73,7 +73,7 @@ VmRESTHandleHTTP_REQUEST(
                       );
         if (strlen(buffer) > 0)
         {
-            write(1,buffer,strlen(buffer));
+           // write(1,buffer,strlen(buffer));
         }
         memset(buffer, '\0', 56);
     }
@@ -114,7 +114,7 @@ VmRESTHandleHTTP_REQUEST(
                   "This is response payload with length 39",39,&temp);
 
     }
-    write(1, "\nThis is App CB for Method", 26);
+   // write(1, "\nThis is App CB for Method", 26);
 
 cleanup:
 

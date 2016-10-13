@@ -12,6 +12,10 @@
  * under the License.
  */
 
+#ifdef _WIN32
+#include <pthread.h>
+#endif
+
 #ifndef __VMRESTCOMMON_H__
 #define __VMRESTCOMMON_H__
 
@@ -89,7 +93,9 @@ extern VMREST_LOG_LEVEL VMRESTLogGetLevel();
     VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_INFO, Format, ##__VA_ARGS__ )
 #define VMREST_LOG_VERBOSE( Format, ... ) \
     VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_DEBUG, Format, ##__VA_ARGS__ )
-#define VMREST_LOG_DEBUG( Format, ... )       \
+
+
+#define VMREST_LOG_DEBUG(Format, ... )       \
     VMREST_LOG_GENERAL_(                      \
         VMREST_LOG_LEVEL_DEBUG,               \
     Format " [file: %s][line: %d]",     \
@@ -134,9 +140,9 @@ VmRESTUtilsConvertInttoString(
     char*                            str
     );
 
-#ifndef WIN32
+//#ifndef WIN32
 typedef pthread_t VMREST_THREAD;
-#endif
+//#endif
 
 typedef VMREST_THREAD* PVMREST_THREAD;
 
@@ -195,12 +201,16 @@ typedef struct _REST_CONFIG
 
 #define VMW_REST_DEFAULT_THREAD_COUNT (5)
 
+#ifndef WIN32
 #define ERROR_BUSY                    200
 #define ERROR_POSSIBLE_DEADLOCK       201
 #define VMREST_UDP_PACKET_SIZE        512 
 #define ERROR_IO_PENDING              300
 #define ERROR_INVALID_MESSAGE         301
 #define WSAECONNRESET                 10054
+#define ERROR_SHUTDOWN_IN_PROGRESS    600
+
+#endif
 
 typedef DWORD (VmRESTStartRoutine)(PVOID);
 typedef VmRESTStartRoutine* PVMREST_START_ROUTINE;

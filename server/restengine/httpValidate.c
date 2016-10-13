@@ -58,7 +58,7 @@ VmRESTRemovePostSpace(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            temp = NULL;
-    uint32_t                         len = 0;
+    size_t                           len = 0;
     uint32_t                         skip = 0;
 
     if (!src || !dest)
@@ -266,7 +266,7 @@ VmRESTValidateHTTPVersion(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         len = 0;
+    size_t                           len = 0;
 
     if ( !pRequest || !result || !err )
     {
@@ -303,7 +303,7 @@ VmRESTValidateHTTPRequestURI(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         len = 0;
+    size_t                           len = 0;
     char*                            temp = NULL;
     char*                            host = NULL;
 

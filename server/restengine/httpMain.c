@@ -83,7 +83,7 @@ VmHTTPInit(
     dwError = VmwSockInitialize();
     BAIL_ON_VMREST_ERROR(dwError);
 
-    isTransportInit = 1;
+    //isTransportInit = 1;
 
     /**** Update the global context for this lib instance ****/
     gRESTEngGlobals.config = restConfig;

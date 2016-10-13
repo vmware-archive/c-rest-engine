@@ -15,6 +15,11 @@
 
 #include "includes.h"
 
+#ifdef WIN32
+#pragma comment(lib, "Ws2_32.lib")
+#define inet_pton(x, y, z) InetPtonA(x, y, z)
+#endif
+
 DWORD
 VmwSockOpenClient(
     PCSTR                            pszHost,

@@ -644,14 +644,14 @@ VmRESTLockRead(
             Simply increment a read count but don't lock for read
             as that would cause undefined behavior.
             ****/
-            VMREST_LOG_DEBUG("Lock read when already holding %u write lock.",*pWriteLockCount);
+           VMREST_LOG_DEBUG("%s","Lock read when already holding %u write lock.",*pWriteLockCount);
         }
         else
         {
             if (*pReadLockCount == 0)
             {
                 pthread_rwlock_rdlock(&pLock->rwLock);
-                VMREST_LOG_DEBUG("Actually locking for read. Result read count: %u\n", *pReadLockCount + 1);
+               VMREST_LOG_DEBUG("%s","Actually locking for read. Result read count: %u\n", *pReadLockCount + 1);
             }
         }
         (*pReadLockCount)++;
@@ -684,7 +684,7 @@ VmRESTTryLockRead(
                 result = pthread_rwlock_tryrdlock(&pLock->rwLock);
                 if (!result)
                 {
-                    VMREST_LOG_DEBUG("Locked for read. Result read count: %u\n",*pReadLockCount + 1);
+                   VMREST_LOG_DEBUG("%s","Locked for read. Result read count: %u\n",*pReadLockCount + 1);
                 }
             }
             else
@@ -718,25 +718,25 @@ VmRESTUnlockRead(
     {
         if (*pWriteLockCount > 0)
         {
-            VMREST_LOG_DEBUG("Read unlock while already holding write lock.");
+           VMREST_LOG_DEBUG("%s","Read unlock while already holding write lock.");
         }
         else
         {
             if (*pReadLockCount ==1)
             {
                 pthread_rwlock_unlock(&pLock->rwLock);
-                VMREST_LOG_DEBUG("[UNLOCK READ]");
+               VMREST_LOG_DEBUG("%s","[UNLOCK READ]");
             }
         }
 
         if (*pReadLockCount > 0)
         {
             (*pReadLockCount)--;
-            VMREST_LOG_DEBUG("[--READ %u]\n",*pReadLockCount);
+           VMREST_LOG_DEBUG("%s","[--READ %u]\n",*pReadLockCount);
         }
         else
         {
-            VMREST_LOG_DEBUG("Unexpected read unlock");
+           VMREST_LOG_DEBUG("%s","Unexpected read unlock");
         }
     }
 }
@@ -749,7 +749,7 @@ VmRESTLockWrite(
     int*                             pWriteLockCount = VmRESTGetLockKey(&pLock->writeKey);
     if (!pWriteLockCount)
     {
-        VMREST_LOG_DEBUG("Out of memory, try plain locking.");
+       VMREST_LOG_DEBUG("%s","Out of memory, try plain locking.");
         pthread_rwlock_wrlock(&pLock->rwLock);
     }
     else
@@ -757,10 +757,10 @@ VmRESTLockWrite(
         if (*pWriteLockCount == 0)
         {
             pthread_rwlock_wrlock(&pLock->rwLock);
-            VMREST_LOG_DEBUG("[LOCK WRITE]");
+           VMREST_LOG_DEBUG("%s","[LOCK WRITE]");
         }
         (*pWriteLockCount)++;
-        VMREST_LOG_DEBUG("[++WRITE %u]\n", *pWriteLockCount);
+       VMREST_LOG_DEBUG("%s","[++WRITE %u]\n", *pWriteLockCount);
     }
 }
 
@@ -776,7 +776,7 @@ VmRESTTryLockWrite(
     {
         if (*pReadLockCount > 0)
         {
-            VMREST_LOG_DEBUG("Cannot wrlock with %u existing rdlock from same thread.\n",*pReadLockCount);
+           VMREST_LOG_DEBUG("%s","Cannot wrlock with %u existing rdlock from same thread.\n",*pReadLockCount);
             result = ERROR_POSSIBLE_DEADLOCK;
         }
         else
@@ -786,7 +786,7 @@ VmRESTTryLockWrite(
                 result = pthread_rwlock_trywrlock(&pLock->rwLock);
                 if (result)
                 {
-                    VMREST_LOG_DEBUG("trywrlock returned %u\n", result);
+                   VMREST_LOG_DEBUG("%s","trywrlock returned %u\n", result);
                 }
             }
             else
@@ -797,7 +797,7 @@ VmRESTTryLockWrite(
             if (!result)
             {
                 (*pWriteLockCount)++;
-                 VMREST_LOG_DEBUG("[++WRITE %u]\n", *pWriteLockCount);
+                VMREST_LOG_DEBUG("%s","[++WRITE %u]\n", *pWriteLockCount);
             }
         }
     }
@@ -820,17 +820,17 @@ VmRESTUnlockWrite(
         if (*pWriteLockCount ==1)
         {
             pthread_rwlock_unlock(&pLock->rwLock);
-            VMREST_LOG_DEBUG("[UNLOCK WRITE] result write count is %u.\n", *pWriteLockCount);
+           VMREST_LOG_DEBUG("%s","[UNLOCK WRITE] result write count is %u.\n", *pWriteLockCount);
         }
 
         if (*pWriteLockCount > 0)
         {
             (*pWriteLockCount)--;
-            VMREST_LOG_DEBUG("[--WRITE %u]\n", *pWriteLockCount);
+           VMREST_LOG_DEBUG("%s","[--WRITE %u]\n", *pWriteLockCount);
         }
         else
         {
-            VMREST_LOG_DEBUG("Unexpected unlock write, write count is %u.\n",*pWriteLockCount);
+           VMREST_LOG_DEBUG("%s","Unexpected unlock write, write count is %u.\n",*pWriteLockCount);
         }
     }
 }

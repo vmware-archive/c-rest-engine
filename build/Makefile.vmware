@@ -1,0 +1,101 @@
+#
+# VMware Archer bootstrap Makefile
+#
+
+#
+# This Makefile is used for both gobuild and local builds
+#
+
+SRCROOT =..
+PROJECT = rest
+
+MAKEROOT=$(SRCROOT)/support/make
+include $(MAKEROOT)/makedefs.mk
+include $(MAKEROOT)/mk/defs-localdefs.mk
+
+CUSTOM = true
+TARGET = custom
+PKGDIR=$(CURDIR)/stage
+RPMPKG=vmware-rest
+RPMSPEC=vmware-rest.spec
+
+CLEANMORE = \
+    build         \
+    client        \
+    .configured   \
+    *.spec        \
+    config.log    \
+    config.status \
+    include       \
+    libtool       \
+    Makefile      \
+    obj64         \
+    server        \
+    stage         \
+    tools
+
+include $(MAKEROOT)/makeimpl.mk
+
+CONFIG_ARGS= \
+    --prefix=$(COMPCODE) \
+    --libdir=$(LIBDIR) \
+    --sysconfdir=/etc \
+    --with-ssl=$(GOBUILD_CAYMAN_OPENSSL_ROOT)/lin64
+
+ifdef DEBUG
+    CONFIG_ARGS += --enable-debug=yes
+    INSTALL_TARGET = install
+else
+    INSTALL_TARGET = install-strip
+endif
+
+CPP := $(CPREPROC)
+
+PATH := $(TCBIN_PATH):$${PATH}
+
+export PATH AS AR NM CPP CC CXX LD RANLIB CFLAGS CPPFLAGS LDFLAGS \
+       BUILDLOG_DIR BUPREFIX AUTOCONFINC AUTOMAKE_PATH AUTOCONF_PATH
+
+.PHONY: rest_package rest_stage rest_build rest_publish
+
+.NOTPARALLEL: rest_package rest_stage rest_build rest_publish
+
+target: rest_build
+
+package: rest_package
+
+rest_package:
+	@echo "Building server package"
+	PATH=$(TCBIN_PATH):$${PATH} \
+	$(MAKE) package
+
+copyfiles:
+	PATH=$(TCBIN_PATH):$${PATH} \
+	$(MAKE) -f $(MAKEFILENAME) DESTDIR=$(PKGDIR)/rpmtmp $(INSTALL_TARGET) && \
+	$(MKDIR) -p $(PKGDIR)/rpmtmp/$(LIBDIR) && \
+	$(CHMOD) u+w $(PKGDIR)/rpmtmp$(LIBDIR)/*
+
+$(RPMSPEC): build/package/rpm/$(RPMSPEC)
+	$(RM) -f $@
+	$(CP) $< $@
+
+rest_build: .configured
+	PATH=$(TCBIN_PATH):$${PATH} \
+	$(MAKE) all
+
+.configured:
+	PATH=$(TCBIN_PATH):$${PATH} \
+	autoreconf -mif .. && \
+	../configure $(CONFIG_ARGS) && \
+	$(TOUCH) .configured
+
+gobuildpublish: rest_publish
+
+rest_publish: rest_package
+	mkdir -p $(PUBLISH_DIR)/lin64
+	mkdir -p $(PUBLISH_DIR)/lin64/include
+	mkdir -p $(PUBLISH_DIR)/lin64/lib64
+	$(CP) -prf $(PKGDIR)/rpmtmp/usr/lib/vmware-rest/include/* $(PUBLISH_DIR)/lin64/include
+	$(CP) -prf $(PKGDIR)/rpmtmp/usr/lib/vmware-rest/lib64/librestengine.so* $(PUBLISH_DIR)/lin64/lib64/
+	$(CP) -prf $(PKGDIR)/rpmtmp/usr/lib/vmware-rest/lib64/libvmsock.so* $(PUBLISH_DIR)/lin64/lib64/
+	$(CP) -prf $(PKGDIR)/RPMS/x86_64/*.rpm $(PUBLISH_DIR)

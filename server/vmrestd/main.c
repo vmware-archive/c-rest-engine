@@ -12,8 +12,11 @@
  * under the License.
  */
 
-#include <includes.h>
+#include "includes.h"
+
+#ifndef WIN32
 #include <getopt.h>
+#endif
 
 uint32_t                         useFile = 0;
 uint32_t                         cbIndex = 0;
@@ -80,6 +83,7 @@ void printRestEngineHelp(void)
     printf("-h,  --help                          See this message\n\n");
 }
 
+
 uint32_t
 VmRegisterHandler(
     char*                            URI,
@@ -109,6 +113,8 @@ cleanup:
 error:
     goto cleanup;
 }
+
+#ifndef WIN32
 
 
 void readOptionConfig(int argc, char *argv[])
@@ -559,33 +565,44 @@ void readOptionServer(int argc, char *argv[])
     }
     optind = 1;
 }
+#endif
 
-#if 0
-
+#if 1
+#ifdef WIN32
+#include "..\transport\win\includes.h"
+#endif
 int main(int argc, char *argv[])
 {
     uint32_t                         dwError = 0;
 
-    dwError = VmRESTInit(NULL,"/tmp/restconfig.txt");
+    printf("Bingo: %u\n", dwError);
 
+#ifdef WIN32 
+    dwError = VmRESTInit(NULL,"c:\\tmp\\restconfig.txt");
+#else
+    dwError = VmRESTInit(NULL,"/tmp/restconfig.txt");
+#endif
     VmRegisterHandler("/v1/pkg", 0);
 
     VmRESTStart();
 
-    sleep(20);
+#ifdef WIN32 
+       Sleep(20000);
+#else
+       sleep(20);
+#endif
+    //dwError = VmRESTStop();
 
-    dwError = VmRESTStop();
+//dwError = VmRESTUnRegisterHandler("/v1/pkg");
 
-    dwError = VmRESTUnRegisterHandler("/v1/pkg");
-
-    VmRESTShutdown();
+   // VmRESTShutdown();
     
 return dwError;
 
 }
 
 #endif
-#if 1
+#if 0
 int
 main (int argc, char *argv[])
 {

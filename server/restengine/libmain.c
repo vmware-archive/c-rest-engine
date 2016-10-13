@@ -15,6 +15,31 @@
 #include "includes.h"
 int  vmrest_syslog_level;
 
+#ifdef WIN32
+
+BOOL APIENTRY DllMain(HMODULE hModule,
+	DWORD  ul_reason_for_call,
+	LPVOID lpReserved
+)
+{
+	switch (ul_reason_for_call)
+	{
+	case DLL_PROCESS_ATTACH:
+	case DLL_THREAD_ATTACH:
+	case DLL_THREAD_DETACH:
+	case DLL_PROCESS_DETACH:
+		break;
+	}
+	return TRUE;
+}
+
+#endif
+
+#ifdef WIN32
+#pragma comment(lib, "Ws2_32.lib")
+#endif
+
+
 uint32_t
 VmRESTInit(
     PREST_CONF                       pConfig,
@@ -35,6 +60,9 @@ error:
     goto cleanup;
 }
 
+#ifdef WIN32
+__declspec(dllexport)
+#endif
 uint32_t
 VmRESTStart(
     void
@@ -139,9 +167,9 @@ VmRESTUnRegisterHandler(
     }
     else
     {
-        dwError = VmRestEngineRemoveEndpoint(
-                      pzEndPointURI
-                      );
+       // dwError = VmRestEngineRemoveEndpoint(
+         //             pzEndPointURI
+           //           );
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -380,7 +408,7 @@ VmRESTSetDataLength(
     }
     else
     {
-        VMREST_LOG_DEBUG("ERROR: Data Length Invalid");
+        VMREST_LOG_DEBUG("%s","ERROR: Data Length Invalid");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);

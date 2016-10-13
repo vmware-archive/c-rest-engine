@@ -14,9 +14,25 @@
 #ifndef __VMREST_H__
 #define __VMREST_H__
 
+
+#ifdef _WIN32
+#ifdef LIBTRIDENT_EXPORTS
+#define VMREST_API __declspec(dllexport)
+#else
+#define VMREST_API __declspec(dllimport)
+#endif
+#else
+#define VMREST_API
+#endif
+
+#define _WIN32 1
+
+
+
 typedef struct _VM_REST_HTTP_REQUEST_PACKET*  PREST_REQUEST;
 
 typedef struct _VM_REST_HTTP_RESPONSE_PACKET* PREST_RESPONSE;
+
 
 typedef uint32_t(
 *PFN_PROCESS_HTTP_REQUEST)(
@@ -71,6 +87,7 @@ typedef struct _REST_ENDPOINT
  * @return                           Returns 0 for success.
  */
 
+VMREST_API
 uint32_t
 VmRESTInit(
     PREST_CONF                       pConfig,
@@ -83,6 +100,7 @@ VmRESTInit(
  * @param[in]                        Void.
  * @return                           Returns 0 for success.
  */
+VMREST_API
 uint32_t
 VmRESTStart(
     void
@@ -95,6 +113,7 @@ VmRESTStart(
  * @param[out]                       ppEndpoint Optionally return the endpoint registration object
  * @return                           Returns 0 for Success
  */
+VMREST_API
 uint32_t
 VmRESTRegisterHandler(
     char const*                      pszEndpoint,
@@ -108,6 +127,7 @@ VmRESTRegisterHandler(
  * @param[out]                       ppEndpoint Endpoint registration to return for given URL
  * @return                           Returns 0 for Success
  */
+VMREST_API
 uint32_t
 VmRESTFindEndpoint(
     char const*                      pszEndpoint,
@@ -118,6 +138,7 @@ VmRESTFindEndpoint(
  * @brief Unregister an endpoint
  * @return                           Returns 0 for success
  */
+VMREST_API
 uint32_t
 VmRESTUnRegisterHandler(
     char*                            pEndpointURI
@@ -131,6 +152,7 @@ VmRESTUnRegisterHandler(
  * @param[out]                       Identier to denote no more data to read.
  * @return                           Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTGetData(
     PREST_REQUEST                    pRequest,
@@ -148,6 +170,7 @@ VmRESTGetData(
  * @param[out]                       Pointer to result Value.
  * @return Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTGetParamsByIndex(
     PREST_REQUEST                    pRequest,
@@ -164,6 +187,7 @@ VmRESTGetParamsByIndex(
  * @param[in]                        Data Length if less than 4096 else NULL.
  * @return                           Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTSetDataLength(
     PREST_RESPONSE*                  ppResponse,
@@ -178,6 +202,7 @@ VmRESTSetDataLength(
  * @param[in]                        Reference to HTTP Response object.
  * @return                           Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTSetSuccessResponse(
     PREST_REQUEST                    pRequest,
@@ -194,6 +219,7 @@ VmRESTSetSuccessResponse(
  * @param[in]                        Reason Phrase (NULL is default has to sent).
  * @return                           Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTSetFailureResponse(
     PREST_RESPONSE*                  ppResponse,
@@ -210,6 +236,7 @@ VmRESTSetFailureResponse(
  * @param[in]                        Identifier to denote all data chunks sent.
  * @return                           Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTSetData(
     PREST_RESPONSE*                  ppResponse,
@@ -222,6 +249,7 @@ VmRESTSetData(
  * @brief Stop the REST Engine
  * @return                           Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTStop(
     void
@@ -230,6 +258,7 @@ VmRESTStop(
 /*
  * @brief Shutdown the REST Library
  */
+VMREST_API 
 void
 VmRESTShutdown(
     void
@@ -251,7 +280,7 @@ VmRESTShutdown(
  * @param[out]                       HTTP method present in request object.
  * @return                           Returns 0 for success else Error code.
  */
-
+VMREST_API
 uint32_t
 VmRESTGetHttpMethod(
     PREST_REQUEST                    pRequest,
@@ -265,6 +294,7 @@ VmRESTGetHttpMethod(
  * @param[out]                       URI present in request object.
  * @return                           Returns 0 for success else error code.
  */
+VMREST_API
 uint32_t
 VmRESTGetHttpURI(
     PREST_REQUEST                    pRequest,
@@ -278,6 +308,7 @@ VmRESTGetHttpURI(
  * @param[out]                       HTTP version (1.0/1.1) present in request object.
  * @return                           Returns 0 for success else error code.
  */
+VMREST_API 
 uint32_t
 VmRESTGetHttpVersion(
     PREST_REQUEST                    pRequest,
@@ -292,6 +323,7 @@ VmRESTGetHttpVersion(
  * @param[out]                       Value of header present in request object.
  * @return                           Returns 0 for success else error code.
  */
+VMREST_API 
 uint32_t
 VmRESTGetHttpHeader(
     PREST_REQUEST                    pRequest,
@@ -307,6 +339,7 @@ VmRESTGetHttpHeader(
  * @param[in]                        Value of header field to be set.
  * @return Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTSetHttpHeader(
     PREST_RESPONSE*                  ppResponse,
@@ -321,6 +354,7 @@ VmRESTSetHttpHeader(
  * @param[in]                        StatusCode to be set.
  * @return Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTSetHttpStatusCode(
     PREST_RESPONSE*                  ppResponse,
@@ -334,6 +368,7 @@ VmRESTSetHttpStatusCode(
  * @param[in]                        HTTP Version to be set.
  * @return Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTSetHttpStatusVersion(
     PREST_RESPONSE*                  ppResponse,
@@ -347,6 +382,7 @@ VmRESTSetHttpStatusVersion(
  * @param[in]                        Reason phrase to be set.
  * @return Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTSetHttpReasonPhrase(
     PREST_RESPONSE*                  ppResponse,
@@ -360,6 +396,7 @@ VmRESTSetHttpReasonPhrase(
  * @param[out]                       Payload buffer(must be allocated by caller).
  * @return Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTGetHttpPayload(
     PREST_REQUEST                    pRequest,
@@ -377,6 +414,7 @@ VmRESTGetHttpPayload(
  * @param[out]                       Status after all data chunks sent.
  * @return Returns 0 for success
  */
+VMREST_API 
 uint32_t
 VmRESTSetHttpPayload(
     PREST_RESPONSE*                  ppResponse,

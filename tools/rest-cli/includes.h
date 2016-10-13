@@ -12,7 +12,12 @@
  * under the License.
  */
 
+#ifndef WIN32
 #include <config.h>
+#else
+#include <stdint.h>
+#endif
+
 
 #include <vmrestsys.h>
 #include <vmrestdefines.h>

@@ -12,7 +12,9 @@
  * under the License.
  */
 
-#include <includes.h>
+#include "includes.h"
+
+
 
 uint32_t
 VmRESTCopyString(
@@ -21,7 +23,7 @@ VmRESTCopyString(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         headerValLen = 0;
+    size_t                           headerValLen = 0;
 
     if ( !src  || !des )
     {
@@ -56,7 +58,7 @@ VmRESTGetHttpResponseHeader(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         headerValLen = 0;
+    size_t                           headerValLen = 0;
 
     if (!pResponse || !header || !response )
     {
@@ -572,8 +574,8 @@ VmRESTSetHTTPMiscHeader(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_HEADER_NODE        node = NULL;
     PVM_REST_HTTP_HEADER_NODE        temp = NULL;
-    uint32_t                         headerLen = 0;
-    uint32_t                         valueLen = 0;
+    size_t                           headerLen = 0;
+    size_t                           valueLen = 0;
 
     if (!miscHeaderQueue || !header || !value)
     {
@@ -631,13 +633,15 @@ VmRESTRemoveAllHTTPMiscHeader(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_HEADER_NODE        node = NULL;
     PVM_REST_HTTP_HEADER_NODE        temp = NULL;
+	int x = 1;
 
     temp = miscHeaderQueue->head;
     while (temp != NULL)
     {
         node = temp;
         temp = temp->next;
-        node->next = NULL;
+        //node->next = NULL;
+		x++;
         VmRESTFreeMemory(
             node
             );

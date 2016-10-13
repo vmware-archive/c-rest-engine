@@ -201,6 +201,7 @@ error :
  *
  * @return 0 on success
  */
+
 DWORD
 VmSockWinOpenServer(
     USHORT               usPort,
@@ -321,6 +322,7 @@ VmSockWinOpenServer(
     dwError = VmRESTAllocateMemory(sizeof(*pSocket), (PVOID*)&pSocket);
     BAIL_ON_VMREST_ERROR(dwError);
 
+    pSocket->pStreamBuffer = NULL;
     pSocket->refCount = 1;
     pSocket->type = VM_SOCK_TYPE_LISTENER;
 
@@ -580,11 +582,20 @@ VmSockWinWaitForEvent(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    VMREST_LOG_DEBUG("IO Completed Socket:%d, Address:%p Event: %d, Size: %d",
+   /* VMREST_LOG_DEBUG("IO Completed Socket:%d, Address:%p Event: %d, Size: %d",
                 pSocket ? pSocket->hSocket : 0,
                 &pIoContext->IoBuffer,
                 pIoContext->eventType,
-                dwIoSize);
+                dwIoSize); */
+
+	 if (dwIoSize)
+    {
+        pIoContext->IoBuffer.dwTotalBytesTransferred += dwIoSize;
+    }
+    else
+    {
+        pIoContext->IoBuffer.dwTotalBytesTransferred = 0;
+    }
 
     pIoContext->IoBuffer.dwBytesTransferred = dwIoSize;
     pIoContext->IoBuffer.dwCurrentSize += dwIoSize;
@@ -838,7 +849,7 @@ VmSockWinRead(
                 pSocket->hSocket,
                 (DWORD)pIoBuffer,
                 pIoContext->eventType,
-                pIoBuffer->dwExpectedSize);
+                pIoBuffer->dwExpectedSize); 
 
         sockError = WSARecv(
                         pSocket->hSocket,
@@ -861,7 +872,7 @@ VmSockWinRead(
         }
         else if (pSocket->pEventQueue)
         {
-            dwError = ERROR_IO_PENDING;
+            dwError = 0 ; //ERROR_IO_PENDING;
         }
     }
 
@@ -980,7 +991,7 @@ VmSockWinWrite(
     }
     else if (pSocket->pEventQueue)
     {
-        dwError = ERROR_IO_PENDING;
+        dwError = 0 ; //ERROR_IO_PENDING;
     }
 
     pIoContext->IoBuffer.dwBytesTransferred = dwBytesWritten;
@@ -1024,6 +1035,7 @@ VmSockWinRelease(
     PVM_SOCKET           pSocket
     )
 {
+	VMREST_LOG_DEBUG("%s", "Sock Release called");
     if (pSocket)
     {
         if (InterlockedDecrement(&pSocket->refCount) == 0)
@@ -1081,14 +1093,18 @@ static VOID
 VmSockWinFreeSocket(
     PVM_SOCKET  pSocket
     )
-{
+{   
+	VMREST_LOG_DEBUG("Freeing Socket %p", pSocket);
     if (pSocket->hSocket != INVALID_SOCKET)
     {
         CancelIo((HANDLE)pSocket->hSocket);
         closesocket(pSocket->hSocket);
         pSocket->hSocket = INVALID_SOCKET;
     }
-
+    if (pSocket->pStreamBuffer)
+    {
+        VmRESTFreeMemory(pSocket->pStreamBuffer);
+    }
     VMREST_SAFE_FREE_MEMORY(pSocket);
 }
 
@@ -1213,6 +1229,7 @@ VmSockWinAcceptConnection(
     PVM_SOCKET pClientSocket = NULL;
     PVM_SOCK_IO_BUFFER pIoBuffer = NULL;
     PVM_SOCK_IO_CONTEXT pIoContext = NULL;
+    PVM_STREAM_BUFFER                pStrmBuf = NULL;
 
     if (!pListenSocket ||
         !pListenSocket->hSocket ||
@@ -1224,11 +1241,27 @@ VmSockWinAcceptConnection(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    dwError = VmRESTAllocateMemory(
+  /*  dwError = VmRESTAllocateMemory(
                     sizeof(*pClientSocket),
                     (PVOID*)&pClientSocket);
+    BAIL_ON_VMREST_ERROR(dwError); */
+
+	dwError = VmRESTAllocateMemory(
+                    sizeof(VM_SOCKET),
+                    (void **)&pClientSocket);
     BAIL_ON_VMREST_ERROR(dwError);
 
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VM_STREAM_BUFFER),
+                  (void**)&pStrmBuf
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    pStrmBuf->dataProcessed = 0;
+    pStrmBuf->dataRead = 0;
+    memset(pStrmBuf->pData, '\0', 4096);
+
+    pClientSocket->pStreamBuffer = pStrmBuf;
     pClientSocket->hSocket = clientSocket;
     pClientSocket->pEventQueue = pListenSocket->pEventQueue;
     pClientSocket->protocol = pListenSocket->protocol;
@@ -1262,7 +1295,7 @@ VmSockWinAcceptConnection(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    dwError = VmSockWinAllocateIoBuffer(VM_SOCK_EVENT_TYPE_NEW_CONNECTION, 0, &pIoBuffer);
+    dwError = VmSockWinAllocateIoBuffer(VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION, 0, &pIoBuffer);
     BAIL_ON_VMREST_ERROR(dwError);
 
     pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
@@ -1361,7 +1394,10 @@ VmSockWinFreeIoBuffer(
 {
     PVM_SOCK_IO_CONTEXT pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
     VMREST_LOG_INFO("Freeing Io Buffer - Address: %p, Event: %d, Size: %d", (DWORD)pIoBuffer, pIoContext->eventType, pIoBuffer->dwCurrentSize);
-    VMREST_SAFE_FREE_MEMORY(pIoContext);
+	if (pIoContext)
+	{
+	    VmRESTFreeMemory(pIoContext);
+	}
 }
 
 /**
@@ -1400,4 +1436,36 @@ error :
 
     goto cleanup;
 
+}
+
+VOID
+VmSockPosixGetStreamBuffer(
+    PVM_SOCKET                       pSocket,
+    PVM_STREAM_BUFFER*               ppStreamBuffer
+    )
+{
+    if (pSocket->pStreamBuffer)
+    {
+        *ppStreamBuffer = pSocket->pStreamBuffer;
+    }
+    else
+    {
+        *ppStreamBuffer = NULL;
+    }
+}
+
+VOID
+VmSockPosixSetStreamBuffer(
+    PVM_SOCKET                       pSocket,
+    PVM_STREAM_BUFFER                pStreamBuffer
+    )
+{
+    if (pStreamBuffer)
+    {
+        pSocket->pStreamBuffer = pStreamBuffer;
+    }
+    else
+    {
+        pSocket->pStreamBuffer = NULL;
+    }
 }

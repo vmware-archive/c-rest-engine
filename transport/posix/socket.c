@@ -598,7 +598,7 @@ VmSockPosixWaitForEvent(
                                       pSocket);
                         BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
-                        eventType = VM_SOCK_EVENT_TYPE_NEW_CONNECTION;
+                        eventType = VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION;
 
                         break;
 
