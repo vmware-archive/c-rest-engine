@@ -34,3 +34,25 @@ error:
     goto cleanup;
 
 }
+
+char
+VmRESTUtilsGetLastChar(
+    char*                            src
+    )
+{
+    char                             ret = '\0';
+    char*                            temp = NULL;
+
+    if (src == NULL || (strlen(src) > MAX_SERVER_PORT_LEN))
+    {
+        VMREST_LOG_DEBUG("VmRESTUtilsGetLastChar(): Invalid Params");
+        return ret;
+    }
+    temp = src;
+    while (*temp != '\0')
+    {
+        ret = *temp;
+        temp++;
+    }
+    return ret;
+}

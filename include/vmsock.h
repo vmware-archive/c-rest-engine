@@ -50,6 +50,7 @@ typedef UINT32                           VM_SOCK_CREATE_FLAGS;
 #define VM_SOCK_CREATE_FLAGS_UDP         0x00000008
 #define VM_SOCK_CREATE_FLAGS_REUSE_ADDR  0x00000010
 #define VM_SOCK_CREATE_FLAGS_NON_BLOCK   0x00000020
+#define VM_SOCK_IS_SSL                   0x00000040
 
 typedef struct _VM_SOCKET*               PVM_SOCKET;
 typedef struct _VM_SOCK_EVENT_QUEUE*     PVM_SOCK_EVENT_QUEUE;
@@ -137,6 +138,8 @@ VmwSockOpenClient(
  *       This value can be (-1) to use the default value.
  *
  * @param[in]  dwFlags 32 bit flags defining socket creation preferences
+ * @param[in]  Path to SSL Certificate file
+ * @param[in]  Path to SSL Key File
  * @param[out] ppSocket Pointer to created socket
  *
  * @return 0 on success
@@ -146,7 +149,9 @@ VmwSockOpenServer(
     USHORT                           usPort,
     int                              iListenQueueSize,
     VM_SOCK_CREATE_FLAGS             dwFlags,
-    PVM_SOCKET*                      ppSocket
+    PVM_SOCKET*                      ppSocket,
+    char*                            sslCert,
+    char*                            sslKey
     );
 
 /**

@@ -16,6 +16,13 @@
 #include "includes.h"
 
 static
+uint32_t
+VmRESTSecureSocket(
+    char*                            certificate,
+    char*                            key
+    );
+
+static
 DWORD
 VmSockPosixCreateSignalSockets(
     PVM_SOCKET*                      ppReaderSocket,
@@ -59,6 +66,69 @@ VOID
 VmSockPosixFreeSocket(
     PVM_SOCKET                       pSocket
     );
+
+static
+uint32_t
+VmRESTSecureSocket(
+    char*                            certificate,
+    char*                            key
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    int                              ret = 0;
+    const SSL_METHOD*                method = NULL;
+    SSL_CTX*                         context = NULL;
+
+    if (key == NULL || certificate == NULL)
+    {
+        VMREST_LOG_ERROR("Invalid params");
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    OpenSSL_add_all_algorithms();
+    SSL_load_error_strings();
+    method = SSLv3_server_method();
+    context = SSL_CTX_new(method);
+    if ( context == NULL )
+    {
+        VMREST_LOG_ERROR("SSL context is NULL");
+        dwError = VMREST_TRANSPORT_SSL_CONFIG_ERROR;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    ret = SSL_CTX_use_certificate_file(context, certificate, SSL_FILETYPE_PEM);
+    if (ret <= 0)
+    {
+        VMREST_LOG_ERROR("Cannot Use SSL certificate");
+        dwError = VMREST_TRANSPORT_SSL_CERTIFICATE_ERROR;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    ret = SSL_CTX_use_PrivateKey_file(context, key, SSL_FILETYPE_PEM);
+    if (ret <= 0)
+    {
+        VMREST_LOG_ERROR("Cannot use private key file");
+        dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_ERROR;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    if (!SSL_CTX_check_private_key(context))
+    {
+        VMREST_LOG_ERROR("Error in Private Key");
+        dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_CHECK_ERROR;
+        BAIL_ON_VMREST_ERROR(dwError)
+    }
+
+    gSockSSLInfo.sslContext = context;
+
+cleanup:
+    return dwError;
+
+error:
+     dwError = VMREST_TRANSPORT_SSL_ERROR;
+    goto cleanup;
+}
+
 
 DWORD
 VmSockPosixOpenClient(
@@ -207,7 +277,9 @@ VmSockPosixOpenServer(
     USHORT                           usPort,
     int                              iListenQueueSize,
     VM_SOCK_CREATE_FLAGS             dwFlags,
-    PVM_SOCKET*                      ppSocket
+    PVM_SOCKET*                      ppSocket,
+    char*                            sslCert,
+    char*                            sslKey
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
@@ -253,6 +325,22 @@ VmSockPosixOpenServer(
     }
 
     socketParams.protocol = 0;
+
+    /**** Check if connection is over SSL ****/
+    if(dwFlags & VM_SOCK_IS_SSL)
+    {
+        SSL_library_init();
+        dwError = VmRESTSecureSocket(
+                      sslCert,
+                      sslKey
+                      );
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
+        gSockSSLInfo.isSecure = 1;
+    }
+    else
+    {
+        gSockSSLInfo.isSecure = 0;
+    }
 
     fd = socket(socketParams.domain, socketParams.type, socketParams.protocol);
     if (fd < 0)
@@ -353,6 +441,7 @@ VmSockPosixOpenServer(
 
     pSocket->fd = fd;
     pSocket->pStreamBuffer = NULL;
+    pSocket->ssl = NULL;
 
     *ppSocket = pSocket;
 
@@ -517,6 +606,9 @@ VmSockPosixWaitForEvent(
     BOOLEAN                          bLocked = FALSE;
     VM_SOCK_EVENT_TYPE               eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
     PVM_SOCKET                       pSocket = NULL;
+    SSL*                             ssl = NULL;
+    uint32_t                         try = MAX_RETRY_ATTEMPTS;
+    uint32_t                         cntRty = 0;
 
     if (!pQueue || !ppSocket || !pEventType)
     {
@@ -589,9 +681,36 @@ VmSockPosixWaitForEvent(
                                       pEventSocket,
                                       &pSocket);
                         BAIL_ON_POSIX_SOCK_ERROR(dwError);
+                        pSocket->inUse = 0;
 
                         dwError = VmSockPosixSetNonBlocking(pSocket);
                         BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+                        /**** If conn is over SSL, do the needful ****/
+                        if (gSockSSLInfo.isSecure)
+                        {
+                             ssl = SSL_new(gSockSSLInfo.sslContext);
+                             SSL_set_fd(ssl,pSocket->fd);
+retry:
+                             if (SSL_accept(ssl) == -1)
+                             {
+                                 if (cntRty <= try )
+                                 {
+                                     cntRty++;
+                                     goto retry;
+                                 }
+                                 else
+                                 {
+                                     dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
+                                     BAIL_ON_VMREST_ERROR(dwError);
+                                 }
+                             }
+                             pSocket->ssl = ssl;    
+                        }
+                        else
+                        {
+                            pSocket->ssl = NULL;
+                        }
 
                         dwError = VmSockPosixEventQueueAdd_inlock(
                                       pQueue,
@@ -599,13 +718,6 @@ VmSockPosixWaitForEvent(
                         BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
                         eventType = VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION;
-
-                        break;
-
-                    case VM_SOCK_PROTOCOL_UDP:
-
-                        pSocket = VmSockPosixAcquireSocket(pEventSocket);
-                        eventType = VM_SOCK_EVENT_TYPE_DATA_AVAILABLE;
 
                         break;
 
@@ -624,8 +736,18 @@ VmSockPosixWaitForEvent(
             }
             else
             {
-                pSocket = VmSockPosixAcquireSocket(pEventSocket);
-                eventType = VM_SOCK_EVENT_TYPE_DATA_AVAILABLE;
+                if (pEventSocket->inUse == 0)
+                {
+                    /**** Assigning one socket to one thread only ****/
+                    pSocket = VmSockPosixAcquireSocket(pEventSocket);
+                    eventType = VM_SOCK_EVENT_TYPE_DATA_AVAILABLE;
+                    pSocket->inUse = 1;
+                }
+                else
+                {
+                    eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
+                    pSocket = pEventSocket;
+                }
             }
         }
         pQueue->iReady++;
@@ -904,13 +1026,20 @@ VmSockPosixRead(
 
     bLocked = TRUE;
 
-    nRead = recvfrom(
+    if (gSockSSLInfo.isSecure && (pSocket->ssl != NULL))
+    {
+        nRead = SSL_read(pSocket->ssl, pIoBuffer->pData + pIoBuffer->dwCurrentSize, dwBufSize);
+    }
+    else if (pSocket->fd > 0)
+    {
+        nRead = recvfrom(
                 pSocket->fd,
                 pIoBuffer->pData + pIoBuffer->dwCurrentSize,
                 dwBufSize,
                 flags,
                 (struct sockaddr*)&pIoBuffer->clientAddr,
                 &pIoBuffer->addrLen);
+    }
     VMREST_LOG_DEBUG("\nRead Status on Socket with fd = %d\nRequested: %d bytes\nRead %d bytes\n", pSocket->fd, dwBufSize, nRead);
 
     if (nRead < 0)
@@ -1014,14 +1143,20 @@ VmSockPosixWrite(
 
     while(bytesWritten < bytes )
     {
-         nWritten = sendto(
+         if (gSockSSLInfo.isSecure && (pSocket->ssl != NULL))
+         {
+             nWritten = SSL_write(pSocket->ssl,(pIoBuffer->pData + bytesWritten),bytesLeft);
+         }
+         else if (pSocket->fd > 0)
+         {
+             nWritten = sendto(
                         pSocket->fd,
                         (pIoBuffer->pData + bytesWritten),
                         bytesLeft,
                         flags,
                         pClientAddressLocal,
                         addrLengthLocal);
-
+         }
          if (nWritten >= 0)
          {
              bytesWritten += nWritten;
@@ -1075,7 +1210,6 @@ VmSockPosixAcquireSocket(
         ****/
         pSocket->refCount++;
     }
-
     return pSocket;
 }
 
@@ -1089,7 +1223,7 @@ VmSockPosixReleaseSocket(
         /**** TODO: Fix this. Atomic decrement.
          if (InterlockedDecrement(&pSocket->refCount) == 0)
         ****/
-        if (((pSocket->refCount)--) == 0)
+        if (--(pSocket->refCount) == 0)
         {
             VmSockPosixFreeSocket(pSocket);
         }
@@ -1109,11 +1243,23 @@ VmSockPosixCloseSocket(
 
     bLocked = TRUE;
 
-    if (pSocket->fd >= 0)
+    if (gSockSSLInfo.isSecure)
     {
-        close(pSocket->fd);
-        pSocket->fd = -1;
+        if (pSocket->ssl)
+        {
+            SSL_shutdown(pSocket->ssl);
+            SSL_free(pSocket->ssl);
+            pSocket->ssl = NULL;
+        }
     }
+    else
+    {
+        if (pSocket->fd >= 0)
+        {
+            close(pSocket->fd);
+            pSocket->fd = -1;
+        }
+    }   
 
 cleanup:
 
@@ -1225,8 +1371,6 @@ VmSockPosixEventQueueAdd_inlock(
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
-    VmSockPosixAcquireSocket(pSocket);
-
 error:
 
     return dwError;
@@ -1251,7 +1395,7 @@ VmSockPosixAcceptConnection(
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     dwError = VmRESTAllocateMemory(
-                  sizeof(VM_STREAM_BUFFER),
+                  sizeof(*pStrmBuf),
                   (void**)&pStrmBuf
                   );
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
@@ -1273,7 +1417,6 @@ VmSockPosixAcceptConnection(
     fd = accept(pListener->fd, &pSocket->addr, &pSocket->addrLen);
     if (fd < 0)
     {
-        VMREST_LOG_ERROR("Accept() failed with Error Code %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }

@@ -591,11 +591,12 @@ int main(int argc, char *argv[])
 #else
        sleep(20);
 #endif
-    //dwError = VmRESTStop();
+    
+    dwError = VmRESTStop();
 
-//dwError = VmRESTUnRegisterHandler("/v1/pkg");
+    dwError = VmRESTUnRegisterHandler("/v1/pkg");
 
-   // VmRESTShutdown();
+    VmRESTShutdown();
     
 return dwError;
 

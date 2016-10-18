@@ -14,3 +14,4 @@
 
 
 extern PVM_SOCK_PACKAGE gpVmSockPosixPackage;
+extern SOCK_SSL_INFO    gSockSSLInfo;

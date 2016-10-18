@@ -278,6 +278,7 @@ VmHandlePackageRead(
                       );
         if (strlen(buffer) > 0)
         {
+            printf("Data read %s", buffer);
             //write(1,buffer,strlen(buffer));
         }
         memset(buffer, '\0', MAX_DATA_LEN);

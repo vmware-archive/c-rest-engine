@@ -52,7 +52,9 @@ VmwSockOpenServer(
     USHORT                           usPort,
     int                              iListenQueueSize,
     VM_SOCK_CREATE_FLAGS             dwFlags,
-    PVM_SOCKET*                      ppSocket
+    PVM_SOCKET*                      ppSocket,
+    char*                            sslCert,
+    char*                            sslKey
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
@@ -67,7 +69,9 @@ VmwSockOpenServer(
                                     usPort,
                                     iListenQueueSize,
                                     dwFlags,
-                                    ppSocket);
+                                    ppSocket,
+                                    sslCert,
+                                    sslKey);
 error:
 
     return dwError;

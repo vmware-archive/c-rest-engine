@@ -140,6 +140,11 @@ VmRESTUtilsConvertInttoString(
     char*                            str
     );
 
+char
+VmRESTUtilsGetLastChar(
+    char*                            src
+    );
+
 //#ifndef WIN32
 typedef pthread_t VMREST_THREAD;
 //#endif

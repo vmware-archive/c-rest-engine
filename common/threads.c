@@ -478,6 +478,7 @@ VmRESTCreateThread(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
+
     pThreadStartInfo->pStartRoutine = pStartRoutine;
     pThreadStartInfo->pArgs = pArgs;
 
@@ -555,6 +556,8 @@ VmRESTFreeThread(
 {
     if ( pThread != NULL )
     {
+        VmRESTFreeMemory(pThread);
+
         /**** nothing to free really ****/
 #ifndef _WIN32
         (*pThread) = 0;

@@ -40,3 +40,5 @@ VM_SOCK_PACKAGE gVmSockPosixPackage =
 };
 
 PVM_SOCK_PACKAGE gpVmSockPosixPackage = &gVmSockPosixPackage;
+
+SOCK_SSL_INFO gSockSSLInfo = {0};

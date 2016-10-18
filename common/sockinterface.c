@@ -102,6 +102,17 @@ VmRESTInitProtocolServer(
     DWORD                            dwFlags = VM_SOCK_CREATE_FLAGS_REUSE_ADDR |
                                                VM_SOCK_CREATE_FLAGS_NON_BLOCK;
     DWORD                            iThr = 0;
+    char                             lastPortChar = '\0';
+    char*                            sslCert = NULL;
+    char*                            sslKey = NULL;
+    char*                            temp = NULL;
+
+    if (!gpRESTConfig)
+    {
+        VMREST_LOG_ERROR("REST Engine configuration missing");
+        dwError = 110;  /** Fix this **/
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTAllocateMemory(
                   sizeof(*pSockContext),
@@ -112,6 +123,40 @@ VmRESTInitProtocolServer(
     dwError = VmRESTAllocateMutex(&pSockContext->pMutex);
     BAIL_ON_VMREST_ERROR(dwError);
 
+    /**** Init SSL if configured ****/
+
+    if (!(gpRESTConfig->server_port))
+    {
+        VMREST_LOG_ERROR("REST Engine config server port missing");
+        dwError = 111;  /** Fix this **/
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    lastPortChar = VmRESTUtilsGetLastChar(
+                       gpRESTConfig->server_port
+                       );
+    if (lastPortChar == 's' || lastPortChar == 'S')
+    {
+        if (strlen(gpRESTConfig->ssl_certificate) == 0 || strlen(gpRESTConfig->ssl_key) == 0)
+        {
+            VMREST_LOG_ERROR("Invalid SSL params");
+            dwError =  112; /** Fix this **/
+        }
+        dwFlags = dwFlags | VM_SOCK_IS_SSL;
+        sslCert = gpRESTConfig->ssl_certificate;
+        sslKey = gpRESTConfig->ssl_key;
+        temp = gpRESTConfig->server_port;
+        while(temp != NULL)
+        {
+            if (*temp == 's' || *temp == 'S')
+            {
+                *temp = '\0';
+                break;
+            }
+            temp++;
+        }
+    }
+
     /**** Handle IPv4 case ****/
 
     dwError = VmwSockOpenServer(
@@ -119,7 +164,10 @@ VmRESTInitProtocolServer(
                         ((int)atoi(gpRESTConfig->worker_thread_count)),
                         dwFlags | VM_SOCK_CREATE_FLAGS_TCP |
                                   VM_SOCK_CREATE_FLAGS_IPV4,
-                        &pSockContext->pListenerTCP);
+                        &pSockContext->pListenerTCP,
+                        sslCert,
+                        sslKey
+                        );
     BAIL_ON_VMREST_ERROR(dwError);
 
 #ifdef AF_INET6
@@ -130,7 +178,9 @@ VmRESTInitProtocolServer(
                   ((int)atoi(gpRESTConfig->worker_thread_count)),
                   dwFlags | VM_SOCK_CREATE_FLAGS_TCP |
                           VM_SOCK_CREATE_FLAGS_IPV6,
-                  &pSockContext->pListenerTCP6
+                  &pSockContext->pListenerTCP6,
+                  sslCert,
+                  sslKey
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 #endif
@@ -158,18 +208,18 @@ VmRESTInitProtocolServer(
 #ifdef WIN32
     dwError = VmwSockStartListening(
                   pSockContext->pListenerTCP,
-                  VMW_REST_DEFAULT_THREAD_COUNT
+                  ((int)atoi(gpRESTConfig->worker_thread_count))
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 #endif
 
     dwError = VmRESTAllocateMemory(
-                  sizeof(PVMREST_THREAD) * VMW_REST_DEFAULT_THREAD_COUNT,
+                  sizeof(PVMREST_THREAD) * (((int)atoi(gpRESTConfig->worker_thread_count))) ,
                   (PVOID*)&pSockContext->pWorkerThreads
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    pSockContext->dwNumThreads = VMW_REST_DEFAULT_THREAD_COUNT;
+    pSockContext->dwNumThreads = ((int)atoi(gpRESTConfig->worker_thread_count));
 
     for (; iThr < pSockContext->dwNumThreads; iThr++)
     {
@@ -239,6 +289,7 @@ VmRESTSockWorkerThreadProc(
                         &eventType,
                         &pIoBuffer);
 
+
         if (dwError == ERROR_SHUTDOWN_IN_PROGRESS)
         {
             VMREST_LOG_INFO(
@@ -276,7 +327,6 @@ error:
     {
         VmwSockRelease(pSocket);
     }
-
     return NULL;
 }
 
@@ -302,7 +352,6 @@ VmRESTHandleSocketEvent(
             break;
 #ifndef WIN32
         case VM_SOCK_EVENT_TYPE_DATA_AVAILABLE:
-
             dwError = VmRESTOnDataAvailable(pSocket, pIoBuffer);
             BAIL_ON_VMREST_ERROR(dwError);
             break;
@@ -311,6 +360,10 @@ VmRESTHandleSocketEvent(
 
             VmRESTOnDisconnect(pSocket, pIoBuffer);
             break;
+        case VM_SOCK_EVENT_TYPE_UNKNOWN:
+             /**** This is for case when hot fd is returned twice as process and read on fd is not protected under mutex ****/
+             /**** DO NOTHING ****/
+             break;
 
         default:
             dwError = ERROR_INVALID_MESSAGE;
@@ -495,8 +548,6 @@ VmRESTTcpReceiveNewData(
     char                             appBuffer[MAX_DATA_BUFFER_LEN] = {0};
     uint32_t                         bytesRead = 0;
 
-	VMREST_LOG_DEBUG("%s","Starting HTTP Parsing.");
-
     dwError = VmsockPosixGetXBytes(
                   MAX_DATA_BUFFER_LEN,
                   appBuffer,
@@ -506,21 +557,21 @@ VmRESTTcpReceiveNewData(
                   );
      BAIL_ON_VMREST_ERROR(dwError);
 
+
      if (bytesRead > 0)
      {
+         VMREST_LOG_DEBUG("%s","Starting HTTP Parsing.");
          dwError = VmRESTProcessIncomingData(
                        appBuffer,
                        bytesRead,
                        pSocket
                        );
          BAIL_ON_VMREST_ERROR(dwError);
-     }    
-	  
+     }
+     VmwSockRelease(pSocket);
+     VmRESTDisconnectClient(pSocket);
 
-	 VMREST_LOG_DEBUG("%s","Calling closed connection....");
-
-	 VmRESTDisconnectClient(pSocket);
-
+     VMREST_LOG_DEBUG("%s","Calling closed connection....");
 
 cleanup:
 

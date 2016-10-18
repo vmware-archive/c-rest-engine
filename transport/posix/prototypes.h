@@ -41,6 +41,8 @@ VmSockPosixOpenClient(
  *       This value can be (-1) to use the default value.
  *
  * @param[in]  dwFlags 32 bit flags defining socket creation preferences
+ * @param[in]  Path to SSL certificate
+ * @param[in]  Path to SSL Key
  * @param[out] ppSocket Pointer to created socket
  *
  * @return 0 on success
@@ -50,7 +52,9 @@ VmSockPosixOpenServer(
     USHORT                           usPort,
     int                              iListenQueueSize,
     VM_SOCK_CREATE_FLAGS             dwFlags,
-    PVM_SOCKET*                      ppSocket
+    PVM_SOCKET*                      ppSocket,
+    char*                            sslCert,
+    char*                            sslKey
     );
 
 /**

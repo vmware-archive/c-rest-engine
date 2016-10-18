@@ -40,7 +40,9 @@ typedef DWORD (*PFN_OPEN_SERVER_SOCKET)(
                     USHORT               usPort,
                     int                  iListenQueueSize,
                     VM_SOCK_CREATE_FLAGS dwFlags,
-                    PVM_SOCKET*          ppSocket
+                    PVM_SOCKET*          ppSocket,
+                    char*                sslCert,
+                    char*                sslKey
                     );
 
 typedef DWORD (*PFN_START_LISTENING)(

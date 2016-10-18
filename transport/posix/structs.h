@@ -23,7 +23,9 @@ typedef struct _VM_SOCKET
     struct sockaddr*                 pAddr;
     PVMREST_MUTEX                    pMutex;
     int                              fd;
+    SSL*                             ssl;
     PVOID                            pData;
+    uint32_t                         inUse;
 } VM_SOCKET;
 
 typedef struct _VM_SOCK_EVENT_QUEUE
@@ -45,4 +47,10 @@ typedef struct _VM_SOCK_IO_CONTEXT
     VM_SOCK_IO_BUFFER                IoBuffer;
     CHAR                             DataBuffer[1];
 } VM_SOCK_IO_CONTEXT, *PVM_SOCK_IO_CONTEXT;
+
+typedef struct _SOCK_SSL_INFO
+{
+    SSL_CTX*                         sslContext;
+    uint32_t                         isSecure;
+} SOCK_SSL_INFO;
 
