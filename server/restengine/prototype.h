@@ -57,6 +57,14 @@ VmRESTParseHTTPReqLine(
     );
 
 uint32_t
+VmRESTParseAndPopulateHTTPHeaders(
+    char*                            buffer,
+    uint32_t                         packetLen,
+    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
+    uint32_t*                        resStatus
+    );
+
+uint32_t
 VmRESTParseAndPopulateRawHTTPMessage(
     char*                            buffer,
     uint32_t                         packetLen,

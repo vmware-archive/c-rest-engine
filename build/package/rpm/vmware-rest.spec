@@ -44,7 +44,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
-%{_sbindir}/vmrestd
+%{_sbindir}/*
 %{_includedir}/vmrest.h
 %{_lib64dir}/librestengine.*
 %{_lib64dir}/libvmsock.*
