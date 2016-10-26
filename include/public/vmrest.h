@@ -25,9 +25,6 @@
 #define VMREST_API
 #endif
 
-#define _WIN32 1
-
-
 
 typedef struct _VM_REST_HTTP_REQUEST_PACKET*  PREST_REQUEST;
 
