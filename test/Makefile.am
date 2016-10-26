@@ -6,7 +6,7 @@ vmresttest_SOURCES = \
     TestTransport.c \
     TestHTTPProtocolHead.c \
     testUtils.c \
-    RestProtocolHead.c
+    TestRestProtocolHead.c
 
 vmresttest_CPPFLAGS = \
     -I$(top_srcdir)/include \

@@ -14,6 +14,12 @@
 #include <CuTest.h>
 #include "includes.h"
 
+/************************************************
+* NOTE: All function using socket layer API calls
+* are not tested here. They will be tested during 
+* end-to-end tested of module.
+************************************************/
+
 void Test_VmRESTHTTPGetReqMethodTest1(
     CuTest* tc
     )
@@ -108,6 +114,30 @@ void Test_VmRESTHTTPGetReqMethodTest4(
     dwError = VmRESTHTTPGetReqMethod(
                   line,
                   strlen(line),
+                  methodName,
+                  &resStatus
+                  );
+    CuAssertTrue(tc, dwError);
+}
+
+void Test_VmRESTHTTPGetReqMethodTest5(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_REQ_LIN_LEN] = {0};
+    char                             methodName[10] = {0};
+    uint32_t                         resStatus = 200;
+
+    memset(line, '\0', MAX_REQ_LIN_LEN);
+    memset(methodName, '\0', 10);
+
+    /**** TEST 5:Negative line length ****/
+    strcpy(line, "");
+
+    dwError = VmRESTHTTPGetReqMethod(
+                  line,
+                  (strlen(line) - 1),
                   methodName,
                   &resStatus
                   );
@@ -216,6 +246,32 @@ void Test_VmRESTHTTPGetReqURITest4(
     CuAssertTrue(tc, dwError);
 }
 
+void Test_VmRESTHTTPGetReqURITest5(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_REQ_LIN_LEN] = {0};
+    char                             uri[MAX_REQ_LIN_LEN] = {0};
+    uint32_t                         resStatus = 200;
+
+    memset(line, '\0', MAX_REQ_LIN_LEN);
+    memset(uri, '\0', MAX_REQ_LIN_LEN);
+
+    /**** TEST 5: Negative line length ****/
+    strcpy(line, "");
+
+    dwError = VmRESTHTTPGetReqURI(
+                  line,
+                  (strlen(line) - 2),
+                  uri,
+                  &resStatus
+                  );
+    CuAssertTrue(tc, dwError);
+}
+
+
+
 void Test_VmRESTHTTPGetReqVersionTest1(
     CuTest* tc
     )
@@ -313,6 +369,31 @@ void Test_VmRESTHTTPGetReqVersionTest4(
                   );
     CuAssertTrue(tc, dwError);
 }
+
+void Test_VmRESTHTTPGetReqVersionTest5(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_REQ_LIN_LEN] = {0};
+    char                             version[10] = {0};
+    uint32_t                         resStatus = 200;
+
+    memset(line, '\0', MAX_REQ_LIN_LEN);
+    memset(version, '\0', 10);
+
+    /**** TEST 5: Negative line length ****/
+    strcpy(line, "");
+
+    dwError = VmRESTHTTPGetReqURI(
+                  line,
+                  (strlen(line) - 2),
+                  version,
+                  &resStatus
+                  );
+    CuAssertTrue(tc, dwError);
+}
+
 
 void Test_VmRESTHTTPPopulateHeaderTest1(
     CuTest* tc
@@ -530,6 +611,34 @@ void Test_VmRESTHTTPPopulateHeaderTest7(
     VmRESTFreeHTTPRequestPacket(&pRequest);
 }
 
+void Test_VmRESTHTTPPopulateHeaderTest8(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_REQ_LIN_LEN] = {0};
+    PREST_REQUEST                    pRequest = NULL;
+    uint32_t                         resStatus = 200;
+
+    dwError = VmRESTAllocateHTTPRequestPacket(&pRequest);
+    CuAssertTrue(tc, !dwError);
+
+    memset(line, '\0', MAX_REQ_LIN_LEN);
+
+    /**** TEST 8: Negative line length ****/
+    strcpy(line, "");
+
+    dwError = VmRESTHTTPPopulateHeader(
+                  line,
+                  (strlen(line) - 2),
+                  pRequest,
+                  &resStatus
+                  );
+    CuAssertTrue(tc, dwError);
+    VmRESTFreeHTTPRequestPacket(&pRequest);
+}
+
+
 void Test_VmRESTParseHTTPReqLineTest1(
     CuTest* tc
     )
@@ -702,6 +811,35 @@ void Test_VmRESTParseHTTPReqLineTest5(
     VmRESTFreeHTTPRequestPacket(&pRequest);
 }
 
+void Test_VmRESTParseHTTPReqLineTest6(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_REQ_LIN_LEN] = {0};
+    PREST_REQUEST                    pRequest = NULL;
+    uint32_t                         resStatus = 200;
+
+    dwError = VmRESTAllocateHTTPRequestPacket(&pRequest);
+    CuAssertTrue(tc, !dwError);
+
+    memset(line, '\0', MAX_REQ_LIN_LEN);
+
+    /**** TEST 6: Negative line length****/
+    strcpy(line, "");
+
+    dwError = VmRESTParseHTTPReqLine(
+                  0,
+                  line,
+                  (strlen(line) - 2),
+                  pRequest,
+                  &resStatus
+                  );
+    CuAssertTrue(tc, dwError);
+    VmRESTFreeHTTPRequestPacket(&pRequest);
+}
+
+
 #if 0
 
 /*****************************************************************
@@ -766,6 +904,777 @@ void Test_VmRESTParseAndPopulateHTTPHeadersTest1(
 
 #endif
 
+void Test_VMRESTWriteChunkedMessageInResponseStreamTest1(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+    
+
+    /**** TEST 1: Valid Case ****/
+    strcpy(src, "This is one chunked data");
+
+    dwError = VMRESTWriteChunkedMessageInResponseStream(
+                  src,
+                  strlen(src),
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, 30, bytesWritten);
+    CuAssertStrEquals(tc, "18\r\nThis is one chunked data\r\n", buffer);
+}
+
+void Test_VMRESTWriteChunkedMessageInResponseStreamTest2(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+
+
+    /**** TEST 2: Valid Case with 0 size ****/
+    strcpy(src, "");
+
+    dwError = VMRESTWriteChunkedMessageInResponseStream(
+                  src,
+                  strlen(src),
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, 5, bytesWritten);
+    CuAssertStrEquals(tc, "0\r\n\r\n", buffer);
+}
+
+void Test_VMRESTWriteChunkedMessageInResponseStreamTest3(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+    
+    
+    /**** TEST 3: Wrong length of source data****/
+    strcpy(src, "This is one chunked data");
+    
+    dwError = VMRESTWriteChunkedMessageInResponseStream(
+                  src,
+                  (strlen(src) + 2),
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+}
+
+void Test_VMRESTWriteChunkedMessageInResponseStreamTest4(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+
+    
+    /**** TEST 4: Wrong length of source data****/
+    strcpy(src, "This is one chunked data");
+    
+    dwError = VMRESTWriteChunkedMessageInResponseStream(
+                  src,
+                  (strlen(src) - 2),
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+}
+
+void Test_VMRESTWriteChunkedMessageInResponseStreamTest5(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+
+
+    /**** TEST 5: Negative data length ****/
+    strcpy(src, "");
+
+    dwError = VMRESTWriteChunkedMessageInResponseStream(
+                  src,
+                  (strlen(src) - 2),
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+}
+
+void Test_VMRESTWriteMessageBodyInResponseStreamTest1(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 1: Valid Case ****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Content-Length",
+                  "20");
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pResponse->messageBody->buffer, "This is message body");
+
+    dwError = VMRESTWriteMessageBodyInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, 20, bytesWritten);
+    CuAssertStrEquals(tc, "This is message body", buffer);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VMRESTWriteMessageBodyInResponseStreamTest2(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 2: Valid Case with 0 content length****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Content-Length",
+                  "0");
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pResponse->messageBody->buffer, "");
+
+    dwError = VMRESTWriteMessageBodyInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, 0, bytesWritten);
+    CuAssertStrEquals(tc, "", buffer);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VMRESTWriteMessageBodyInResponseStreamTest3(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 3: Missing content length ****/
+
+    strcpy(pResponse->messageBody->buffer, "");
+
+    dwError = VMRESTWriteMessageBodyInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VMRESTWriteMessageBodyInResponseStreamTest4(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 4: Negative content length****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Content-Length",
+                  "-2");
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pResponse->messageBody->buffer, "");
+
+    dwError = VMRESTWriteMessageBodyInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VMRESTWriteMessageBodyInResponseStreamTest5(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 5: Larger content length than data****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Content-Length",
+                  "20");
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pResponse->messageBody->buffer, "Small data");
+
+    dwError = VMRESTWriteMessageBodyInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VMRESTWriteStatusLineInResponseStreamTest1(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 1: Valid case ****/
+    strcpy(pResponse->statusLine->version, "HTTP/1.1");
+    strcpy(pResponse->statusLine->statusCode, "200");
+    strcpy(pResponse->statusLine->reason_phrase, "OK");
+    
+
+    dwError = VMRESTWriteStatusLineInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, 17, bytesWritten);
+    CuAssertStrEquals(tc, "HTTP/1.1 200 OK\r\n", buffer);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VMRESTWriteStatusLineInResponseStreamTest2(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 2: Missing version ****/
+    strcpy(pResponse->statusLine->statusCode, "200");
+    strcpy(pResponse->statusLine->reason_phrase, "OK");
+
+    dwError = VMRESTWriteStatusLineInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VMRESTWriteStatusLineInResponseStreamTest3(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 3: Missing status code ****/
+    strcpy(pResponse->statusLine->version, "HTTP/1.1");
+    strcpy(pResponse->statusLine->reason_phrase, "OK");
+
+
+    dwError = VMRESTWriteStatusLineInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VMRESTWriteStatusLineInResponseStreamTest4(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 4:  Missing reason phrase****/
+    strcpy(pResponse->statusLine->version, "HTTP/1.1");
+    strcpy(pResponse->statusLine->statusCode, "200");
+
+
+    dwError = VMRESTWriteStatusLineInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VmRESTAddAllHeaderInResponseStreamTest1(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 1: Valid Case****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Content-Length",
+                  "10");
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Connection",
+                  "close");
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Accept",
+                  "*/*");
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "header",
+                  "value");
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTAddAllHeaderInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, strlen("Content-Length:10\r\nConnection:close\r\nAccept:*/*\r\nheader:value\r\n\r\n"), bytesWritten);
+    CuAssertStrEquals(tc, "Content-Length:10\r\nConnection:close\r\nAccept:*/*\r\nheader:value\r\n\r\n", buffer);
+    
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VmRESTAddAllHeaderInResponseStreamTest2(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 2: No headers ****/
+
+    dwError = VmRESTAddAllHeaderInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, 2, bytesWritten);
+    CuAssertStrEquals(tc, "\r\n", buffer);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VmRESTAddAllHeaderInResponseStreamTest3(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 3: Valid Case with space ****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  " Content-Length",
+                  "10");
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTAddAllHeaderInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, strlen("Content-Length:10\r\n\r\n"), bytesWritten);
+    CuAssertStrEquals(tc, "Content-Length:10\r\n\r\n", buffer);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VmRESTAddAllHeaderInResponseStreamTest4(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+    
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+    
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 4: Valid Case with space ****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Content-Length ",
+                  "10");
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTAddAllHeaderInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, strlen("Content-Length:10\r\n\r\n"), bytesWritten);
+    CuAssertStrEquals(tc, "Content-Length:10\r\n\r\n", buffer);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VmRESTAddAllHeaderInResponseStreamTest5(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+    
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+    
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 5: Valid Case with space ****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Content-Length",
+                  " 10");
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTAddAllHeaderInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, strlen("Content-Length:10\r\n\r\n"), bytesWritten);
+    CuAssertStrEquals(tc, "Content-Length:10\r\n\r\n", buffer);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VmRESTAddAllHeaderInResponseStreamTest6(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+    
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+    
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 6: Valid Case with space ****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Content-Length",
+                  "10 ");
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTAddAllHeaderInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, strlen("Content-Length:10\r\n\r\n"), bytesWritten);
+    CuAssertStrEquals(tc, "Content-Length:10\r\n\r\n", buffer);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VmRESTAddAllHeaderInResponseStreamTest7(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 7: Missing value ****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "Content-Length",
+                  "");
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTAddAllHeaderInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VmRESTAddAllHeaderInResponseStreamTest8(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         bytesWritten = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    memset(buffer, '\0', MAX_DATA_BUFFER_LEN);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    /**** TEST 8: Missing header ****/
+    dwError = VmRESTSetHttpHeader(
+                  &pResponse,
+                  "",
+                  "10");
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTAddAllHeaderInResponseStream(
+                  pResponse,
+                  buffer,
+                  &bytesWritten
+                  );
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeHTTPResponsePacket(&pResponse);
+}
+
+void Test_VmRESTCloseClientTest1(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    PREST_REQUEST                    pRequest = NULL;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    dwError = VmRESTAllocateHTTPRequestPacket(&pRequest);
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    pResponse->requestPacket = pRequest;
+
+    strcpy(pResponse->statusLine->statusCode, "200");
+
+    /**** TEST 1: Valid case ****/
+    dwError = VmRESTCloseClient(
+                  pResponse);
+    CuAssertTrue(tc, !dwError);
+
+}
+
+void Test_VmRESTCloseClientTest2(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    pResponse->requestPacket = NULL;
+
+    strcpy(pResponse->statusLine->statusCode, "200");
+
+    /**** TEST 2: Valid case ****/
+    dwError = VmRESTCloseClient(
+                  pResponse);
+    CuAssertTrue(tc, !dwError);
+}
+
+void Test_VmRESTCloseClientTest3(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    PREST_REQUEST                    pRequest = NULL;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    dwError = VmRESTAllocateHTTPRequestPacket(&pRequest);
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    pResponse->requestPacket = pRequest;
+
+    /**** TEST 3: Missing Status code  ****/
+    dwError = VmRESTCloseClient(
+                  pResponse);
+    CuAssertTrue(tc, !dwError);
+
+}
+
+void Test_VmRESTCloseClientTest4(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    PREST_RESPONSE                   pResponse = NULL;
+
+    dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
+    CuAssertTrue(tc, !dwError);
+
+    pResponse->requestPacket = NULL;
+
+    strcpy(pResponse->statusLine->statusCode, "400");
+
+    /**** TEST 4: Failed status code  ****/
+    dwError = VmRESTCloseClient(
+                  pResponse);
+    CuAssertTrue(tc, !dwError);
+}
+
+
 
 CuSuite* CuGetTestHTTPProtocolHeadSuite(void)
 {
@@ -775,14 +1684,17 @@ CuSuite* CuGetTestHTTPProtocolHeadSuite(void)
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqMethodTest2);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqMethodTest3);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqMethodTest4);
+    SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqMethodTest5);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqURITest1);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqURITest2);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqURITest3);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqURITest4);
+    SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqMethodTest5);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqVersionTest1);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqVersionTest2);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqVersionTest3);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqVersionTest4);
+    SUITE_ADD_TEST(suite, Test_VmRESTHTTPGetReqVersionTest5);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPPopulateHeaderTest1);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPPopulateHeaderTest2);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPPopulateHeaderTest3);
@@ -790,11 +1702,40 @@ CuSuite* CuGetTestHTTPProtocolHeadSuite(void)
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPPopulateHeaderTest5);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPPopulateHeaderTest6);
     SUITE_ADD_TEST(suite, Test_VmRESTHTTPPopulateHeaderTest7);
+    SUITE_ADD_TEST(suite, Test_VmRESTHTTPPopulateHeaderTest8);
     SUITE_ADD_TEST(suite, Test_VmRESTParseHTTPReqLineTest1);
     SUITE_ADD_TEST(suite, Test_VmRESTParseHTTPReqLineTest2);
     SUITE_ADD_TEST(suite, Test_VmRESTParseHTTPReqLineTest3);
     SUITE_ADD_TEST(suite, Test_VmRESTParseHTTPReqLineTest4);
     SUITE_ADD_TEST(suite, Test_VmRESTParseHTTPReqLineTest5);
+    SUITE_ADD_TEST(suite, Test_VmRESTParseHTTPReqLineTest6);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteChunkedMessageInResponseStreamTest1);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteChunkedMessageInResponseStreamTest2);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteChunkedMessageInResponseStreamTest3);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteChunkedMessageInResponseStreamTest4); 
+    /**** CRASHING TEST :: MUST FIX ASAP ****/
+    //SUITE_ADD_TEST(suite, Test_VMRESTWriteChunkedMessageInResponseStreamTest5);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteMessageBodyInResponseStreamTest1);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteMessageBodyInResponseStreamTest2);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteMessageBodyInResponseStreamTest3);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteMessageBodyInResponseStreamTest4);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteMessageBodyInResponseStreamTest5); 
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteStatusLineInResponseStreamTest1);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteStatusLineInResponseStreamTest2);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteStatusLineInResponseStreamTest3);
+    SUITE_ADD_TEST(suite, Test_VMRESTWriteStatusLineInResponseStreamTest4);
+    SUITE_ADD_TEST(suite, Test_VmRESTAddAllHeaderInResponseStreamTest1);
+    SUITE_ADD_TEST(suite, Test_VmRESTAddAllHeaderInResponseStreamTest2);
+    SUITE_ADD_TEST(suite, Test_VmRESTAddAllHeaderInResponseStreamTest3);
+    SUITE_ADD_TEST(suite, Test_VmRESTAddAllHeaderInResponseStreamTest4);
+    SUITE_ADD_TEST(suite, Test_VmRESTAddAllHeaderInResponseStreamTest5);
+    SUITE_ADD_TEST(suite, Test_VmRESTAddAllHeaderInResponseStreamTest6);
+    SUITE_ADD_TEST(suite, Test_VmRESTAddAllHeaderInResponseStreamTest7);
+    SUITE_ADD_TEST(suite, Test_VmRESTAddAllHeaderInResponseStreamTest8);
+    SUITE_ADD_TEST(suite, Test_VmRESTCloseClientTest1);
+    SUITE_ADD_TEST(suite, Test_VmRESTCloseClientTest2);
+    SUITE_ADD_TEST(suite, Test_VmRESTCloseClientTest3);
+    SUITE_ADD_TEST(suite, Test_VmRESTCloseClientTest4);
 
     return suite;
 }
