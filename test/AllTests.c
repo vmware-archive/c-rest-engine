@@ -9,6 +9,7 @@ int  vmdns_debug = 0;
 CuSuite* CuGetRestProtocolHeadSuite(void);
 CuSuite* CuGetTestHTTPProtocolHeadSuite(void);
 CuSuite* CuGetTestHttpUtilsExternalSuite(void);
+CuSuite* CuGetTestHttpUtilsInternalSuite(void);
 
 void RunAllTests(void)
 {
@@ -23,6 +24,9 @@ void RunAllTests(void)
 
     CuSuite* httpUtilsExternalSuite = CuGetTestHttpUtilsExternalSuite();
     CuSuiteAddSuite(suite, httpUtilsExternalSuite);
+
+    CuSuite* httpUtilsInternalSuite = CuGetTestHttpUtilsInternalSuite();
+    CuSuiteAddSuite(suite, httpUtilsInternalSuite);
 
    /****** ADD MORE SUITES HERE ***********
    *  
