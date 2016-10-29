@@ -522,6 +522,706 @@ void Test_VmRESTParseAndPopulateConfigFileTest2(
     VmRESTFreeMemory(pRESTConfig);
 }
 
+void Test_VmRESTValidateConfigTest1(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+
+    dwError = VmRESTAllocateMemory(
+              sizeof(VM_REST_CONFIG),
+              (void**)&pRESTConfig
+              );
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pRESTConfig->server_port, "81");
+    strcpy(pRESTConfig->worker_thread_count, "10");
+    strcpy(pRESTConfig->client_count, "9");
+    strcpy(pRESTConfig->debug_log_file, "/tmp/xxx.txt");
+    
+    /**** TEST 1 : Valid case ****/
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+    CuAssertStrEquals(tc, "81", pRESTConfig->server_port);
+    CuAssertStrEquals(tc, "9", pRESTConfig->client_count);
+    CuAssertStrEquals(tc, "/tmp/xxx.txt", pRESTConfig->debug_log_file);
+    CuAssertStrEquals(tc, "10", pRESTConfig->worker_thread_count);
+
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTValidateConfigTest2(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+    
+    dwError = VmRESTAllocateMemory(
+              sizeof(VM_REST_CONFIG),
+              (void**)&pRESTConfig
+              );
+    CuAssertTrue(tc, !dwError);
+    /**** TEST 2 : No Port specified ****/
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTValidateConfigTest3(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+    
+    dwError = VmRESTAllocateMemory(
+              sizeof(VM_REST_CONFIG),
+              (void**)&pRESTConfig
+              );
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pRESTConfig->server_port, "81s");
+
+    /**** TEST 3 : SSL Port but not SSL key and cert paths ****/
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
+    CuAssertTrue(tc, dwError);
+  
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTValidateConfigTest4(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+
+    dwError = VmRESTAllocateMemory(
+              sizeof(VM_REST_CONFIG),
+              (void**)&pRESTConfig
+              );
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pRESTConfig->server_port, "81s");
+    strcpy(pRESTConfig->ssl_certificate, "/root/mycert.pem");
+    strcpy(pRESTConfig->ssl_key, "/root/mycert.pem");
+
+    /**** TEST 4 : valid SSL config ****/
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+    CuAssertStrEquals(tc, "/root/mycert.pem", pRESTConfig->ssl_certificate);
+    CuAssertStrEquals(tc, "/root/mycert.pem", pRESTConfig->ssl_key);
+
+    /**** Defaults value for missing configs ****/
+    CuAssertStrEquals(tc, "5", pRESTConfig->client_count);
+    CuAssertStrEquals(tc, "/tmp/restServer.log", pRESTConfig->debug_log_file);
+    CuAssertStrEquals(tc, "5", pRESTConfig->worker_thread_count);
+
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTValidateConfigTest5(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+
+    dwError = VmRESTAllocateMemory(
+              sizeof(VM_REST_CONFIG),
+              (void**)&pRESTConfig
+              );
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pRESTConfig->server_port, "blahbal");
+
+    /**** TEST 5 : Invalid Port number ****/
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeMemory(pRESTConfig);
+}
+
+void Test_VmRESTValidateConfigTest6(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+
+    dwError = VmRESTAllocateMemory(
+              sizeof(VM_REST_CONFIG),
+              (void**)&pRESTConfig
+              );
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pRESTConfig->server_port, "81");
+    strcpy(pRESTConfig->client_count, "blah");
+
+    /**** TEST 6 :client count ****/
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+    /**** Defaults to 5 *****/
+    CuAssertStrEquals(tc, "5", pRESTConfig->client_count);
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTValidateConfigTest7(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+
+    dwError = VmRESTAllocateMemory(
+              sizeof(VM_REST_CONFIG),
+              (void**)&pRESTConfig
+              );
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pRESTConfig->server_port, "81");
+    strcpy(pRESTConfig->worker_thread_count, "blah");
+
+    /**** TEST 7 : Wrong thread count ****/
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+    /**** Defaults to 5 *****/
+    CuAssertStrEquals(tc, "5", pRESTConfig->worker_thread_count);
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTValidateConfigTest8(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+
+    dwError = VmRESTAllocateMemory(
+              sizeof(VM_REST_CONFIG),
+              (void**)&pRESTConfig
+              );
+    CuAssertTrue(tc, !dwError);
+
+    strcpy(pRESTConfig->server_port, "81");
+
+    /**** TEST 8 : Missing log file****/
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+    /**** Defaults to /tmp/resSErver.log *****/
+    CuAssertStrEquals(tc, "/tmp/restServer.log", pRESTConfig->debug_log_file);
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTCopyConfigTest1(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+    REST_CONF                        conf = {0};
+
+    conf.pSSLCertificate = "/root/mycert.pem";
+    conf.pSSLKey = "/root/mycert.pem";
+    conf.pServerPort = "81";
+    conf.pDebugLogFile = "/tmp/restServer.log";
+    conf.pClientCount = "8";
+    conf.pMaxWorkerThread = "9";
+
+    /**** TEST 1: Valid case ****/
+    dwError = VmRESTCopyConfig(
+                  &conf,
+                  &pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+
+    CuAssertStrEquals(tc, "/root/mycert.pem", pRESTConfig->ssl_certificate);
+    CuAssertStrEquals(tc, "/root/mycert.pem", pRESTConfig->ssl_key);
+    CuAssertStrEquals(tc, "81", pRESTConfig->server_port);
+    CuAssertStrEquals(tc, "/tmp/restServer.log", pRESTConfig->debug_log_file);
+    CuAssertStrEquals(tc, "8", pRESTConfig->client_count);
+    CuAssertStrEquals(tc, "9", pRESTConfig->worker_thread_count);
+
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTCopyConfigTest2(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+    REST_CONF                        conf = {0};
+
+    conf.pServerPort = "81s";
+    conf.pDebugLogFile = "/tmp/restServer.log";
+    conf.pClientCount = "8";
+    conf.pMaxWorkerThread = "9";
+
+    /**** TEST 2: SSL Config but missing SSL files ****/
+    dwError = VmRESTCopyConfig(
+                  &conf,
+                  &pRESTConfig);
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTCopyConfigTest3(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+    REST_CONF                        conf = {0};
+
+    
+    conf.pServerPort = "81";
+    
+    /**** TEST 3: Configure all default values ****/
+    dwError = VmRESTCopyConfig(
+                  &conf,
+                  &pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+    CuAssertStrEquals(tc, "81", pRESTConfig->server_port);
+    CuAssertStrEquals(tc, "/tmp/restServer.log", pRESTConfig->debug_log_file);
+    CuAssertStrEquals(tc, "5", pRESTConfig->client_count);
+    CuAssertStrEquals(tc, "5", pRESTConfig->worker_thread_count);
+    
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTCopyConfigTest4(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+    REST_CONF                        conf = {0};
+
+    conf.pServerPort = "blah";
+
+    /**** TEST 4: Wrong port ****/
+    dwError = VmRESTCopyConfig(
+                  &conf,
+                  &pRESTConfig);
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTCopyConfigTest5(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+    REST_CONF                        conf = {0};
+
+    conf.pServerPort = NULL;
+
+    /**** TEST 5: Null Port ****/
+    dwError = VmRESTCopyConfig(
+                  &conf,
+                  &pRESTConfig);
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTCopyConfigTest6(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+    REST_CONF                        conf = {0};
+
+    conf.pServerPort = "81";
+    conf.pClientCount = "blah";
+    conf.pMaxWorkerThread = "blah";
+
+    /**** TEST 6: Wrong info ****/
+    dwError = VmRESTCopyConfig(
+                  &conf,
+                  &pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+
+    CuAssertStrEquals(tc, "5", pRESTConfig->client_count);
+    CuAssertStrEquals(tc, "5", pRESTConfig->worker_thread_count);
+
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTCopyConfigTest7(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    VM_REST_CONFIG*                  pRESTConfig = NULL;
+    REST_CONF                        conf = {0};
+
+    conf.pServerPort = "81123213213123123123123123123123123123123123123123123123123123123123123";
+    conf.pClientCount = "4555555555555555555555555555555555555555555555555555555555555555555555";
+    conf.pMaxWorkerThread = "555555555555555555555555555555555555555555555555555555555555555555";
+    conf.pSSLCertificate = "/root/mycert.pemdsdasssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssdsdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+    conf.pSSLKey = "/root/mycert.pemdsssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssdsssssssssssssssdsdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+    conf.pDebugLogFile = "/tmp/restServer.logdsfdsfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffdfdsssssssssssssssdsdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+
+    /**** TEST 7: Large data length ****/
+    dwError = VmRESTCopyConfig(
+                  &conf,
+                  &pRESTConfig);
+    CuAssertTrue(tc, dwError);
+
+    VmRESTFreeMemory(pRESTConfig);
+
+}
+
+void Test_VmRESTGetChunkSizeTest1(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         skipBytes = 0;
+    uint32_t                         chunkSize = 0;
+
+    memset(line, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(line, "16\r\n");
+
+    /**** TEST 1: Valid Case ****/
+
+    dwError = VmRESTGetChunkSize(
+                  line,
+                  &skipBytes,
+                  &chunkSize);
+    CuAssertTrue(tc, !dwError);
+
+    CuAssertIntEquals(tc, 22, chunkSize);
+    CuAssertIntEquals(tc, 4, skipBytes);
+
+}
+
+void Test_VmRESTGetChunkSizeTest2(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         skipBytes = 0;
+    uint32_t                         chunkSize = 0;
+
+    memset(line, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(line, "16");
+
+    /**** TEST 2: CRLF missinh ****/
+
+    dwError = VmRESTGetChunkSize(
+                  line,
+                  &skipBytes,
+                  &chunkSize);
+    CuAssertTrue(tc, dwError);
+
+}
+
+void Test_VmRESTGetChunkSizeTest3(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         skipBytes = 0;
+    uint32_t                         chunkSize = 0;
+
+    memset(line, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(line, "0x16\r\n");
+
+    /**** TEST 3: Valid Case ****/
+
+    dwError = VmRESTGetChunkSize(
+                  line,
+                  &skipBytes,
+                  &chunkSize);
+    CuAssertTrue(tc, !dwError);
+
+    CuAssertIntEquals(tc, 22, chunkSize);
+    CuAssertIntEquals(tc, 6, skipBytes);
+
+}
+
+void Test_VmRESTGetChunkSizeTest4(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         skipBytes = 0;
+    uint32_t                         chunkSize = 0;
+
+    memset(line, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(line, "fadsffs\r\n");
+
+    /**** TEST 4: Invalid ****/
+
+    dwError = VmRESTGetChunkSize(
+                  line,
+                  &skipBytes,
+                  &chunkSize);
+    CuAssertTrue(tc, dwError);
+
+}
+
+void Test_VmRESTGetChunkSizeTest5(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         skipBytes = 0;
+    uint32_t                         chunkSize = 0;
+
+    memset(line, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(line, "\r\n16\r\n");
+
+    /**** TEST 5: Invalid Case ****/
+
+    dwError = VmRESTGetChunkSize(
+                  line,
+                  &skipBytes,
+                  &chunkSize);
+    CuAssertTrue(tc, dwError);
+
+}
+
+void Test_VmRESTGetChunkSizeTest6(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         skipBytes = 0;
+    uint32_t                         chunkSize = 0;
+
+    memset(line, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(line, "16\r\n");
+
+    /**** TEST 6: NULL line ****/
+
+    dwError = VmRESTGetChunkSize(
+                  NULL,
+                  &skipBytes,
+                  &chunkSize);
+    CuAssertTrue(tc, dwError);
+}
+
+void Test_VmRESTGetChunkSizeTest7(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         skipBytes = 0;
+    uint32_t                         chunkSize = 0;
+
+    memset(line, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(line, " 16\r\n");
+
+    /**** TEST 7: Valid Case ****/
+
+    dwError = VmRESTGetChunkSize(
+                  line,
+                  &skipBytes,
+                  &chunkSize);
+    CuAssertTrue(tc, !dwError);
+
+    CuAssertIntEquals(tc, 22, chunkSize);
+    CuAssertIntEquals(tc, 4, skipBytes);
+
+}
+
+void Test_VmRESTCopyDataWithoutCRLFTest1(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    char                             des[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         actualBytes = 0;
+
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+    memset(des, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(src, "Simple data with \r\n at last");
+
+    /**** TEST 1: Valid Case ****/
+
+    dwError = VmRESTCopyDataWithoutCRLF(
+                  strlen(src),
+                  src,
+                  des,
+                  &actualBytes);
+    CuAssertTrue(tc, !dwError);
+
+    CuAssertIntEquals(tc, 25, actualBytes);
+    CuAssertStrEquals(tc, "Simple data with  at last", des);
+
+}
+
+void Test_VmRESTCopyDataWithoutCRLFTest2(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    char                             des[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         actualBytes = 0;
+
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+    memset(des, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(src, "Simple data with at last");
+
+    /**** TEST 2: Valid Case ****/
+
+    dwError = VmRESTCopyDataWithoutCRLF(
+                  strlen(src),
+                  src,
+                  des,
+                  &actualBytes);
+    CuAssertTrue(tc, !dwError);
+
+    CuAssertIntEquals(tc, 24, actualBytes);
+    CuAssertStrEquals(tc, "Simple data with at last", des);
+
+}
+
+void Test_VmRESTCopyDataWithoutCRLFTest3(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    char                             des[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         actualBytes = 0;
+
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+    memset(des, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(src, "\r\n");
+
+    /**** TEST 3: Valid Case ****/
+
+    dwError = VmRESTCopyDataWithoutCRLF(
+                  strlen(src),
+                  src,
+                  des,
+                  &actualBytes);
+    CuAssertTrue(tc, !dwError);
+
+    CuAssertIntEquals(tc, 0, actualBytes);
+    CuAssertStrEquals(tc, "", des);
+
+}
+
+void Test_VmRESTCopyDataWithoutCRLFTest4(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    char                             des[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         actualBytes = 0;
+
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+    memset(des, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(src, "\r\nThis\r\n is \r\n payload\r\n");
+
+    /**** TEST 4: Valid Case ****/
+
+    dwError = VmRESTCopyDataWithoutCRLF(
+                  strlen(src),
+                  src,
+                  des,
+                  &actualBytes);
+    CuAssertTrue(tc, !dwError);
+
+    CuAssertIntEquals(tc, 16, actualBytes);
+    CuAssertStrEquals(tc, "This is payload", des);
+
+}
+
+void Test_VmRESTCopyDataWithoutCRLFTest5(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    char                             des[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         actualBytes = 0;
+
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+    memset(des, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(src, "xx");
+
+    /**** TEST 5: wrong length ****/
+
+    dwError = VmRESTCopyDataWithoutCRLF(
+                  (strlen(src)- 4),
+                  src,
+                  des,
+                  &actualBytes);
+    CuAssertTrue(tc, dwError);
+}
+
+void Test_VmRESTCopyDataWithoutCRLFTest6(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             src[MAX_DATA_BUFFER_LEN] = {0};
+    char                             des[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         actualBytes = 0;
+
+    memset(src, '\0', MAX_DATA_BUFFER_LEN);
+    memset(des, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(src, "\r X \n X\n");
+
+    /**** TEST 6: Valid case ****/
+
+    dwError = VmRESTCopyDataWithoutCRLF(
+                  strlen(src),
+                  src,
+                  des,
+                  &actualBytes);
+    CuAssertTrue(tc, !dwError);
+
+    CuAssertIntEquals(tc, 8, actualBytes);
+    CuAssertStrEquals(tc, "\r X \n X\n", des);
+
+}
+
+
 CuSuite* CuGetTestHttpUtilsInternalSuite(void)
 {
     CuSuite* suite = CuSuiteNew();
@@ -546,9 +1246,42 @@ CuSuite* CuGetTestHttpUtilsInternalSuite(void)
     SUITE_ADD_TEST(suite, Test_VmRESTSetHttpRequestHeaderTest4);
     SUITE_ADD_TEST(suite, Test_VmRESTSetHttpRequestHeaderTest5);
     SUITE_ADD_TEST(suite, Test_VmRESTParseAndPopulateConfigFileTest1);
-    /***** CRASHING TEST: FIX ASAP ***********************************
+    /***** CRASHING TEST: This feature will be eliminated: No need to fix *****
     SUITE_ADD_TEST(suite, Test_VmRESTParseAndPopulateConfigFileTest2);
-    ******************************************************************/
+    **************************************************************************/
+    SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest1);
+    SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest2);
+    SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest3);
+    SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest4);
+    SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest5);
+    SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest6);
+    SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest7);
+    SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest8);
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest1);
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest2);
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest3);
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest4);
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest5);
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest6);
+    /**** CRASHING TEST: FIX ASAP **********************
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest7);
+    ***************************************************/
+    SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest1);
+    SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest2);
+    SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest3);
+    SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest4);
+    SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest5);
+    SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest6);
+    SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest7);
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest1);
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest2);
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest3);
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest4);
+    /**** CRASHING TEST: FIX ASAP *****************************
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest5);
+    ***********************************************************/
+    SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest6);
+
 
     return suite;
 }
