@@ -350,3 +350,45 @@ VmHTTPShutdown(
     void
     );
 
+/********************* httpValidate.c *******************/
+
+uint32_t
+VmRESTRemovePreSpace(
+    char*                            src,
+    char*                            dest
+    );
+
+uint32_t
+VmRESTRemovePostSpace(
+    char*                            src,
+    char*                            dest
+    );
+
+uint32_t
+VmRESTConverUpperToLower(
+    char*                            src,
+    char*                            dest
+    );
+
+uint32_t
+VmRESTValidateHTTPVersion(
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result,
+    uint32_t*                        err
+    );
+
+uint32_t
+VmRESTValidateHTTPRequestURI(
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result,
+    uint32_t*                        err
+    );
+
+uint32_t
+VmRESTValidateHTTPContentType(
+    PVM_REST_HTTP_REQUEST_PACKET     pRequest,
+    uint32_t*                        result,
+    uint32_t*                        err
+    );
+
+

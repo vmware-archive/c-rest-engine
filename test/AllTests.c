@@ -10,6 +10,7 @@ CuSuite* CuGetRestProtocolHeadSuite(void);
 CuSuite* CuGetTestHTTPProtocolHeadSuite(void);
 CuSuite* CuGetTestHttpUtilsExternalSuite(void);
 CuSuite* CuGetTestHttpUtilsInternalSuite(void);
+CuSuite* CuGetHttpValidateSuite(void);
 
 void RunAllTests(void)
 {
@@ -27,6 +28,9 @@ void RunAllTests(void)
 
     CuSuite* httpUtilsInternalSuite = CuGetTestHttpUtilsInternalSuite();
     CuSuiteAddSuite(suite, httpUtilsInternalSuite);
+
+    CuSuite* httpValidateSuite = CuGetHttpValidateSuite();
+    CuSuiteAddSuite(suite, httpValidateSuite);
 
    /****** ADD MORE SUITES HERE ***********
    *  
