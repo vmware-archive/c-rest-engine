@@ -32,10 +32,10 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define MAX_URL_PARAMS_ARR_SIZE    10
 #define MAX_EXTRA_CRLF_BUF_SIZE    10
 #define MAX_DATA_BUFFER_LEN        4096
-#define MAX_REQ_LIN_LEN            1024
+#define MAX_REQ_LIN_LEN            8192
 
 #define MAX_HTTP_HEADER_ATTR_LEN   64
-#define MAX_HTTP_HEADER_VAL_LEN    2048
+#define MAX_HTTP_HEADER_VAL_LEN    8192
 
 #define DEFAULT_WORKER_THR_CNT     "5"
 #define DEFAULT_CLIENT_CNT         "5"

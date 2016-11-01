@@ -154,7 +154,7 @@ VmRestEngineHandler(
     else if ((strcmp(httpMethod,"OPTIONS") == 0) || (strcmp(httpMethod,"PATCH") == 0))
     {
         /**** Add all allowed HTTP methods ****/
-        if (pEndPoint && pEndPoint->pHandler && pEndPoint->pHandler->pfnHandleDelete)
+        if (pEndPoint && pEndPoint->pHandler && pEndPoint->pHandler->pfnHandleOthers)
         {
             dwError = pEndPoint->pHandler->pfnHandleOthers(pRequest, ppResponse, paramsCount);
         }
