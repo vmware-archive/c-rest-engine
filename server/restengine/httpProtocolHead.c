@@ -1033,13 +1033,13 @@ VmRESTProcessIncomingData(
     uint32_t                         tempStatus = 0;
     PVM_REST_HTTP_REQUEST_PACKET     pReqPacket = NULL;
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket = NULL;
+    PVM_REST_HTTP_RESPONSE_PACKET    pIntResPacket = NULL;
     uint32_t                         resStatus = OK;
     uint32_t                         connectionClosed = 0;
     char                             statusStng[MAX_STATUS_LENGTH] = {0};
     char*                            contentLen = NULL;
+    char*                            expect = NULL;
     uint32_t                         done = 0;
-
-   // //VMREST_LOG_DEBUG("%s",("Process HTTP called with %u bytes and buffer data looks like\n%s\n", byteRead, buffer); 
 
     /**** 1. Allocate and init request and response objects ****/
 
@@ -1069,7 +1069,48 @@ VmRESTProcessIncomingData(
                   pReqPacket,
                   &resStatus
                   );
-    //VMREST_LOG_DEBUG("%s",("Header parsing done : return code %u", dwError);
+    VMREST_LOG_DEBUG("Header parsing done : return code %u", dwError);
+
+    dwError = VmRESTGetHttpHeader(
+                  pReqPacket,
+                  "Expect",
+                  &expect
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (expect != NULL && (strcmp(" 100-continue", expect) == 0))
+    {
+        dwError = VmRESTAllocateHTTPResponsePacket(
+                  &pIntResPacket
+                  );
+         BAIL_ON_VMREST_ERROR(dwError);
+         pIntResPacket->miscHeader->head = NULL;
+         pIntResPacket->pSocket = pReqPacket->pSocket;
+         pIntResPacket->requestPacket = pReqPacket;
+         pIntResPacket->headerSent = 0;
+         dwError = VmRESTSetFailureResponse( &pIntResPacket, "100","Continue");
+         BAIL_ON_VMREST_ERROR(dwError);
+
+         dwError = VmRESTSetDataLength(
+                  &pIntResPacket,
+                  "0"
+                  );
+         BAIL_ON_VMREST_ERROR(dwError);
+
+         dwError = VmRESTSetData(
+                  &pIntResPacket,
+                  "",
+                  0,
+                  &done
+                  );
+         BAIL_ON_VMREST_ERROR(dwError);
+
+         sleep(4);
+
+         VmRESTFreeHTTPResponsePacket(
+            &pIntResPacket
+            );
+    }
 
     /**** 3. Set the total payload information in request object ****/
 

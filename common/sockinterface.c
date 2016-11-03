@@ -772,6 +772,8 @@ VmsockPosixGetXBytes(
               remainingBytes);
         pStreamBuffer->dataProcessed = remainingBytes;
         *bytesRead = dataAvailableInCache + remainingBytes;
+
+        VMREST_LOG_DEBUG("dataAvailableInCache %u, remainingBytes %u, appBuffersize %u", dataAvailableInCache, remainingBytes, strlen(appBuffer));
     }
 
     VmwSockSetStreamBuffer(pSocket, pStreamBuffer);

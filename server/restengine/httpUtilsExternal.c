@@ -221,7 +221,6 @@ VmRESTGetHttpPayload(
         {
             readXBytes = MAX_DATA_BUFFER_LEN;
         }
-       //VMREST_LOG_DEBUG("%s","Get Payload, Requesting %u bytes to read", readXBytes);
         dwError = VmsockPosixGetXBytes(
                       readXBytes,
                       localAppBuffer,

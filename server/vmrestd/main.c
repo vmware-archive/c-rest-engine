@@ -91,7 +91,7 @@ VmRegisterHandler(
     )
 {
     uint32_t                         dwError = 0;
-    /**** Call helper in global with resource specific pointer ****/
+    /**** Call helper in global with resource specific pointer ****
 
     VmAppStoreEndpoint(
         index,
@@ -100,6 +100,17 @@ VmRegisterHandler(
         &VmHandlePackageUpdate,
         &VmHandlePackageDelete
         );
+    */
+     VmAppStoreEndpoint(
+        index,
+        &VmHandleEchoData,
+        &VmHandleEchoData,
+        &VmHandleEchoData,
+        &VmHandleEchoData
+        );
+        
+
+ 
 
      dwError = VmRESTRegisterHandler(
                   URI,
@@ -589,7 +600,10 @@ int main(int argc, char *argv[])
 #ifdef WIN32 
        Sleep(20000);
 #else
-       sleep(20);
+       while(1)
+       {
+           usleep(100);
+       }
 #endif
     
     dwError = VmRESTStop();

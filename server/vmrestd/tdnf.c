@@ -13,6 +13,14 @@
  */
 
 #include "includes.h"
+#include <stdio.h>
+
+
+uint32_t
+VmRESTUtilsConvertInttoString(
+    int                              num,
+    char*                            str
+    );
 
 /****************************************
 *  
@@ -457,6 +465,120 @@ VmHandlePackageDelete(
                   &done
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmHandleEchoData(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             buffer[4097] = {0};
+    uint32_t                         done = 0;
+    char*                            res = NULL;
+    FILE*                            fp = NULL;
+    int                              bytesRead = 0;
+    char                             size[10] = {0};
+
+    memset(buffer, '\0', MAX_DATA_LEN);
+    memset(size, '\0', 10);
+
+    dwError = VmRESTGetHttpMethod(
+                  pRequest,
+                  &res);
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    fp  = fopen("/tmp/rcvdData", "w");
+    if (fp == NULL)
+    {
+        BAIL_ON_VMREST_ERROR(60);
+    }
+
+    /**** Read the data if present ****/
+
+    while(done != 1)
+    {
+        dwError = VmRESTGetData(
+                      pRequest,
+                      buffer,
+                      &done
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        if (strlen(buffer) > 0)
+        {
+            fwrite(buffer, strlen(buffer), 1, fp);
+
+        }
+        memset(buffer, '\0', 4097);
+    }
+    fclose(fp);
+    done = 0;
+
+    /*** Return hardcoded tdnf version v1.0.5 ****/
+
+    dwError = VmRESTSetSuccessResponse(
+                  pRequest,
+                  ppResponse
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    fp  = fopen("/tmp/rcvdData", "r");
+    if (fp == NULL)
+    {
+        BAIL_ON_VMREST_ERROR(61);
+    }
+
+    memset(buffer, '\0', 4097);
+    bytesRead = fread(buffer, 1, 4096, fp);
+   
+    printf(">>> KUMAR bytesRead = %d", bytesRead); 
+    if (bytesRead < 4096 )
+    {
+       write(1, ">>>> blah", 10);
+        dwError = VmRESTUtilsConvertInttoString(
+                          strlen(buffer),
+                          size);
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        dwError = VmRESTSetDataLength(
+                  ppResponse,
+                  size
+                  );
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    else
+    {
+        write(1, ">>>> wtf", 10);
+        dwError = VmRESTSetDataLength(
+                  ppResponse,
+                  NULL
+                  );
+        BAIL_ON_VMREST_ERROR(dwError);
+    } 
+  
+    while(done != 1)
+    {
+
+        dwError = VmRESTSetData(
+                  ppResponse,
+                  buffer,
+                  bytesRead,
+                  &done
+                  );
+        memset(buffer, '\0', 4097);
+        bytesRead = fread(buffer, 1, 4096, fp);
+        
+    }
+    fclose(fp);
+
 
 cleanup:
     return dwError;
