@@ -1105,7 +1105,7 @@ VmRESTProcessIncomingData(
                   );
          BAIL_ON_VMREST_ERROR(dwError);
 
-         sleep(4);
+         sleep(1);
 
          VmRESTFreeHTTPResponsePacket(
             &pIntResPacket

@@ -539,10 +539,8 @@ VmHandleEchoData(
     memset(buffer, '\0', 4097);
     bytesRead = fread(buffer, 1, 4096, fp);
    
-    printf(">>> KUMAR bytesRead = %d", bytesRead); 
     if (bytesRead < 4096 )
     {
-       write(1, ">>>> blah", 10);
         dwError = VmRESTUtilsConvertInttoString(
                           strlen(buffer),
                           size);
@@ -556,7 +554,6 @@ VmHandleEchoData(
     }
     else
     {
-        write(1, ">>>> wtf", 10);
         dwError = VmRESTSetDataLength(
                   ppResponse,
                   NULL
