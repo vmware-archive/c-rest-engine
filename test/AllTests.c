@@ -47,6 +47,12 @@ void RunAllTests(void)
 
     printf("%s\n", output->buffer);
 
+    CuSuiteDelete(restProtocolHeadSuite);
+    CuSuiteDelete(httpProtocolHeadSuite);
+    CuSuiteDelete(httpUtilsExternalSuite);
+    CuSuiteDelete(httpUtilsInternalSuite);
+    CuSuiteDelete(httpValidateSuite);
+
     CuSuiteDelete(suite);
     CuStringDelete(output);
 }

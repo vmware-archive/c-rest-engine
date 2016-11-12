@@ -124,8 +124,7 @@ VmRESTInitProtocolServer(
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Init SSL if configured ****/
-
-    if (!(gpRESTConfig->server_port))
+    if ((gpRESTConfig != NULL) && (strlen(gpRESTConfig->server_port) == 0))
     {
         VMREST_LOG_ERROR("REST Engine config server port missing");
         dwError = 111;  /** Fix this **/
@@ -142,6 +141,7 @@ VmRESTInitProtocolServer(
             VMREST_LOG_ERROR("Invalid SSL params");
             dwError =  112; /** Fix this **/
         }
+        BAIL_ON_VMREST_ERROR(dwError);
         dwFlags = dwFlags | VM_SOCK_IS_SSL;
         sslCert = gpRESTConfig->ssl_certificate;
         sslKey = gpRESTConfig->ssl_key;

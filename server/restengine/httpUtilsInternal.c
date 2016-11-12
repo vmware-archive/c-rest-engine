@@ -77,7 +77,7 @@ VmRESTGetHttpResponseHeader(
     if (*response)
     {
          headerValLen = strlen(*response);
-         if (headerValLen < 0 || headerValLen > MAX_HTTP_HEADER_VAL_LEN)
+         if (headerValLen > MAX_HTTP_HEADER_VAL_LEN)
          {
              dwError = VMREST_HTTP_VALIDATION_FAILED;
          }
@@ -392,7 +392,7 @@ VmRESTParseAndPopulateConfigFile(
     BAIL_ON_VMREST_ERROR(dwError);
 
     memset(word,'\0', MAX_LINE_LEN);
-    while (fscanf(fp, "%s", word) != EOF)
+    while (fscanf(fp, "%255s", word) != EOF)
     {
         if (resultLen != 0 && result != NULL)
         {
@@ -487,7 +487,7 @@ VmRESTValidateConfig(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (!(pRESTConfig->server_port))
+    if ((pRESTConfig != NULL) && (strlen(pRESTConfig->server_port) == 0))
     {
         VMREST_LOG_ERROR("Configuration Validation failed: Port not specified");
         dwError = REST_ENGINE_FAILURE;
@@ -521,39 +521,41 @@ VmRESTCopyConfig(
                   (void**)&pRESTConfig
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+
+    memset(pRESTConfig, '\0', sizeof(VM_REST_CONFIG));
   
     if (pConfig->pSSLCertificate)
     {
-        strcpy(pRESTConfig->ssl_certificate, pConfig->pSSLCertificate);
+        strncpy(pRESTConfig->ssl_certificate, pConfig->pSSLCertificate,( MAX_PATH_LEN - 1));
     }
     if (pConfig->pSSLKey)
     {
-        strcpy(pRESTConfig->ssl_key, pConfig->pSSLKey);
+        strncpy(pRESTConfig->ssl_key, pConfig->pSSLKey, (MAX_PATH_LEN - 1));
     }
     if (pConfig->pServerPort)
     {
-        strcpy(pRESTConfig->server_port, pConfig->pServerPort);
+        strncpy(pRESTConfig->server_port, pConfig->pServerPort, (MAX_SERVER_PORT_LEN - 1));
     }
     if (pConfig->pDebugLogFile)
     {
-        strcpy(pRESTConfig->debug_log_file, pConfig->pDebugLogFile);
+        strncpy(pRESTConfig->debug_log_file, pConfig->pDebugLogFile, (MAX_PATH_LEN - 1));
     }
     if (pConfig->pClientCount) 
     {
-        strcpy(pRESTConfig->client_count, pConfig->pClientCount);
+        strncpy(pRESTConfig->client_count, pConfig->pClientCount,(MAX_CLIENT_ALLOWED_LEN - 1));
     }
     else
     {
-        strcpy(pRESTConfig->worker_thread_count, DEFAULT_WORKER_THR_CNT);
+        strncpy(pRESTConfig->worker_thread_count, DEFAULT_WORKER_THR_CNT, (MAX_CLIENT_ALLOWED_LEN - 1));
     }
 
     if (pConfig->pMaxWorkerThread)
     {
-        strcpy(pRESTConfig->worker_thread_count, pConfig->pMaxWorkerThread);
+        strncpy(pRESTConfig->worker_thread_count, pConfig->pMaxWorkerThread, (MAX_WORKER_COUNT_LEN - 1));
     }
     else
     {
-        strcpy(pRESTConfig->client_count, DEFAULT_CLIENT_CNT);
+        strncpy(pRESTConfig->client_count, DEFAULT_CLIENT_CNT, (MAX_WORKER_COUNT_LEN - 1));
     }
 
     *ppRESTConfig = pRESTConfig;

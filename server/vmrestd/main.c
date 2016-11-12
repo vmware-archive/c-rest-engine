@@ -180,36 +180,36 @@ void readOptionConfig(int argc, char *argv[])
 
             case 'f':
                 printf ("Reading Config from File %s\n", optarg);
-                strcpy(restdConfig.configFile,optarg);
+                strncpy(restdConfig.configFile,optarg, (MAX_CONFIG_PARAMS_LEN - 1));
                 useFile = 1;
                 break;
 
             case 'p':
                 printf ("Server will be listening on port %s\n", optarg);
-                strcpy(restdConfig.port,optarg);
+                strncpy(restdConfig.port,optarg, (MAX_CONFIG_PARAMS_LEN -1));
                 break;
 
             case 'l':
                 printf ("Log file location %s\n", optarg);
-                strcpy(restdConfig.debugLogFile,optarg);                
+                strncpy(restdConfig.debugLogFile,optarg, (MAX_CONFIG_PARAMS_LEN -1));                
                 break;
             case 'k':
                 printf ("SSL Key file %s\n", optarg);
-                strcpy(restdConfig.sslKey,optarg);
+                strncpy(restdConfig.sslKey,optarg, (MAX_CONFIG_PARAMS_LEN - 1));
                 break;
 
             case 'c':
                 printf ("SSL Certificate File %s\n", optarg);
-                strcpy(restdConfig.sslCert,optarg);
+                strncpy(restdConfig.sslCert,optarg, (MAX_CONFIG_PARAMS_LEN -1));
                 break;
 
             case 'C':
                 printf ("Maximum Client %s\n", optarg);
-                strcpy(restdConfig.clientCnt,optarg);
+                strncpy(restdConfig.clientCnt,optarg, (MAX_CONFIG_PARAMS_LEN - 1));
                 break;
             case 'W':
                 printf ("Maximum worker thread spawned %s\n", optarg);
-                strcpy(restdConfig.workerThCnt,optarg);
+                strncpy(restdConfig.workerThCnt,optarg, (MAX_CONFIG_PARAMS_LEN - 1));
                 break;
             case 'h':
                 printConfigHelp();

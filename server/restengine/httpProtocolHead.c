@@ -439,7 +439,7 @@ VmRESTParseAndPopulateHTTPHeaders(
                 bytesRead = 0;
                 packetLen = bytesReadInBuffer;
 
-                if ((packetLen <= 4) && (appBuffer != NULL)  && (strcmp(appBuffer, "\r\n\r\n") != 0))
+                if ((packetLen <= 4) && (strcmp(appBuffer, "\r\n\r\n") != 0))
                 {
                     skipRead = 1;
                     VMREST_LOG_ERROR("Bad HTTP request detected");
@@ -970,6 +970,13 @@ VmRESTCloseClient(
     uint32_t                         closeSocket = 1;
     char*                            statusStartChar = NULL;
 
+    if (!pResPacket)
+    {
+        VMREST_LOG_ERROR("Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     /**** Look for response status ****/
     statusStartChar = pResPacket->statusLine->statusCode;
 
@@ -1008,12 +1015,10 @@ VmRESTCloseClient(
             );
         pResPacket->requestPacket = NULL;
     }
-    if (pResPacket)
-    {
-        VmRESTFreeHTTPResponsePacket(
-            &pResPacket
-            );
-    }
+        
+    VmRESTFreeHTTPResponsePacket(
+        &pResPacket
+        );
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -1110,6 +1115,7 @@ VmRESTProcessIncomingData(
          VmRESTFreeHTTPResponsePacket(
             &pIntResPacket
             );
+        pIntResPacket = NULL;
     }
 
     /**** 3. Set the total payload information in request object ****/
@@ -1119,8 +1125,6 @@ VmRESTProcessIncomingData(
                   "Content-Length",
                   &contentLen
                   );
-    BAIL_ON_VMREST_ERROR(dwError);
-
 
     if ((contentLen != NULL) && (strlen(contentLen) > 0))
     {
@@ -1167,11 +1171,28 @@ VmRESTProcessIncomingData(
     //VMREST_LOG_DEBUG("%s",("Closed Client Connection: error code %u", dwError);
     BAIL_ON_VMREST_ERROR(dwError);
     connectionClosed = 1;
+    pResPacket = NULL;
 
 cleanup:
+    if ((pResPacket != NULL)  && connectionClosed == 0)
+    {
+        VMREST_LOG_ERROR("DOUBLE FAILURE: No response sent to client");
+        tempStatus = VmRESTCloseClient(
+                         pResPacket
+                         );
+        /**** Error response is already sent to client, return success ****/
+        dwError = REST_ENGINE_SUCCESS;
+    }
     return dwError;
 error:
     VMREST_LOG_ERROR("Something failed");
+    if (pIntResPacket)
+    {
+        VmRESTFreeHTTPResponsePacket(
+            &pIntResPacket
+            );
+        pIntResPacket = NULL;
+    }
     if (pReqPacket)
     {
         VmRESTFreeHTTPRequestPacket(
@@ -1232,8 +1253,7 @@ error:
 
                 if (tempStatus)
                 {
-                    VMREST_LOG_ERROR("ERROR setting data in failure response");
-                    goto cleanup;
+                    VMREST_LOG_ERROR("ERROR: DOUBLE FAILURE :: setting data in failure response");
                 }
 
                 pResPacket->headerSent = 1;
@@ -1243,11 +1263,6 @@ error:
                 VMREST_LOG_ERROR("Error in VmRESTSendHeaderAndPayload");
                 goto cleanup;
             }
-            tempStatus = VmRESTCloseClient(
-                         pResPacket
-                         );
-            /**** Error response is already sent to client, return success ****/
-            dwError = REST_ENGINE_SUCCESS;
         }
     }
     goto cleanup;

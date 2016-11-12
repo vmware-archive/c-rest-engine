@@ -116,7 +116,7 @@ VmRESTSecureSocket(
     {
         VMREST_LOG_ERROR("Error in Private Key");
         dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_CHECK_ERROR;
-        BAIL_ON_VMREST_ERROR(dwError)
+        BAIL_ON_VMREST_ERROR(dwError);
     }
 
     gSockSSLInfo.sslContext = context;
@@ -370,7 +370,13 @@ VmSockPosixOpenServer(
 
 #if defined(SOL_IPV6) && defined(IPV6_V6ONLY)
         int one = 1;
-        setsockopt(fd, SOL_IPV6, IPV6_V6ONLY, (void *) &one, sizeof(one));
+        int ret = 0;
+        ret = setsockopt(fd, SOL_IPV6, IPV6_V6ONLY, (void *) &one, sizeof(one));
+        if (ret != 0)
+        {
+            dwError = ERROR_NOT_SUPPORTED;
+            BAIL_ON_POSIX_SOCK_ERROR(dwError);
+        }
 #endif
 
 #else
@@ -581,7 +587,7 @@ VmSockPosixEventQueueAdd(
 
 cleanup:
 
-    if (bLocked)
+    if (bLocked && pQueue)
     {
         VmRESTUnlockMutex(pQueue->pMutex);
     }
@@ -725,8 +731,6 @@ retry:
 
                         dwError = ERROR_INVALID_STATE;
                         BAIL_ON_POSIX_SOCK_ERROR(dwError);
-
-                        break;
                 }
             }
             else if (pEventSocket->type == VM_SOCK_TYPE_SIGNAL)
@@ -755,11 +759,14 @@ retry:
 
     *ppSocket = pSocket;
     *pEventType = eventType;
-    *ppIoBuffer = (PVM_SOCK_IO_BUFFER)pSocket->pData;
+    if(pSocket)
+    {
+        *ppIoBuffer = (PVM_SOCK_IO_BUFFER)pSocket->pData;
+    }
 
 cleanup:
 
-    if (bLocked)
+    if (pQueue && bLocked)
     {
         VmRESTUnlockMutex(pQueue->pMutex);
     }
@@ -875,8 +882,6 @@ VmSockPosixGetProtocol(
 
             dwError = ERROR_INTERNAL_ERROR;
             BAIL_ON_POSIX_SOCK_ERROR(dwError);
-
-            break;
     }
 
     *pdwProtocol = dwProtocol;
@@ -1132,8 +1137,6 @@ VmSockPosixWrite(
 
             dwError = ERROR_NOT_SUPPORTED;
             BAIL_ON_POSIX_SOCK_ERROR(dwError);
-
-            break;
     }
 
     dwError = VmRESTLockMutex(pSocket->pMutex);
@@ -1385,7 +1388,7 @@ VmSockPosixAcceptConnection(
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
     PVM_SOCKET                       pSocket = NULL;
-    int                              fd = -1;
+    int                              fd = 0;
     PVM_STREAM_BUFFER                pStrmBuf = NULL;
 
     dwError = VmRESTAllocateMemory(
@@ -1636,7 +1639,7 @@ VmSockPosixGetAddress(
         !pAddresLen ||
         !pAddress)
     {
-        dwError = ERROR_SUCCESS;
+        dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
 

@@ -135,11 +135,12 @@ extern "C" {
         }                                 \
     } while(0)
 
-#define BAIL_ON_VMREST_ERROR(dwError)     \
-    if (dwError)                          \
-    {                                     \
-        goto error;                       \
-    }
+#define BAIL_ON_VMREST_ERROR(dwError)       \
+    do {                                  \
+        if (dwError) {                    \
+            goto error;                   \
+        }                                 \
+    } while(0)
 
 #define BAIL_ON_VMREST_INVALID_POINTER(p, errCode)     \
         if (p == NULL) {                          \

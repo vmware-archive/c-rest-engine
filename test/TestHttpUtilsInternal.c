@@ -643,9 +643,11 @@ void Test_VmRESTValidateConfigTest5(
               (void**)&pRESTConfig
               );
     CuAssertTrue(tc, !dwError);
-
-    strcpy(pRESTConfig->server_port, "blahbal");
-
+    if (pRESTConfig != NULL)
+    {
+        memset(pRESTConfig->server_port, '\0', MAX_SERVER_PORT_LEN);
+        strncpy(pRESTConfig->server_port, "blahbal",(MAX_SERVER_PORT_LEN - 1));
+    }
     /**** TEST 5 : Invalid Port number ****/
 
     dwError = VmRESTValidateConfig(pRESTConfig);
@@ -667,8 +669,10 @@ void Test_VmRESTValidateConfigTest6(
               );
     CuAssertTrue(tc, !dwError);
 
-    strcpy(pRESTConfig->server_port, "81");
-    strcpy(pRESTConfig->client_count, "blah");
+    memset(pRESTConfig, '\0', sizeof(VM_REST_CONFIG));
+
+    strncpy(pRESTConfig->server_port, "81", (MAX_SERVER_PORT_LEN - 1));
+    strncpy(pRESTConfig->client_count, "blah", (MAX_CLIENT_ALLOWED_LEN - 1));
 
     /**** TEST 6 :client count ****/
 

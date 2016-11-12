@@ -17,9 +17,12 @@
 
 #define VM_SOCK_POSIX_DEFAULT_QUEUE_SIZE        (64)
 
-#define BAIL_ON_POSIX_SOCK_ERROR(dwError) \
-        if (dwError) \
-            goto error;
+#define BAIL_ON_POSIX_SOCK_ERROR(dwError)  \
+    do {                                  \
+        if (dwError) {                    \
+            goto error;                   \
+        }                                 \
+    } while(0)
 
 #ifndef PopEntryList
 #define PopEntryList(ListHead) \

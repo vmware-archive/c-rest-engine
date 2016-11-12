@@ -22,7 +22,6 @@ VmHTTPInit(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         isTransportInit = 0;
     PVM_REST_CONFIG                  restConfig = NULL;
 
     vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;
@@ -35,7 +34,7 @@ VmHTTPInit(
                       );
         BAIL_ON_VMREST_ERROR(dwError);
     }
-    else if (pConfig == NULL)
+    else   // pconfig ==  NULL
     {
         if (file == NULL)
         {
@@ -61,11 +60,6 @@ VmHTTPInit(
                       );
         BAIL_ON_VMREST_ERROR(dwError);
     }
-    else
-    {
-        dwError = REST_ENGINE_INVALID_CONFIG;    
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
 
     /**** Init the debug log ****/
     dwError = VmRESTLogInitialize(
@@ -82,8 +76,6 @@ VmHTTPInit(
     /**** Init Transport ****/
     dwError = VmwSockInitialize();
     BAIL_ON_VMREST_ERROR(dwError);
-
-    //isTransportInit = 1;
 
     /**** Update the global context for this lib instance ****/
     gRESTEngGlobals.config = restConfig;
@@ -102,11 +94,6 @@ error:
                 );
         gRESTEngGlobals.config = NULL;
         VmRESTUnSetConfig();
-    }
-    if (isTransportInit == 1)
-    {
-        VmwSockShutdown();
-        isTransportInit = 0;
     }
     goto cleanup;
 }

@@ -45,7 +45,8 @@ VmRestEngineHandler(
                   &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-    strcpy(httpMethod,ptr);
+    memset(httpMethod, '\0', MAX_METHOD_LEN);
+    strncpy(httpMethod,ptr, (MAX_METHOD_LEN - 1));
     ptr = NULL;
 
     VMREST_LOG_DEBUG("HTTP method %s", httpMethod);
@@ -57,7 +58,8 @@ VmRestEngineHandler(
                   &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-    strcpy(httpURI,ptr);
+    memset(httpURI, '\0',MAX_URI_LEN);
+    strncpy(httpURI,ptr,(MAX_URI_LEN - 1));
     ptr = NULL;
 
     VMREST_LOG_DEBUG("HTTP URI %s", httpURI);
@@ -543,7 +545,7 @@ VmRestParseParams(
                 }
                 else
                 {
-                    strcpy(res, (value +1));
+                    strncpy(res, (value +1), (MAX_KEY_VAL_PARAM_LEN -1));
                 }    
             }
             else
@@ -602,7 +604,7 @@ VmRESTGetParamsByIndex(
 
     index = paramIndex - 1; 
     
-    if ((pRequest->paramArray[index].key) && (strlen(pRequest->paramArray[index].key) > 0))
+    if ((pRequest != NULL) && (strlen(pRequest->paramArray[index].key) > 0))
     {
         *pszKey = pRequest->paramArray[index].key;
     }
@@ -612,7 +614,7 @@ VmRESTGetParamsByIndex(
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
 
-    if ((pRequest->paramArray[index].value) && (strlen(pRequest->paramArray[index].value) > 0))
+    if ((pRequest != NULL) && (strlen(pRequest->paramArray[index].value) > 0))
     {
         *pszValue = pRequest->paramArray[index].value;
     }

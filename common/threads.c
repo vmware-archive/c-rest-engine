@@ -421,13 +421,6 @@ ThreadFunction(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    
-    if (pArgs)
-    {
-        VmRESTFreeMemory(pArgs);
-        pArgs = NULL;
-    }
-
     dwError = pThreadStart( pThreadArgs );
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -560,7 +553,7 @@ VmRESTFreeThread(
 
         /**** nothing to free really ****/
 #ifndef _WIN32
-        (*pThread) = 0;
+        //(*pThread) = 0;
 #endif
     }
 }

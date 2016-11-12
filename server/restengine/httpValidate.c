@@ -91,6 +91,8 @@ error:
     goto cleanup;
 }
 
+#if 0
+
 uint32_t
 VmRESTConverUpperToLower(
     char*                            src,
@@ -131,6 +133,8 @@ cleanup:
 error:
     goto cleanup;
 }
+
+#endif
 
 uint32_t
 VmRESTValidateHTTPMethodGET(
@@ -378,6 +382,7 @@ VmRESTValidateHTTPContentType(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            temp = NULL;
     char*                            contentType = NULL;
+    char*                            dup = NULL;
 
     if ( !pRequest || !result || !err )
     {
@@ -398,7 +403,8 @@ VmRESTValidateHTTPContentType(
 
     if ((contentType != NULL) && (strlen(contentType) > 0 ))
     {
-        temp = strtok(strdup(contentType), ",");
+        dup = strdup(contentType);
+        temp = strtok(dup, ",");
         while (temp != NULL)
         {
             /**** TODO: Add all other supported media type ****/
@@ -419,6 +425,11 @@ VmRESTValidateHTTPContentType(
     }
 
 cleanup:
+    if (dup)
+    {
+        free(dup);
+        dup = NULL;
+    }
     return dwError;
 error:
     goto cleanup;
@@ -434,6 +445,7 @@ VmRESTValidateAccept(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            temp = NULL;
     char*                            accept = NULL;
+    char*                            dup = NULL;
 
     if ( !pRequest || !result  || !err )
     {
@@ -454,7 +466,8 @@ VmRESTValidateAccept(
 
     if ((accept != NULL) && (strlen(accept) > 0))
     {
-        temp = strtok(strdup(accept), ",");
+        dup = strdup(accept);
+        temp = strtok(dup, ",");
         while (temp != NULL)
         {
             if(strcmp(temp, "application/json") == 0)
@@ -475,10 +488,16 @@ VmRESTValidateAccept(
     }
 
 cleanup:
+    if (dup)
+    {
+        free(dup);
+        dup = NULL;
+    }
     return dwError;
 error:
     goto cleanup;
 }
+
 
 uint32_t
 VmRESTValidateAcceptCharSet(
@@ -490,6 +509,7 @@ VmRESTValidateAcceptCharSet(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            temp = NULL;
     char*                            acceptCharSet = NULL;
+    char*                            dup = NULL;
 
     if ( !pRequest || !result || !err )
     {
@@ -510,7 +530,8 @@ VmRESTValidateAcceptCharSet(
 
     if ((acceptCharSet != NULL) && (strlen(acceptCharSet) > 0))
     {
-        temp = strtok(strdup(acceptCharSet), ",");
+        dup = strdup(acceptCharSet);
+        temp = strtok(dup, ",");
         while (temp != NULL)
         {
             if(strcmp(temp, "utf-8") == 0)
@@ -529,6 +550,11 @@ VmRESTValidateAcceptCharSet(
     }
 
 cleanup:
+    if (dup)
+    {
+        free(dup);
+        dup = NULL;
+    }
     return dwError;
 error:
     goto cleanup;

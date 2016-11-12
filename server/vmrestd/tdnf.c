@@ -520,6 +520,7 @@ VmHandleEchoData(
         memset(buffer, '\0', 4097);
     }
     fclose(fp);
+    fp = NULL;
     done = 0;
 
     /*** Return hardcoded tdnf version v1.0.5 ****/
@@ -541,6 +542,8 @@ VmHandleEchoData(
    
     if (bytesRead < 4096 )
     {
+        // check this
+        buffer[4096] = '\0';
         dwError = VmRESTUtilsConvertInttoString(
                           strlen(buffer),
                           size);
@@ -575,10 +578,15 @@ VmHandleEchoData(
         
     }
     fclose(fp);
+    fp = NULL;
 
 
 cleanup:
     return dwError;
 error:
+    if (fp)
+    {
+        fclose(fp);
+    }
     goto cleanup;
 }

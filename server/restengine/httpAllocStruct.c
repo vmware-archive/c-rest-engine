@@ -142,29 +142,28 @@ VmRESTAllocateHTTPResponsePacket(
     PVM_REST_HTTP_MESSAGE_BODY       pMessageBody = NULL;
     PMISC_HEADER_QUEUE               pMiscHeaderQueue = NULL;
 
-    dwError = VmRESTAllocateStatusLine(
-                  &pStatusLine
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTAllocateMessageBody(
-                  &pMessageBody
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
     dwError = VmRESTAllocateMemory(
                   sizeof(VM_REST_HTTP_RESPONSE_PACKET),
                   (void**)&pResPacket
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
+    dwError = VmRESTAllocateStatusLine(
+                  &pStatusLine
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    pResPacket->statusLine = pStatusLine;
+
+    dwError = VmRESTAllocateMessageBody(
+                  &pMessageBody
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    pResPacket->messageBody = pMessageBody;
+
     dwError = VmRESTAllocateMiscQueue(
                   &pMiscHeaderQueue
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-
-    pResPacket->statusLine = pStatusLine;
-    pResPacket->messageBody = pMessageBody;
     pResPacket->miscHeader = pMiscHeaderQueue;
 
     *ppResPacket = pResPacket;
@@ -233,14 +232,13 @@ VmRESTAllocateEndPoint(
                   (void**)&pEndPointURI
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+    pEndPoint->pszEndPointURI = pEndPointURI;
 
     dwError = VmRESTAllocateMemory(
                   sizeof(REST_PROCESSOR),
                   (void**)&pHandler
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-
-    pEndPoint->pszEndPointURI = pEndPointURI;
     pEndPoint->pHandler = pHandler;
 
     *ppEndPoint = pEndPoint;

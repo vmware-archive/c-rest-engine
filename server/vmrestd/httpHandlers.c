@@ -77,6 +77,8 @@ VmRESTHandleHTTP_REQUEST(
         }
         memset(buffer, '\0', 56);
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+    
 
     /*** SET all HTTP response Headers before setting payload ****/
 

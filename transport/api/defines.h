@@ -13,9 +13,12 @@
  */
 
 
-#define BAIL_ON_VMSOCK_ERROR(dwError) \
-        if (dwError) \
-           goto error;
+#define BAIL_ON_VMSOCK_ERROR(dwError)     \
+    do {                                  \
+        if (dwError) {                    \
+            goto error;                   \
+        }                                 \
+    } while(0)
 
 #ifdef WIN32
 #define inet_pton(x, y, z) InetPtonA(x, y, z)

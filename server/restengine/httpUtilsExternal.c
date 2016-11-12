@@ -44,7 +44,10 @@ VmRESTGetHttpMethod(
 cleanup:
     return dwError;
 error:
-    *ppResponse = NULL;
+    if (ppResponse)
+    {
+        *ppResponse = NULL;
+    }
     goto cleanup;
 }
 
@@ -76,7 +79,10 @@ VmRESTGetHttpURI(
 cleanup:
     return dwError;
 error:
-    *ppResponse = NULL;
+    if (ppResponse)
+    {
+        *ppResponse = NULL;
+    }
     goto cleanup;
 }
 
@@ -108,7 +114,10 @@ VmRESTGetHttpVersion(
 cleanup:
     return dwError;
 error:
-    *ppResponse = NULL;
+    if (ppResponse)
+    {
+        *ppResponse = NULL;
+    }
     goto cleanup;
 }
 
@@ -138,7 +147,7 @@ VmRESTGetHttpHeader(
     if (*ppResponse)
     {
          headerValLen = strlen(*ppResponse);
-         if (headerValLen < 0 || headerValLen > MAX_HTTP_HEADER_VAL_LEN)
+         if (headerValLen > MAX_HTTP_HEADER_VAL_LEN)
          {
              dwError = VMREST_HTTP_VALIDATION_FAILED;
          }
@@ -152,7 +161,10 @@ VmRESTGetHttpHeader(
 cleanup:
     return dwError;
 error:
-    *ppResponse = NULL;
+    if (ppResponse)
+    {
+        *ppResponse = NULL;
+    }
     goto cleanup;
 }
 
@@ -406,7 +418,7 @@ VmRESTSetHttpPayload(
     if ((contentLength != NULL) && (strlen(contentLength) > 0))
     {
         contentLen = atoi(contentLength);
-        if ((contentLen >= 0) && (contentLen <= MAX_DATA_BUFFER_LEN))
+        if (contentLen <= MAX_DATA_BUFFER_LEN)
         {
             memcpy(pResponse->messageBody->buffer, buffer, contentLen);
         }
@@ -415,6 +427,7 @@ VmRESTSetHttpPayload(
             VMREST_LOG_ERROR("Invalid content length %u", contentLen);
             dwError = VMREST_HTTP_VALIDATION_FAILED;
         }
+        BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VmRESTSendHeaderAndPayload(
                       ppResponse
@@ -592,7 +605,8 @@ VmRESTSetHttpReasonPhrase(
 
     pResponse = *ppResponse;
 
-    strcpy(pResponse->statusLine->reason_phrase, reasonPhrase);
+    memset(pResponse->statusLine->reason_phrase, '\0', MAX_REA_PHRASE_LEN);
+    strncpy(pResponse->statusLine->reason_phrase, reasonPhrase, (MAX_REA_PHRASE_LEN - 1));
 
 cleanup:
     return dwError;
