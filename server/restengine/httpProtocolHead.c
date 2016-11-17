@@ -1176,7 +1176,6 @@ VmRESTProcessIncomingData(
 cleanup:
     if ((pResPacket != NULL)  && connectionClosed == 0)
     {
-        VMREST_LOG_ERROR("DOUBLE FAILURE: No response sent to client");
         tempStatus = VmRESTCloseClient(
                          pResPacket
                          );

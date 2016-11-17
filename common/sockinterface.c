@@ -282,13 +282,13 @@ VmRESTSockWorkerThreadProc(
     {
         VM_SOCK_EVENT_TYPE eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
 
+         VMREST_LOG_DEBUG("blocked....");
         dwError = VmwSockWaitForEvent(
                         pSockContext->pEventQueue,
                         -1,
                         &pSocket,
                         &eventType,
                         &pIoBuffer);
-
 
         if (dwError == ERROR_SHUTDOWN_IN_PROGRESS)
         {
@@ -297,7 +297,6 @@ VmRESTSockWorkerThreadProc(
                 __FUNCTION__);
             break;
         }
-
         dwError = VmRESTHandleSocketEvent(
                         pSocket,
                         eventType,
@@ -306,7 +305,7 @@ VmRESTSockWorkerThreadProc(
 
         if (dwError == ERROR_SUCCESS ||
             dwError == ERROR_IO_PENDING)
-        {
+        { 
             dwError = ERROR_SUCCESS;
         }
         else
@@ -317,16 +316,17 @@ VmRESTSockWorkerThreadProc(
                 pSocket = NULL;
             }
             pIoBuffer = NULL;
-            dwError = 0;
+        //    dwError = 0;
         }
         BAIL_ON_VMREST_ERROR(dwError);
+   
     }
 error:
-
     if (pSocket)
     {
         VmwSockRelease(pSocket);
     }
+
     return NULL;
 }
 
@@ -596,9 +596,9 @@ VmRESTSockContextFree(
     {
         VmwSockRelease(pSockContext->pListenerTCP);
     }
-    if (pSockContext->pListenerUDP)
+    if (pSockContext->pListenerTCP6)
     {
-        VmwSockClose(pSockContext->pListenerUDP);
+        VmwSockRelease(pSockContext->pListenerTCP6);
     }
     if (pSockContext->pWorkerThreads)
     {
@@ -675,7 +675,7 @@ VmsockPosixGetXBytes(
 
     if (sizeof(appBuffer) > MAX_DATA_BUFFER_LEN)
     {
-      VMREST_LOG_DEBUG("%s","ERROR: Application buffer size too large");
+        VMREST_LOG_DEBUG("%s","ERROR: Application buffer size too large");
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);

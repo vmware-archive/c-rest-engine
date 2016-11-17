@@ -11,8 +11,6 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
-
 #include "includes.h"
 
 static
@@ -448,6 +446,7 @@ VmSockPosixOpenServer(
     pSocket->fd = fd;
     pSocket->pStreamBuffer = NULL;
     pSocket->ssl = NULL;
+    pSocket->wThrCnt = iListenQueueSize;
 
     *ppSocket = pSocket;
 
@@ -529,6 +528,7 @@ VmSockPosixCreateEventQueue(
     pQueue->state  = VM_SOCK_POSIX_EVENT_STATE_WAIT;
     pQueue->nReady = -1;
     pQueue->iReady = 0;
+    pQueue->bShutdown = 0;
 
     dwError = VmSockPosixEventQueueAdd_inlock(
                   pQueue,
@@ -578,6 +578,11 @@ VmSockPosixEventQueueAdd(
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     bLocked = TRUE;
+
+    if (pSocket->type == VM_SOCK_TYPE_LISTENER && pSocket->protocol == VM_SOCK_PROTOCOL_TCP)
+    {
+        pQueue->thrCnt = pSocket->wThrCnt;
+    }
 
     dwError = VmSockPosixEventQueueAdd_inlock(
                   pQueue,
@@ -735,8 +740,17 @@ retry:
             }
             else if (pEventSocket->type == VM_SOCK_TYPE_SIGNAL)
             {
-                pSocket = VmSockPosixAcquireSocket(pEventSocket);
-                eventType = VM_SOCK_EVENT_TYPE_DATA_AVAILABLE;
+                if (pQueue->bShutdown)
+                {
+                    pQueue->thrCnt--;
+                    dwError = ERROR_SHUTDOWN_IN_PROGRESS;
+                    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+                }
+                else
+                {
+                    pSocket = VmSockPosixAcquireSocket(pEventSocket);
+                    eventType = VM_SOCK_EVENT_TYPE_DATA_AVAILABLE;
+                }
             }
             else
             {
@@ -776,6 +790,12 @@ cleanup:
         *ppIoBuffer = NULL;
     }
 
+    // This needs to happen after we unlock mutex
+    if (dwError == ERROR_SHUTDOWN_IN_PROGRESS && pQueue->thrCnt == 0)
+    {
+        VmSockPosixFreeEventQueue(pQueue);
+    }
+
     return dwError;
 
 error:
@@ -806,9 +826,9 @@ VmSockPosixCloseEventQueue(
         if (pQueue->pSignalWriter)
         {
             char szBuf[] = {0};
+            pQueue->bShutdown = 1;
             write(pQueue->pSignalWriter->fd, szBuf, sizeof(szBuf));
         }
-        VmSockPosixFreeEventQueue(pQueue);
     }
 }
 
@@ -1509,26 +1529,35 @@ VmSockPosixFreeEventQueue(
     )
 {
     if (pQueue->pSignalReader)
-    {
-        VmSockPosixReleaseSocket(pQueue->pSignalReader);
+    {   
+        VmSockPosixFreeSocket(pQueue->pSignalReader);
+        pQueue->pSignalReader = NULL;
     }
     if (pQueue->pSignalWriter)
     {
-        VmSockPosixReleaseSocket(pQueue->pSignalWriter);
+        VmSockPosixFreeSocket(pQueue->pSignalWriter);
+        pQueue->pSignalWriter = NULL;
     }
     if (pQueue->pMutex)
     {
         VmRESTFreeMutex(pQueue->pMutex);
+        pQueue->pMutex = NULL;
     }
     if (pQueue->epollFd >= 0)
     {
         close(pQueue->epollFd);
+        pQueue->epollFd = -1;
     }
     if (pQueue->pEventArray)
     {
         VmRESTFreeMemory(pQueue->pEventArray);
+        pQueue->pEventArray = NULL;
     }
-    VmRESTFreeMemory(pQueue);
+    if(pQueue)
+    {
+        VmRESTFreeMemory(pQueue);
+        pQueue = NULL;
+    }
 }
 
 static

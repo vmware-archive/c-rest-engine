@@ -600,10 +600,10 @@ int main(int argc, char *argv[])
 #ifdef WIN32 
        Sleep(20000);
 #else
-       while(1)
-       {
-           usleep(100);
-       }
+//       while(1)
+    //   {
+           sleep(20);
+  //     }
 #endif
     
     dwError = VmRESTStop();

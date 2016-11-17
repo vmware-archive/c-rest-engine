@@ -26,11 +26,13 @@ typedef struct _VM_SOCKET
     SSL*                             ssl;
     PVOID                            pData;
     uint32_t                         inUse;
+    uint32_t                         wThrCnt;
 } VM_SOCKET;
 
 typedef struct _VM_SOCK_EVENT_QUEUE
 {
     PVMREST_MUTEX                    pMutex;
+    uint32_t                         bShutdown;
     PVM_SOCKET                       pSignalReader;
     PVM_SOCKET                       pSignalWriter;
     VM_SOCK_POSIX_EVENT_STATE        state;
@@ -39,6 +41,7 @@ typedef struct _VM_SOCK_EVENT_QUEUE
     DWORD                            dwSize;
     int                              nReady;
     int                              iReady;
+    uint32_t                         thrCnt;
 } VM_SOCK_EVENT_QUEUE;
 
 typedef struct _VM_SOCK_IO_CONTEXT
