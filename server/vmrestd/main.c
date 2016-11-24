@@ -16,6 +16,15 @@
 
 #ifndef WIN32
 #include <getopt.h>
+#include <sys/types.h>
+#include <sys/inotify.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdbool.h>
+#include <time.h>
+
+#define EVENT_SIZE  ( sizeof (struct inotify_event) )
+#define EVENT_BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
 #endif
 
 uint32_t                         useFile = 0;
@@ -578,7 +587,86 @@ void readOptionServer(int argc, char *argv[])
 }
 #endif
 
-#if 1
+
+bool execute_command( char* buffer, char** myargv )
+{
+    int i = 0;
+    char* ptr = strtok(buffer, " ");
+    while(ptr != NULL)
+    {
+        strcpy(myargv[i++],ptr);
+        ptr = strtok(NULL, " ");
+
+        if (i == MAX_ARGUMENTS)
+        {
+            printf("\nERROR: Maximum 10 arguments supported from CLI\n");
+            return false;
+        }
+    }
+
+    char *temp =myargv[i-1];
+    int len =strlen(temp);
+
+    *(temp + len -1) = '\0';
+
+    if (myargv[0] != NULL)
+    {
+        if (strcmp(myargv[0], "server") == 0)
+        {
+            readOptionServer(i, myargv);
+        }
+        else if (strcmp(myargv[0], "config") == 0)
+        {
+            readOptionConfig(i, myargv);
+        }
+        else if (strcmp(myargv[0], "endpoint") == 0)
+        {
+            readOptionEndPoint(i, myargv);
+        }
+        else if (strcmp(myargv[0], "restengine") == 0)
+        {
+            readOptionRestEngine(i, myargv);
+        }
+        else if ((strcmp(myargv[0], "--help") == 0) || (strcmp(myargv[0], "help") == 0))
+        {
+            printHelp();
+        }
+        else if (strcmp(myargv[0], "exit") == 0)
+        {
+            printf("Exiting CLI .....\n");
+            return false;
+        }
+        else
+        {
+            len = 0;
+            if (strlen(myargv[0]) > 0)
+            {
+                printf("\n%s not a valid command.\nType \'--help\' to see list of available commands and options\n\n", myargv[0]);
+            }
+        }
+
+    }
+
+    for (i =0; i < MAX_ARGUMENTS; i++)
+    {
+        memset(myargv[i],'\0',20);
+    }
+    memset(buffer,'\0', 100);
+    return true;
+}
+
+
+bool string_ends_with(const char* str, const char* suffix)
+{
+  int str_len = strlen(str);
+  int suffix_len = strlen(suffix);
+
+  return (str_len >= suffix_len) && (0 == strcmp(str + (str_len-suffix_len), suffix));
+}
+
+
+
+#if 0
 #ifdef WIN32
 #include "..\transport\win\includes.h"
 #endif
@@ -611,96 +699,118 @@ int main(int argc, char *argv[])
     dwError = VmRESTUnRegisterHandler("/v1/pkg");
 
     VmRESTShutdown();
+
     
 return dwError;
 
 }
 
 #endif
-#if 0
+#if 1
 int
 main (int argc, char *argv[])
 {
-  int                                i = 0;
+  int                                i;
   char                               buffer[100] = {0};
-  char*                              ptr = NULL;
+  FILE*                              fr = NULL;
 
   char **myargv = malloc(MAX_ARGUMENTS * sizeof(char *));
-   for (i =0; i < MAX_ARGUMENTS; i++)
+  for (i =0; i < MAX_ARGUMENTS; i++)
   {
       myargv[i] = (char*)malloc(MAX_ARG_LEN);
   }
 
-  i = 0;
+#ifndef WIN32
+  if( argc >= 2)
+  {
+    int    length;
+    int    fd;
+    int    wd;
+    char   eventbuffer[EVENT_BUF_LEN];
+    char   filename[1024];
+    time_t lastmodified;
+    struct stat attr;
+    char   lastevent_name[80] = { 0 };
+    time_t lastevent_time;
+    time ( &lastevent_time );
+
+    /*creating the INOTIFY instance*/
+    fd = inotify_init();
+
+    if ( fd < 0 )
+    {
+      printf( "@ Error in inotify_init\n" );
+      goto clean;
+    }
+    wd = inotify_add_watch( fd, argv[1], IN_MODIFY );
+
+    if( argc >= 3 )
+        printf("@ Monitoring %s directory for command files with %s extension\n", argv[1], argv[2]);
+    else
+        printf("@ Monitoring %s directory for command files\n", argv[1]);
+
+    while( exitLoop == 0  )
+    {
+        length = read( fd, eventbuffer, EVENT_BUF_LEN );
+
+        if ( length < 0 )
+        {
+          printf( "@ Error in read event\n" );
+          break;
+        }
+	i = 0;
+        while( i < length )
+        {
+            struct inotify_event* event = (struct inotify_event*) &eventbuffer[ i ];
+            if ( event->len > 0 && (event->mask & IN_MODIFY) && !(event->mask & IN_ISDIR) )
+            {
+                if( argc == 2 || string_ends_with(event->name, argv[2]) )
+                {
+                    strcpy(filename, argv[1]);
+                    strcat(filename, "/");
+                    strcat(filename, event->name);
+                    stat(filename, &attr);
+                    lastmodified = attr.st_mtime;
+                    if( lastevent_time != lastmodified || strcmp(lastevent_name, event->name) != 0)
+                    {
+                        lastevent_time = lastmodified;
+                        strcpy(lastevent_name, event->name);
+                        printf("@ Loading file: %s.\n", event->name );
+                        fr = fopen(filename, "rt");
+                        if (fr != NULL)
+                        {
+                            while(fgets(buffer, 100, fr) != NULL)
+                           {
+                                printf("> %s", buffer );
+			        if ( !execute_command(buffer, myargv) )
+                                {
+                                    exitLoop = 1;
+                                    break;
+                                }
+                            }
+                            fclose(fr);
+                        }
+                        else
+                            printf("@ Cannot open file %s\n", filename);
+	            }
+                }
+            }
+            i += EVENT_SIZE + event->len;
+        }
+    }
+    inotify_rm_watch( fd, wd );
+   /*closing the INOTIFY instance*/
+    close( fd );
+    goto clean;
+  }
+#endif
 
   while( exitLoop == 0 )
   {
-      printf("VMREST_TEST_CLI > ");
-      fgets(buffer, 100, stdin);
-
-      ptr = strtok(buffer, " ");
-      while(ptr != NULL)
-      {
-          strcpy(myargv[i++],ptr);
-          ptr = strtok(NULL, " ");
-
-          if (i == MAX_ARGUMENTS)
-          {
-              printf("\nERROR: Maximum 10 arguments supported from CLI\n");
-              goto clean;
-          }
-      }
-
-      char *temp =myargv[i-1];
-      int len =strlen(temp);
- 
-       *(temp + len -1) = '\0';
-
-      if (myargv[0] != NULL)
-      {
-          if (strcmp(myargv[0], "server") == 0)
-          {
-              readOptionServer(i, myargv);
-          }
-          else if (strcmp(myargv[0], "config") == 0)
-          {
-              readOptionConfig(i, myargv);
-          }
-          else if (strcmp(myargv[0], "endpoint") == 0)
-          {
-              readOptionEndPoint(i, myargv);
-          }
-          else if (strcmp(myargv[0], "restengine") == 0)
-          {
-              readOptionRestEngine(i, myargv);
-          }
-          else if ((strcmp(myargv[0], "--help") == 0) || (strcmp(myargv[0], "help") == 0))
-          {
-              printHelp();
-          }
-          else if (strcmp(myargv[0], "exit") == 0)
-          {
-              printf("Exiting CLI .....\n");
-              exitLoop = 1;
-              goto clean;
-          }
-          else
-          {
-              len = 0;
-              if (strlen(myargv[0]) > 0)
-              {
-                  printf("\n%s not a valid command.\nType \'--help\' to see list of available commands and options\n\n", myargv[0]);
-              }
-          }
-
-      }
-
-      for (i =0; i < MAX_ARGUMENTS; i++)
-      {
-          memset(myargv[i],'\0',20);
-      }
-      memset(buffer,'\0', 100);
-      i = 0;
+    printf("VMREST_TEST_CLI > ");
+    fgets(buffer, 100, stdin);
+    if ( !execute_command(buffer, myargv) )
+        break;
   }
 
 clean:
@@ -710,7 +820,8 @@ clean:
   }
   free(*myargv);
   
-return 0;
+  return 0;
 }
 
 #endif
+
