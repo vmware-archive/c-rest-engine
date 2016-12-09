@@ -1,0 +1,4 @@
+config --FILE /tmp/restconfig.txt
+restengine --init
+endpoint -r /v1/pkg
+server --start

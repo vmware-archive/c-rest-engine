@@ -1,0 +1,4 @@
+server --stop
+endpoint -d /v1/pkg
+restengine --shutdown
+exit

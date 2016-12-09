@@ -32,8 +32,9 @@ uint32_t                         cbIndex = 0;
 
 #define MAX_ARGUMENTS 10
 #define MAX_ARG_LEN 20
+#define MAX_COMMAND_LEN 100
 
-int exitLoop = 0;
+int     exitLoop = 0;
 
 void printHelp(void)
 {
@@ -588,6 +589,17 @@ void readOptionServer(int argc, char *argv[])
 #endif
 
 
+void init_command(char* buffer, char** myargv)
+{
+    for (int i =0; i < MAX_ARGUMENTS; i++)
+    {
+        myargv[i][0] = '\0';
+    }
+    memset(buffer,'\0', MAX_COMMAND_LEN);
+}
+
+/// Executes single command, returns true even though there is an error, false if command is 'exit'
+
 bool execute_command( char* buffer, char** myargv )
 {
     int i = 0;
@@ -600,7 +612,7 @@ bool execute_command( char* buffer, char** myargv )
         if (i == MAX_ARGUMENTS)
         {
             printf("\nERROR: Maximum 10 arguments supported from CLI\n");
-            return false;
+            return true;
         }
     }
 
@@ -646,12 +658,9 @@ bool execute_command( char* buffer, char** myargv )
         }
 
     }
+    
+    init_command(buffer, myargv);
 
-    for (i =0; i < MAX_ARGUMENTS; i++)
-    {
-        memset(myargv[i],'\0',20);
-    }
-    memset(buffer,'\0', 100);
     return true;
 }
 
@@ -664,6 +673,32 @@ bool string_ends_with(const char* str, const char* suffix)
   return (str_len >= suffix_len) && (0 == strcmp(str + (str_len-suffix_len), suffix));
 }
 
+
+/// Runs all commands in file, returns true, unless the 'exit' command is encountered, in which case returns false right away
+
+bool run_command_file( char* filepath, char* buffer, char** myargv )
+{
+    bool exitval = true;
+    FILE* fr = fopen(filepath, "rt");
+    if (fr != NULL)
+    {
+        printf("@ Running command file: %s\n", filepath );
+        while(exitval == true && fgets(buffer, MAX_COMMAND_LEN, fr) != NULL)
+        {
+            printf("> %s", buffer );
+            if ( !execute_command(buffer, myargv) )
+            {
+                exitval = false;
+                break;
+            }
+        }
+        fclose(fr);
+        printf("@ Done running command file: %s\n", filepath );
+    }
+    else
+        printf("@ Cannot open command file %s\n", filepath);
+    return exitval;
+}
 
 
 #if 0
@@ -710,15 +745,20 @@ return dwError;
 int
 main (int argc, char *argv[])
 {
-  int                                i;
-  char                               buffer[100] = {0};
-  FILE*                              fr = NULL;
-
-  char **myargv = malloc(MAX_ARGUMENTS * sizeof(char *));
+  int    retval = 0;
+  int    i;
+  char   buffer[MAX_COMMAND_LEN+1];
+  char** myargv = malloc(MAX_ARGUMENTS * sizeof(char *));
   for (i =0; i < MAX_ARGUMENTS; i++)
   {
       myargv[i] = (char*)malloc(MAX_ARG_LEN);
   }
+
+  init_command(buffer, (char**)myargv);
+
+  if( argc >=4 )
+      if( !run_command_file(argv[3], buffer, myargv) )
+            goto clean;
 
 #ifndef WIN32
   if( argc >= 2)
@@ -739,10 +779,13 @@ main (int argc, char *argv[])
 
     if ( fd < 0 )
     {
-      printf( "@ Error in inotify_init\n" );
-      goto clean;
+        printf( "@ Error in inotify_init\n" );
+        retval = 1;
+        goto clean;
     }
     wd = inotify_add_watch( fd, argv[1], IN_MODIFY );
+
+
 
     if( argc >= 3 )
         printf("@ Monitoring %s directory for command files with %s extension\n", argv[1], argv[2]);
@@ -755,10 +798,10 @@ main (int argc, char *argv[])
 
         if ( length < 0 )
         {
-          printf( "@ Error in read event\n" );
-          break;
+            printf( "@ Error in reading file/directory event\n" );
+            break;
         }
-	i = 0;
+        i = 0;
         while( i < length )
         {
             struct inotify_event* event = (struct inotify_event*) &eventbuffer[ i ];
@@ -775,24 +818,12 @@ main (int argc, char *argv[])
                     {
                         lastevent_time = lastmodified;
                         strcpy(lastevent_name, event->name);
-                        printf("@ Loading file: %s.\n", event->name );
-                        fr = fopen(filename, "rt");
-                        if (fr != NULL)
+                        if( !run_command_file( filename, buffer, myargv ) )
                         {
-                            while(fgets(buffer, 100, fr) != NULL)
-                           {
-                                printf("> %s", buffer );
-			        if ( !execute_command(buffer, myargv) )
-                                {
-                                    exitLoop = 1;
-                                    break;
-                                }
-                            }
-                            fclose(fr);
+                            exitLoop = 1;
+                            break;
                         }
-                        else
-                            printf("@ Cannot open file %s\n", filename);
-	            }
+                    }
                 }
             }
             i += EVENT_SIZE + event->len;
@@ -807,21 +838,22 @@ main (int argc, char *argv[])
 
   while( exitLoop == 0 )
   {
-    printf("VMREST_TEST_CLI > ");
-    fgets(buffer, 100, stdin);
-    if ( !execute_command(buffer, myargv) )
-        break;
+      printf("VMREST_TEST_CLI > ");
+      fgets(buffer, MAX_COMMAND_LEN, stdin);
+      if ( !execute_command(buffer, myargv) )
+          break;
   }
 
 clean:
   for (i =0; i < MAX_ARGUMENTS; i++)
   {
       free(myargv[i]);
-  }
-  free(*myargv);
-  
-  return 0;
+  } 
+  free(myargv);
+
+  return retval;
 }
 
 #endif
+
 
