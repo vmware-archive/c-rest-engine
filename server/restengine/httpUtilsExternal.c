@@ -187,7 +187,7 @@ VmRESTGetHttpPayload(
     uint32_t                         newChunk = 0;
     uint32_t                         extraRead = 0;
     uint32_t                         tryCnt = 0;
-    uint32_t                         maxTry = 5000;
+    uint32_t                         maxTry = 50000;
     char*                            res = NULL;
     char*                            contentLength = NULL;
     char*                            transferEncoding = NULL;

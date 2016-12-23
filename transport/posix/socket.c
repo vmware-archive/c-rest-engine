@@ -1101,7 +1101,7 @@ VmSockPosixWrite(
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
     BOOLEAN                          bLocked  = FALSE;
-    int                              flags    = 0;
+    int                              flags    = MSG_NOSIGNAL;
     ssize_t                          nWritten = 0;
     DWORD                            dwBytesToWrite = 0;
     const struct sockaddr*           pClientAddressLocal = NULL;
