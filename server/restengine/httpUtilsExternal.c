@@ -186,6 +186,8 @@ VmRESTGetHttpPayload(
     uint32_t                         actualBytesCopied = 0;
     uint32_t                         newChunk = 0;
     uint32_t                         extraRead = 0;
+    uint32_t                         tryCnt = 0;
+    uint32_t                         maxTry = 5000;
     char*                            res = NULL;
     char*                            contentLength = NULL;
     char*                            transferEncoding = NULL;
@@ -233,6 +235,7 @@ VmRESTGetHttpPayload(
         {
             readXBytes = MAX_DATA_BUFFER_LEN;
         }
+tryagain:
         dwError = VmsockPosixGetXBytes(
                       readXBytes,
                       localAppBuffer,
@@ -240,7 +243,19 @@ VmRESTGetHttpPayload(
                       &bytesRead,
                       1
                       );
+
+        /**** If Expect:100-continue was received, re-attempt read considering RTT delay ****/
+        if (dwError !=0 && pRequest->dataNotRcvd == 1 && tryCnt < maxTry)
+        { 
+            tryCnt++;
+            goto tryagain;
+        }
         BAIL_ON_VMREST_ERROR(dwError);
+
+        if (pRequest->dataNotRcvd == 1)
+        {
+            pRequest->dataNotRcvd = 0;
+        }
 
         dwError = VmRESTCopyDataWithoutCRLF(
                       bytesRead,
@@ -283,6 +298,7 @@ VmRESTGetHttpPayload(
         }
 
         /**** This is chunked encoded packet ****/
+tryagain1:
         dwError = VmsockPosixGetXBytes(
                       readXBytes,
                       localAppBuffer,
@@ -290,8 +306,19 @@ VmRESTGetHttpPayload(
                       &bytesRead,
                       1
                       );
+
+        /**** If Expect:100-continue was received, re-attempt read considering RTT delay ****/
+        if (dwError !=0 && pRequest->dataNotRcvd == 1 && tryCnt < maxTry)
+        {
+            tryCnt++;
+            goto tryagain1;
+        }
         BAIL_ON_VMREST_ERROR(dwError);
 
+        if (pRequest->dataNotRcvd == 1)
+        {
+            pRequest->dataNotRcvd = 0;
+        }
 
         if (newChunk)
         {

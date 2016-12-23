@@ -1064,6 +1064,7 @@ VmRESTProcessIncomingData(
     pResPacket->pSocket = pReqPacket->pSocket;
     pResPacket->requestPacket = pReqPacket;
     pResPacket->headerSent = 0;
+    pReqPacket->dataNotRcvd = 0;
     memset(statusStng,'\0', MAX_STATUS_LENGTH);
 
     /**** 2. Start parsing the request line ****/
@@ -1076,6 +1077,7 @@ VmRESTProcessIncomingData(
                   );
     VMREST_LOG_DEBUG("Header parsing done : return code %u", dwError);
 
+    /**** 3: If Expect:100-continue is received, send the continue message back to client ****/
     dwError = VmRESTGetHttpHeader(
                   pReqPacket,
                   "Expect",
@@ -1083,7 +1085,8 @@ VmRESTProcessIncomingData(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (expect != NULL && (strcmp(" 100-continue", expect) == 0))
+    /**** FIXME:: space before header value ****/
+    if (expect != NULL && ((strcmp(" 100-continue", expect) == 0) || (strcmp("100-continue", expect) == 0)))
     {
         dwError = VmRESTAllocateHTTPResponsePacket(
                   &pIntResPacket
@@ -1109,8 +1112,7 @@ VmRESTProcessIncomingData(
                   &done
                   );
          BAIL_ON_VMREST_ERROR(dwError);
-
-         sleep(1);
+         pReqPacket->dataNotRcvd = 1;
 
          VmRESTFreeHTTPResponsePacket(
             &pIntResPacket
@@ -1118,7 +1120,7 @@ VmRESTProcessIncomingData(
         pIntResPacket = NULL;
     }
 
-    /**** 3. Set the total payload information in request object ****/
+    /**** 4. Set the total payload information in request object ****/
 
     dwError = VmRESTGetHttpHeader(
                   pReqPacket,
@@ -1136,7 +1138,7 @@ VmRESTProcessIncomingData(
     }
     
 
-    /**** 4. Give application the callback ****/
+    /**** 5. Give application the callback ****/
 
     if (!dwError)
     {
@@ -1145,7 +1147,6 @@ VmRESTProcessIncomingData(
                       pReqPacket,
                       &pResPacket
                       );
-        //VMREST_LOG_DEBUG("%s",("CallBack given to App: return code %u", dwError);
     }
     else
     {
@@ -1163,12 +1164,11 @@ VmRESTProcessIncomingData(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    /**** 5. Close the connection and free associated memory ****/
+    /**** 6. Close the connection and free associated memory ****/
 
     dwError = VmRESTCloseClient(
                   pResPacket
                   );
-    //VMREST_LOG_DEBUG("%s",("Closed Client Connection: error code %u", dwError);
     BAIL_ON_VMREST_ERROR(dwError);
     connectionClosed = 1;
     pResPacket = NULL;

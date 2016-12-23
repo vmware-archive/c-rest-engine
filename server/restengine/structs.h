@@ -75,7 +75,8 @@ typedef struct _VM_REST_HTTP_REQUEST_PACKET
     PMISC_HEADER_QUEUE               miscHeader;
     PVM_SOCKET                       pSocket;
     uint32_t                         dataRemaining;
-    VM_REST_URL_PARAMS               paramArray[MAX_URL_PARAMS_ARR_SIZE];    
+    VM_REST_URL_PARAMS               paramArray[MAX_URL_PARAMS_ARR_SIZE];
+    uint32_t                         dataNotRcvd; 
 
 }VM_REST_HTTP_REQUEST_PACKET, *PVM_REST_HTTP_REQUEST_PACKET;
 
