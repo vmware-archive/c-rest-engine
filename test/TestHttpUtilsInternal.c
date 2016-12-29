@@ -899,7 +899,7 @@ void Test_VmRESTCopyConfigTest7(
     dwError = VmRESTCopyConfig(
                   &conf,
                   &pRESTConfig);
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
 
     VmRESTFreeMemory(pRESTConfig);
 
@@ -1250,9 +1250,6 @@ CuSuite* CuGetTestHttpUtilsInternalSuite(void)
     SUITE_ADD_TEST(suite, Test_VmRESTSetHttpRequestHeaderTest4);
     SUITE_ADD_TEST(suite, Test_VmRESTSetHttpRequestHeaderTest5);
     SUITE_ADD_TEST(suite, Test_VmRESTParseAndPopulateConfigFileTest1);
-    /***** CRASHING TEST: This feature will be eliminated: No need to fix *****
-    SUITE_ADD_TEST(suite, Test_VmRESTParseAndPopulateConfigFileTest2);
-    **************************************************************************/
     SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest1);
     SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest2);
     SUITE_ADD_TEST(suite, Test_VmRESTValidateConfigTest3);
@@ -1267,9 +1264,7 @@ CuSuite* CuGetTestHttpUtilsInternalSuite(void)
     SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest4);
     SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest5);
     SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest6);
-    /**** CRASHING TEST: FIX ASAP **********************
     SUITE_ADD_TEST(suite, Test_VmRESTCopyConfigTest7);
-    ***************************************************/
     SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest1);
     SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest2);
     SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest3);
@@ -1281,9 +1276,7 @@ CuSuite* CuGetTestHttpUtilsInternalSuite(void)
     SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest2);
     SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest3);
     SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest4);
-    /**** CRASHING TEST: FIX ASAP *****************************
     SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest5);
-    ***********************************************************/
     SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest6);
 
 

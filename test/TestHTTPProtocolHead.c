@@ -1713,7 +1713,6 @@ CuSuite* CuGetTestHTTPProtocolHeadSuite(void)
     SUITE_ADD_TEST(suite, Test_VMRESTWriteChunkedMessageInResponseStreamTest2);
     SUITE_ADD_TEST(suite, Test_VMRESTWriteChunkedMessageInResponseStreamTest3);
     SUITE_ADD_TEST(suite, Test_VMRESTWriteChunkedMessageInResponseStreamTest4); 
-    /**** CRASHING TEST :: MUST FIX ASAP ****/
     SUITE_ADD_TEST(suite, Test_VMRESTWriteChunkedMessageInResponseStreamTest5);
     SUITE_ADD_TEST(suite, Test_VMRESTWriteMessageBodyInResponseStreamTest1);
     SUITE_ADD_TEST(suite, Test_VMRESTWriteMessageBodyInResponseStreamTest2);

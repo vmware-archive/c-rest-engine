@@ -764,7 +764,7 @@ VmRESTCopyDataWithoutCRLF(
     char*                            res = NULL;
     uint32_t                         skip = 0;
 
-    if (!src || !des || !actualBytes)
+    if (!src || !des || !actualBytes || maxBytes < 0 || maxBytes > MAX_DATA_BUFFER_LEN)
     {
         VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
