@@ -88,7 +88,7 @@ VmRESTHTTPGetReqMethod(
     }
     else
     {
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
+        dwError = METHOD_NOT_ALLOWED;
         *resStatus = METHOD_NOT_ALLOWED;
         VMREST_LOG_ERROR("HTTP Method not allowed");
         BAIL_ON_VMREST_ERROR(dwError);
@@ -125,7 +125,7 @@ VmRESTHTTPGetReqURI(
     if (firstSpace != NULL)
     {
         secondSpace = strchr(firstSpace + 1, ' ');
-        if (secondSpace != NULL)
+        if (secondSpace != NULL && ((secondSpace - firstSpace) < MAX_URI_LEN))
         {
             strncpy(result, firstSpace+1, secondSpace - firstSpace);
             result[secondSpace - firstSpace - 1] = '\0';
@@ -133,7 +133,7 @@ VmRESTHTTPGetReqURI(
         else
         {
             VMREST_LOG_ERROR("Invalid params");
-            dwError =  VMREST_HTTP_INVALID_PARAMS;
+            dwError =  REQUEST_URI_TOO_LARGE;
             *resStatus = BAD_REQUEST;
         }
     }
@@ -143,7 +143,7 @@ VmRESTHTTPGetReqURI(
     if (uriLen == 0 || uriLen > MAX_URI_LEN)
     {
         VMREST_LOG_ERROR("URI length too large");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
+        dwError = MAX_URI_LEN;
         *resStatus = REQUEST_URI_TOO_LARGE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -187,15 +187,21 @@ VmRESTHTTPGetReqVersion(
         if (secondSpace != NULL)
         {
             endLine = strchr(secondSpace +1, '\0');
-            if (endLine != NULL)
+            if (endLine != NULL && ((endLine - secondSpace - 3) < HTTP_VER_LEN))
             {
                 strncpy(local, secondSpace+1, HTTP_VER_LEN);
                 local[HTTP_VER_LEN] = '\0';
+
+                /**** Supports only HTTP 1.1 ****/
+                if (strcmp(local, "HTTP/1.1") != 0)
+                {
+                    dwError = HTTP_VERSION_NOT_SUPPORTED;
+                }
             }
             else
             {
                 VMREST_LOG_ERROR("HTTP version not found");
-                dwError = VMREST_HTTP_VALIDATION_FAILED;
+                dwError = HTTP_VERSION_NOT_SUPPORTED;
                 *resStatus = BAD_REQUEST;
             }
         }
@@ -1275,6 +1281,22 @@ error:
                                      &pResPacket,
                                      "405",
                                      "Method Not Allowed"
+                                     );
+                }
+                else if (dwError == REQUEST_URI_TOO_LARGE)
+                {
+                    tempStatus = VmRESTSetFailureResponse(
+                                     &pResPacket,
+                                     "414",
+                                     "URI too Long"
+                                     );
+                }
+                else if (dwError == HTTP_VERSION_NOT_SUPPORTED)
+                {
+                    tempStatus = VmRESTSetFailureResponse(
+                                     &pResPacket,
+                                     "505",
+                                     "HTTP Version not supported"
                                      );
                 }
                 else
