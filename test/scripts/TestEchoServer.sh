@@ -148,12 +148,11 @@ fi
 rm -f $OUTDIR/resHeader.txt
 rm -f $OUTDIR/resData.txt
 
-# CRASHING TEST : FIX ASAP
-#curl -v -D $OUTDIR/resHeader.txt -o $OUTDIR/resData.txt -d @$INDIR/smalldata.txt -X BLAHdsafdsfdsfadfsfadsfafadsfadsfadsfdsafdsfdsafjkafgjkdg  http://$IPADDR:$PORT/v1/pkg?x=y 2&> xx.txt
+curl -v -D $OUTDIR/resHeader.txt -o $OUTDIR/resData.txt -d @$INDIR/smalldata.txt -X BLAHdsafdsfdsfadfsfadsfafadsfadsfadsfdsafdsfdsafjkafgjkdg  http://$IPADDR:$PORT/v1/pkg?x=y 2&> xx.txt
 
-#header=$(<$OUTDIR/resHeader.txt)
-#data=$(<$OUTDIR/resData.txt)
-#expectedHeader=$(<$EXPECTEDDIR/SampleBadMethod.txt)
+header=$(<$OUTDIR/resHeader.txt)
+data=$(<$OUTDIR/resData.txt)
+expectedHeader=$(<$EXPECTEDDIR/SampleBadMethod.txt)
 
 inputData=''
 

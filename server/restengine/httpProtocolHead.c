@@ -36,7 +36,7 @@ VmRESTHTTPGetReqMethod(
     BAIL_ON_VMREST_ERROR(dwError);
 
     firstSpace = strchr(line, ' ');
-    if (firstSpace != NULL)
+    if (firstSpace != NULL && ((firstSpace - line) < MAX_METHOD_LEN))
     {
         strncpy(local, line, firstSpace - line);
         local[firstSpace - line] = '\0';
@@ -44,16 +44,10 @@ VmRESTHTTPGetReqMethod(
     else
     {
         VMREST_LOG_ERROR("Bad method name in request");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
+        dwError = METHOD_NOT_ALLOWED;
         *resStatus = BAD_REQUEST;
     }
-
-    if (strlen(result) > MAX_METHOD_LEN)
-    {
-        VMREST_LOG_ERROR("Method len too large");
-        dwError = VMREST_HTTP_VALIDATION_FAILED;
-        *resStatus = BAD_REQUEST;
-    }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     /* method will be first letter in line */
     if (strcmp(local,"GET") == 0)
@@ -1273,6 +1267,14 @@ error:
                                      &pResPacket,
                                      "431",
                                      "Large Header Field"
+                                     );
+                }
+                else if (dwError == METHOD_NOT_ALLOWED)
+                {
+                    tempStatus = VmRESTSetFailureResponse(
+                                     &pResPacket,
+                                     "405",
+                                     "Method Not Allowed"
                                      );
                 }
                 else
