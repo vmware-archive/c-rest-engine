@@ -399,6 +399,10 @@ cleanup:
     return dwError;
 error:
     response = NULL;
+    if (dwError == 5100)
+    {
+        dwError = LENGTH_REQUIRED;
+    }
     goto cleanup;
 }
 

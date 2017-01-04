@@ -701,7 +701,7 @@ bool run_command_file( char* filepath, char* buffer, char** myargv )
 }
 
 
-#if 0
+#if 1
 #ifdef WIN32
 #include "..\transport\win\includes.h"
 #endif
@@ -723,10 +723,10 @@ int main(int argc, char *argv[])
 #ifdef WIN32 
        Sleep(20000);
 #else
-//       while(1)
-    //   {
-           sleep(20);
-  //     }
+       while(1)
+       {
+           usleep(10);
+       }
 #endif
     
     dwError = VmRESTStop();
@@ -741,7 +741,7 @@ return dwError;
 }
 
 #endif
-#if 1
+#if 0
 int
 main (int argc, char *argv[])
 {

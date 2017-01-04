@@ -390,6 +390,10 @@ VmRestEngineGetEndPoint(
     }
 
 cleanup:
+    if (temp == NULL)
+    {
+        dwError = NOT_FOUND;
+    }
     return dwError;
 error:
     goto cleanup;

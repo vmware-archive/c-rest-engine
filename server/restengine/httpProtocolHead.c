@@ -398,6 +398,7 @@ VmRESTParseAndPopulateHTTPHeaders(
     char                             appBuffer[MAX_DATA_BUFFER_LEN]={0};
     uint32_t                         bytesReadInBuffer = 0;
     uint32_t                         skipRead = 0;
+    uint32_t                         extraBytes = 0;
 
     if (!buffer || !pReqPacket || (*resStatus != OK) || (packetLen <= 4))
     {
@@ -420,6 +421,7 @@ VmRESTParseAndPopulateHTTPHeaders(
 
             if (!skipRead)
             {
+                extraBytes = packetLen - bytesRead;
                 dwError = VmSockPosixAdjustProcessedBytes(
                               pReqPacket->pSocket,
                               bytesRead
@@ -467,10 +469,11 @@ VmRESTParseAndPopulateHTTPHeaders(
             if((*(temp+2) == '\r') && (*(temp+3) == '\n'))
             {
                 bytesRead = bytesRead + 2;
+                VMREST_LOG_DEBUG("Finished headers parsing with bytesRead %u", bytesRead);
                 /**** All headers processed : data starts from here ***/
                 dwError = VmSockPosixAdjustProcessedBytes(
                               pReqPacket->pSocket,
-                              bytesRead
+                              (bytesRead - extraBytes)
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
                 //VMREST_LOG_DEBUG("%s",("Finished all header parsing, total header bytes %u", bytesRead);
@@ -481,10 +484,18 @@ VmRESTParseAndPopulateHTTPHeaders(
             line = local;
             continue;
         }
-        *line = *temp;
-        temp++;
-        line++;
-        bytesRead++;
+        if ((line - local) < MAX_REQ_LIN_LEN )
+        {
+            *line = *temp;
+            temp++;
+            line++;
+            bytesRead++;
+        }
+        else
+        {
+            dwError = REQUEST_HEADER_FIELD_TOO_LARGE;
+            BAIL_ON_VMREST_ERROR(dwError);
+        }
     }
 cleanup:
     return dwError;
@@ -1045,6 +1056,10 @@ VmRESTProcessIncomingData(
     char*                            contentLen = NULL;
     char*                            expect = NULL;
     uint32_t                         done = 0;
+    char                             httpURI[MAX_URI_LEN] = {0};
+    char                             endPointURI[MAX_URI_LEN] = {0};
+    char*                            ptr = NULL;
+    PREST_ENDPOINT                   pEndPoint = NULL;
 
     /**** 1. Allocate and init request and response objects ****/
 
@@ -1075,6 +1090,7 @@ VmRESTProcessIncomingData(
                   pReqPacket,
                   &resStatus
                   );
+    BAIL_ON_VMREST_ERROR(dwError);
     VMREST_LOG_DEBUG("Header parsing done : return code %u", dwError);
 
     /**** 3: If Expect:100-continue is received, send the continue message back to client ****/
@@ -1088,7 +1104,34 @@ VmRESTProcessIncomingData(
     /**** FIXME:: space before header value ****/
     if (expect != NULL && ((strcmp(" 100-continue", expect) == 0) || (strcmp("100-continue", expect) == 0)))
     {
-        dwError = VmRESTAllocateHTTPResponsePacket(
+         /**** Do not send 100-continue for invalid URI ****/
+         if (gRESTEngGlobals.useEndPoint == 1)
+         {
+             memset(httpURI, '\0', MAX_URI_LEN);
+             memset(endPointURI, '\0', MAX_URI_LEN);
+             dwError = VmRESTGetHttpURI(
+                           pReqPacket,
+                           &ptr
+                           );
+             BAIL_ON_VMREST_ERROR(dwError);
+             memset(httpURI, '\0',MAX_URI_LEN);
+             strncpy(httpURI,ptr,(MAX_URI_LEN - 1));
+             ptr = NULL;
+
+             dwError = VmRestGetEndPointURIfromRequestURI(
+                           httpURI,
+                           endPointURI
+                           );
+             BAIL_ON_VMREST_ERROR(dwError);
+
+             dwError = VmRestEngineGetEndPoint(
+                            endPointURI,
+                            &pEndPoint
+                            );
+             BAIL_ON_VMREST_ERROR(dwError);
+         }
+
+         dwError = VmRESTAllocateHTTPResponsePacket(
                   &pIntResPacket
                   );
          BAIL_ON_VMREST_ERROR(dwError);
@@ -1136,7 +1179,6 @@ VmRESTProcessIncomingData(
     {
         pReqPacket->dataRemaining = 0;
     }
-    
 
     /**** 5. Give application the callback ****/
 
@@ -1209,12 +1251,28 @@ error:
         {
             if (pResPacket->headerSent == 0)
             {
-                if (dwError == 100)
+                if (dwError == NOT_FOUND)
                 {
                     tempStatus = VmRESTSetFailureResponse(
                                      &pResPacket,
-                                     "400",
-                                     "Bad Request"
+                                     "404",
+                                     "URI Not Found"
+                                     );
+                }
+                else if (dwError == LENGTH_REQUIRED)
+                {
+                    tempStatus = VmRESTSetFailureResponse(
+                                     &pResPacket,
+                                     "411",
+                                     "Length Required"
+                                     );
+                }
+                else if (dwError == REQUEST_HEADER_FIELD_TOO_LARGE)
+                {
+                    tempStatus = VmRESTSetFailureResponse(
+                                     &pResPacket,
+                                     "431",
+                                     "Large Header Field"
                                      );
                 }
                 else
