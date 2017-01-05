@@ -1,6 +1,6 @@
 # !/bin/bash
 TOPDIR=`pwd`
-IPADDR="172.16.127.132"
+IPADDR="172.16.127.129"
 PORT="81"
 
 # Compile from source in the same directory
@@ -22,9 +22,9 @@ $TOPDIR/NonSSLClient $IPADDR $PORT "TEST 7"
 
 $TOPDIR/NonSSLClient $IPADDR $PORT "TEST 8"
 
-#$TOPDIR/NonSSLClient $IPADDR $PORT "TEST 9"
+$TOPDIR/NonSSLClient $IPADDR $PORT "TEST 9"
 
-#$TOPDIR/NonSSLClient $IPADDR $PORT "TEST 10"
+$TOPDIR/NonSSLClient $IPADDR $PORT "TEST 10"
 
 $TOPDIR/NonSSLClient $IPADDR $PORT "TEST 11"
 

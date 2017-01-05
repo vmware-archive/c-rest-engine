@@ -403,7 +403,7 @@ VmRESTParseAndPopulateHTTPHeaders(
     if (!buffer || !pReqPacket || (*resStatus != OK) || (packetLen <= 4))
     {
        VMREST_LOG_ERROR("Invalid params");
-       dwError =  VMREST_HTTP_INVALID_PARAMS;
+       dwError =  BAD_REQUEST;
        *resStatus = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1054,6 +1054,7 @@ VmRESTProcessIncomingData(
     uint32_t                         connectionClosed = 0;
     char                             statusStng[MAX_STATUS_LENGTH] = {0};
     char*                            contentLen = NULL;
+    char*                            transferEncoding = NULL;
     char*                            expect = NULL;
     uint32_t                         done = 0;
     char                             httpURI[MAX_URI_LEN] = {0};
@@ -1171,16 +1172,29 @@ VmRESTProcessIncomingData(
                   &contentLen
                   );
 
-    if ((contentLen != NULL) && (strlen(contentLen) > 0))
+    dwError = VmRESTGetHttpHeader(
+                  pReqPacket,
+                  "Transfer-Encoding",
+                  &transferEncoding
+                  );
+
+    /**** 5. Either of Content length or transfer encoding must be set ****/
+
+    if (contentLen != NULL && transferEncoding == NULL && (strlen(contentLen) > 0))
     {
         pReqPacket->dataRemaining = atoi(contentLen);
     }
-    else
+    else if (transferEncoding != NULL && contentLen == NULL && ((strcmp(transferEncoding, "chunked") == 0) || (strcmp(transferEncoding, " chunked") == 0)))
     {
         pReqPacket->dataRemaining = 0;
     }
+    else if (!(contentLen == NULL && transferEncoding == NULL))
+    {
+        dwError = LENGTH_REQUIRED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
 
-    /**** 5. Give application the callback ****/
+    /**** 6. Give application the callback ****/
 
     if (!dwError)
     {
@@ -1206,7 +1220,7 @@ VmRESTProcessIncomingData(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    /**** 6. Close the connection and free associated memory ****/
+    /**** 7. Close the connection and free associated memory ****/
 
     dwError = VmRESTCloseClient(
                   pResPacket
@@ -1226,7 +1240,7 @@ cleanup:
     }
     return dwError;
 error:
-    VMREST_LOG_ERROR("Something failed");
+    VMREST_LOG_ERROR("Something failed, dwError = %u", dwError);
     if (pIntResPacket)
     {
         VmRESTFreeHTTPResponsePacket(
@@ -1251,7 +1265,15 @@ error:
         {
             if (pResPacket->headerSent == 0)
             {
-                if (dwError == NOT_FOUND)
+                if (dwError == BAD_REQUEST)
+                {
+                    tempStatus = VmRESTSetFailureResponse(
+                                     &pResPacket,
+                                     "400",
+                                     "Bad Request"
+                                     );
+                }
+                else if (dwError == NOT_FOUND)
                 {
                     tempStatus = VmRESTSetFailureResponse(
                                      &pResPacket,

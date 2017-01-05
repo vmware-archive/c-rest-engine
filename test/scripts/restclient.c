@@ -62,37 +62,37 @@ getExpectedResult(
     else if (strcmp(testID, "TEST 5") == 0)
     {
         strcpy(input, "GET /v1/pkg?x=y HTTP/1.1\r\nHost: SITE\r\nConnection: Keep-Alive\r\nContent-Length: 20\r\n\r\nThis");
-        strcpy(expected, "HTTP/1.1 400 BAD REQUEST\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+        strcpy(expected, "HTTP/1.1 411 Length Required\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
     }
     else if (strcmp(testID, "TEST 6") == 0)
     {
         strcpy(input, "Non HTTP Junk Data which should be discarded totally\r\n\r\ndfdfafdsfadsf");
-        strcpy(expected, "HTTP/1.1 400 BAD REQUEST\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+        strcpy(expected, "HTTP/1.1 405 Method Not Allowed\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
     }
     else if (strcmp(testID, "TEST 7") == 0)
     {
         strcpy(input, "GET /v1/pkg?x=y HTTP/1.1\r\nHost: SITE\r\nConnection: Keep-Alive\r\n\r\nThis is payload");
-        strcpy(expected, "HTTP/1.1 400 BAD REQUEST\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+        strcpy(expected, "HTTP/1.1 200 OK\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
     }
     else if (strcmp(testID, "TEST 8") == 0)
     {
         strcpy(input, "GET /v1/pkg?x=y HTTP/1.1\r\nHost: SITE\r\nContent-Length: 28\r\n\r\nThis is payload with \r\ndfdf\r\n");
-        strcpy(expected, "HTTP/1.1 400 BAD REQUEST\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+        strcpy(expected, "HTTP/1.1 411 Length Required\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
     }
     else if (strcmp(testID, "TEST 9") == 0)
     {
         strcpy(input, "GET /v1/pkg?x=y HTTP/1.1\r\nHost: SITE\r\nContent-Length: 28\r\nTransfer-Encoding:chunked\r\n\r\nThis is payload with4\r\ndfdf\r\n");
-        strcpy(expected, "HTTP/1.1 400 BAD REQUEST\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+        strcpy(expected, "HTTP/1.1 411 Length Required\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
     }
     else if (strcmp(testID, "TEST 10") == 0)
     {
-        strcpy(input, "");
-        strcpy(expected, "HTTP/1.1 400 BAD REQUEST\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+        strcpy(input, " ");
+        strcpy(expected, "HTTP/1.1 400 Bad Request\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
     }
     else if (strcmp(testID, "TEST 11") == 0)
     {
         strcpy(input, "\r\n\r\b\r\n\r\n");
-        strcpy(expected, "HTTP/1.1 400 BAD REQUEST\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+        strcpy(expected, "HTTP/1.1 405 Method Not Allowed\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
     }
 
 

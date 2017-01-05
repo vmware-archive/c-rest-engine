@@ -308,10 +308,16 @@ tryagain1:
                       );
 
         /**** If Expect:100-continue was received, re-attempt read considering RTT delay ****/
-        if (dwError !=0 && pRequest->dataNotRcvd == 1 && tryCnt < maxTry)
+        if (dwError == 5100 && pRequest->dataNotRcvd == 1 && tryCnt < maxTry)
         {
             tryCnt++;
             goto tryagain1;
+        }
+
+        /**** Cross examine size if its last chuck ****/
+        if (dwError == 5100 && bytesRead > 0 && bytesRead < HTTP_CHUNCKED_DATA_LEN)
+        {
+            dwError = 0;
         }
         BAIL_ON_VMREST_ERROR(dwError);
 
@@ -329,7 +335,7 @@ tryagain1:
                           );
             BAIL_ON_VMREST_ERROR(dwError);
             pRequest->dataRemaining = chunkLen;
-
+            VMREST_LOG_DEBUG("Chunk Len = %u", chunkLen);
             if (chunkLen == 0)
             {
                 *done = 1;

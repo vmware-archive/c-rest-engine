@@ -84,9 +84,6 @@ extern VMREST_LOG_LEVEL VMRESTLogGetLevel();
 
 #define VMREST_LOG_GENERAL_( Level, Format, ... ) \
     VMREST_LOG_( Level, Format, ##__VA_ARGS__ )
-
-#define VMREST_LOG_ERROR( Format, ... )   \
-    VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_ERROR, Format, ##__VA_ARGS__ )
 #define VMREST_LOG_WARNING( Format, ... ) \
     VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_WARNING, Format, ##__VA_ARGS__ )
 #define VMREST_LOG_INFO( Format, ... )    \
@@ -98,6 +95,13 @@ extern VMREST_LOG_LEVEL VMRESTLogGetLevel();
 #define VMREST_LOG_DEBUG(Format, ... )       \
     VMREST_LOG_GENERAL_(                      \
         VMREST_LOG_LEVEL_DEBUG,               \
+    Format " [file: %s][line: %d]",     \
+    ##__VA_ARGS__, __FILE__, __LINE__ )
+
+
+#define VMREST_LOG_ERROR(Format, ... )       \
+    VMREST_LOG_GENERAL_(                      \
+        VMREST_LOG_LEVEL_ERROR,               \
     Format " [file: %s][line: %d]",     \
     ##__VA_ARGS__, __FILE__, __LINE__ )
 
