@@ -1,7 +1,7 @@
 Name:    vmware-rest
 Summary: VMware REST Library
-Version: 1.0.0
-Release: 0
+Version: 1.0.1
+Release: 5
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware

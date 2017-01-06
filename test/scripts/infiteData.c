@@ -10,7 +10,6 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 
-int max_data_size = 0;
 
 void
 VmSockPosixSetSocketNonBlocking(
@@ -26,34 +25,19 @@ VmSockPosixSetSocketNonBlocking(
 
 }
 
-void
-getExpectedResult(
-    char*                            testID,
-    char*                            input,
-    char*                            expected
-    )
-{
-    if (!testID || !input || !expected)
-    {
-        return;
-    }
-    if (strcmp(testID, "TEST 1") == 0)
-    {
-        memset(input, 'B', max_data_size);
-        strcpy(expected, "HTTP/1.1 400 Bad Request\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
-    }
-
-}
-
 int main(int argc, char *argv[])
 {
     int sockfd, numbytes;  
     char *buf = NULL;
+    char* res = NULL;
     char expected[512];
+    char expected1[512];
+    char out[512];
     struct addrinfo hints, *servinfo, *p;
     int rv;
     char s[INET6_ADDRSTRLEN];
-    int c = 0;
+    int c = 0, x = 0;
+    int max_data_size = 0;
 
     if (argc != 5) {
         printf("Wrong number of arguments supplied to test program\n");
@@ -66,6 +50,10 @@ int main(int argc, char *argv[])
 
     memset(buf, '\0',max_data_size);
     memset(expected, '\0', 512);
+    memset(expected1, '\0', 512);
+    memset(out, '\0', 512);
+    strcpy(expected, "HTTP/1.1 400 Bad Request\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+    strcpy(expected1, "HTTP/1.1 431 Large Header Field\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -97,27 +85,21 @@ int main(int argc, char *argv[])
         return 2;
     }
 
-    freeaddrinfo(servinfo); 
+    freeaddrinfo(servinfo);
 
-    getExpectedResult(argv[4],buf ,expected);
-
-    while(1)
+    res = expected;
+    if (((strcmp(argv[4], "TEST 7") == 0) || (strcmp(argv[4], "TEST 8") == 0))) 
     {
-        int x = 0;
-        memset(buf, 'B', max_data_size);
-        write(sockfd, buf, max_data_size);
-        memset(buf, '\0', max_data_size);
-        x = read(sockfd, buf, max_data_size);
-        if ( x > 0 )
-        {
-            break;
-        }
+        res = expected1;
     }
+
+    memset(buf, 'B', max_data_size);
+    write(sockfd, buf, max_data_size);
+    x = read(sockfd, out, 512);
 
     sleep(1);
 
- 
-    if (strcmp(buf, expected) == 0)
+    if (strcmp(out, res) == 0)
     {
         printf("\n%s PASSED\n", argv[4]);
     }

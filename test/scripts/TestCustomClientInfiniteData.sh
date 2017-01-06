@@ -1,6 +1,6 @@
 # !/bin/bash
 TOPDIR=`pwd`
-IPADDR="172.16.127.132"
+IPADDR="172.16.127.129"
 PORT="81"
 
 # Compile from source in the same directory
@@ -22,7 +22,7 @@ $TOPDIR/infiteData $IPADDR $PORT "10000" "TEST 7"
 
 $TOPDIR/infiteData $IPADDR $PORT "32000" "TEST 8"
 
-$TOPDIR/infiteData $IPADDR $PORT "0" "TEST 9"
+$TOPDIR/infiteData $IPADDR $PORT "1024" "TEST 9"
 
 rm -f $TOPDIR/infiteData
 

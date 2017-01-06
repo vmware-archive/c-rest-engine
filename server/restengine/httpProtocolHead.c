@@ -1325,8 +1325,8 @@ error:
                 {
                     tempStatus = VmRESTSetFailureResponse(
                                      &pResPacket,
-                                     NULL,
-                                     NULL
+                                     "400",
+                                     "Bad Request"
                                      );
                 }
                 if (tempStatus)
