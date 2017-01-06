@@ -692,8 +692,6 @@ VmsockPosixGetXBytes(
 
     dataAvailableInCache = pStreamBuffer->dataRead - pStreamBuffer->dataProcessed;
 
-    VMREST_LOG_DEBUG("Data Available in Cache = %u bytes", dataAvailableInCache);
-
     if (dataAvailableInCache >= bytesRequested)
     {
         /**** Enough data available in stream cache buffer ****/

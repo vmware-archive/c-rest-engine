@@ -1065,11 +1065,9 @@ VmSockPosixRead(
                 (struct sockaddr*)&pIoBuffer->clientAddr,
                 &pIoBuffer->addrLen);
     }
-    VMREST_LOG_DEBUG("\nRead Status on Socket with fd = %d\nRequested: %d bytes\nRead %d bytes\n", pSocket->fd, dwBufSize, nRead);
 
     if (nRead < 0)
     {
-        VMREST_LOG_ERROR("recvfrom() returned Error code %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
