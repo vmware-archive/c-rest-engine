@@ -184,7 +184,8 @@ VmHTTPShutdown(
         VmRESTFreeConfigFileStruct(
             gRESTEngGlobals.config
             );
+        VmRESTLogTerminate(
+            );
+        gRESTEngGlobals.config = NULL;
     }
-    VmRESTLogTerminate(
-        );
 }
