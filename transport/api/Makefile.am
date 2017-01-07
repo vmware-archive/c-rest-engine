@@ -2,7 +2,7 @@
 # Copyright (c) VMware Inc.  All rights Reserved.
 #
 
-lib_LTLIBRARIES = libvmsock.la
+noinst_LTLIBRARIES = libvmsock.la
 
 libvmsock_la_SOURCES = \
     api.c \
@@ -15,7 +15,8 @@ libvmsock_la_CPPFLAGS = \
     -I$(top_srcdir)/transport/include \
     -DHAVE_ARPA_INET_H
 
-libvmsock_la_LDFLAGS = 
+libvmsock_la_LDFLAGS = \
+    -static
 
 libvmsock_la_LIBADD = \
     $(top_builddir)/transport/posix/libvmsockposix.la

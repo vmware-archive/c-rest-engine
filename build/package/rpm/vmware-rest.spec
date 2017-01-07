@@ -1,7 +1,7 @@
 Name:    vmware-rest
 Summary: VMware REST Library
 Version: 1.0.1
-Release: 5
+Release: 6
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware
@@ -47,7 +47,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_sbindir}/*
 %{_includedir}/vmrest.h
 %{_lib64dir}/librestengine.*
-%{_lib64dir}/libvmsock.*
 
 # %doc ChangeLog README COPYING
 
