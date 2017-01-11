@@ -486,6 +486,8 @@ VmHandleEchoData(
     FILE*                            fp = NULL;
     int                              bytesRead = 0;
     char                             size[10] = {0};
+    uint32_t                         wcCount = 0;
+    char*                            wildcard = NULL;
 
     memset(buffer, '\0', MAX_DATA_LEN);
     memset(size, '\0', 10);
@@ -494,6 +496,33 @@ VmHandleEchoData(
                   pRequest,
                   &res);
     BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTGetWildCardCount(
+                  pRequest,
+                  &wcCount);
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    printf("WC COUNT %u", wcCount);
+
+    dwError = VmRESTGetWildCardByIndex(
+              pRequest,
+              1,
+              &wildcard);
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    printf("WC String 1 = %s", wildcard);
+    write(1,wildcard,strlen(wildcard));
+
+    wildcard = NULL;
+
+    dwError = VmRESTGetWildCardByIndex(
+              pRequest,
+              2,
+              &wildcard);
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    write(1,wildcard,strlen(wildcard));
+    printf("WC String 2 = %s", wildcard);
 
     fp  = fopen("/tmp/rcvdData", "w");
     if (fp == NULL)

@@ -317,6 +317,28 @@ VmRestParseParams(
     PREST_REQUEST                    pRequest
     );
 
+uint32_t
+VmRESTMatchEndPointURI(
+    char*                            pattern,
+    char*                            pEndPointURI
+    );
+
+uint32_t
+VmRESTGetPreSlashIndex(
+    char*                            patternURI,
+    uint32_t                         wildCardIndex,
+    uint32_t*                        preSlashIndex
+    );
+
+uint32_t
+VmRESTCopyWCStringByIndex(
+    char*                            requestEndPointURI,
+    char*                            des,
+    uint32_t                         wcIndex,
+    uint32_t                         totalWC,
+    uint32_t                         preSlashIndex
+    );
+
 /***************** httpMain.c  ************/
 
 uint32_t

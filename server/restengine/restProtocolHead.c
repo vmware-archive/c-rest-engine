@@ -82,7 +82,7 @@ VmRestEngineHandler(
     VMREST_LOG_DEBUG("EndPoint found for URI %s",endPointURI);
 
     /**** 5. Get Params count ****/
-  
+
     dwError = VmRestGetParamsCountInReqURI(
                   httpURI,
                   &paramsCount
@@ -260,6 +260,23 @@ VmRestEngineAddEndpoint(
 
     endPointURILen = strlen(pEndPointURI);
 
+    /**** If Endpoint already exists - return****/
+    dwError = VmRestEngineGetEndPoint(
+                  pEndPointURI,
+                  &temp
+                  );
+    if(dwError != NOT_FOUND)
+    {
+        dwError = REST_ENGINE_ENDPOINT_EXISTS;
+    }
+    else
+    {
+        dwError = 0;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    temp = NULL;
+
     /**** Allocate and Assign Endpoint ****/
     dwError = VmRESTAllocateEndPoint(
                   &pEndPoint
@@ -276,6 +293,11 @@ VmRestEngineAddEndpoint(
         pEndPoint->pHandler->pfnHandleRead = pHandler->pfnHandleRead;
         pEndPoint->pHandler->pfnHandleOthers = pHandler->pfnHandleOthers;
         pEndPoint->next = NULL;
+    }
+    else
+    {
+        dwError = REST_ENGINE_ENDPOINT_BAD_URI;
+        BAIL_ON_VMREST_ERROR(dwError);
     }
 
     /**** Add to list of endpoints ****/
@@ -295,11 +317,14 @@ VmRestEngineAddEndpoint(
         temp->next = pEndPoint;
     }
     pthread_mutex_unlock(&(gRESTEngGlobals.mutex));
-    
 cleanup:
     return dwError;
 error:
-    /**** TODO: Free the allocated memory ****/
+    if (pEndPoint)
+    {
+        VmRESTFreeEndPoint(pEndPoint);
+        pEndPoint = NULL;
+    }
     goto cleanup;
 }
 
@@ -366,6 +391,7 @@ VmRestEngineGetEndPoint(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    uint32_t                         found = 0;
 
     PREST_ENDPOINT                   temp = NULL;
 
@@ -381,10 +407,17 @@ VmRestEngineGetEndPoint(
 
     while (temp != NULL)
     {
-        if ((temp->pszEndPointURI != NULL) && (strcmp(temp->pszEndPointURI,pEndPointURI) == 0))
+        if (temp->pszEndPointURI != NULL)
         {
-            *ppEndPoint = temp;
-            break;
+            found = VmRESTMatchEndPointURI(
+                        temp->pszEndPointURI,
+                        pEndPointURI
+                        );
+            if(found == 1)
+            {
+                *ppEndPoint = temp;
+                break;
+            }
         }
         temp = temp->next;
     }
@@ -578,6 +611,36 @@ error:
     goto cleanup;
 }
 
+uint32_t
+VmRESTMatchEndPointURI(
+    char*                            pattern,
+    char*                            pEndPointURI
+    )
+{
+    /**** return 0 = fail, return 1 = success ****/
+
+    if (*pattern == '\0' && *pEndPointURI == '\0')
+    {
+        return 1;
+    }
+
+    if (*pattern == '*' && *(pattern+1) != '\0' && *pEndPointURI == '\0')
+    {
+        return 0;
+    }
+
+    if (*pattern == *pEndPointURI)
+    {
+        return VmRESTMatchEndPointURI(pattern+1, pEndPointURI+1);
+    }
+
+    if (*pattern == '*')
+    {
+        return VmRESTMatchEndPointURI(pattern+1, pEndPointURI) || VmRESTMatchEndPointURI(pattern, pEndPointURI+1);
+    }
+    return 0;
+}
+
 /**** Exposed API to manupulate over params present in URI ****/
 
 uint32_t
@@ -641,3 +704,290 @@ error:
     }
     goto cleanup;
 }
+
+uint32_t
+VmRESTGetWildCardCount(
+    PREST_REQUEST                    pRequest,
+    uint32_t*                        wildCardCount
+    )
+{
+    char                             httpURI[MAX_URI_LEN] = {0};
+    char                             endPointURI[MAX_URI_LEN] = {0};
+    char*                            ptr = NULL;
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    uint32_t                         count = 0;
+    PREST_ENDPOINT                   pEndPoint = NULL;
+
+    if (pRequest == NULL || wildCardCount == NULL)
+    {
+        VMREST_LOG_ERROR("Invalid Params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+    *wildCardCount = 0;
+
+    memset(httpURI, '\0', MAX_URI_LEN);
+    memset(endPointURI, '\0', MAX_URI_LEN);
+
+    dwError = VmRESTGetHttpURI(
+                  pRequest,
+                  &ptr
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    strncpy(httpURI,ptr,(MAX_URI_LEN - 1));
+    ptr = NULL;
+    
+    dwError = VmRestGetEndPointURIfromRequestURI(
+                  httpURI,
+                  endPointURI
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRestEngineGetEndPoint(
+                  endPointURI,
+                  &pEndPoint
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    ptr = pEndPoint->pszEndPointURI;
+
+    while(*ptr != '\0')
+    {
+        if(*ptr == '*')
+        {
+            count++;
+        }
+        ptr++;
+    }
+
+    *wildCardCount = count;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+
+uint32_t
+VmRESTGetWildCardByIndex(
+    PREST_REQUEST                    pRequest,
+    uint32_t                         index,
+    char**                           ppszWildCard
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    uint32_t                         count = 0;
+    uint32_t                         preSlashIndex = 0;
+    char                             httpURI[MAX_URI_LEN] = {0};
+    char                             endPointURI[MAX_URI_LEN] = {0};
+    char*                            ptr = NULL;
+    char*                            pszWildCard = NULL;
+    PREST_ENDPOINT                   pEndPoint = NULL;
+
+    if (pRequest == NULL)
+    {
+        VMREST_LOG_ERROR("Invalid Params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTGetWildCardCount(
+                  pRequest,
+                  &count
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (index > count)
+    {
+        VMREST_LOG_ERROR("Invalid index count %u index %u", count, index);
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (void **)&pszWildCard
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    memset(httpURI, '\0', MAX_URI_LEN);
+    memset(endPointURI, '\0', MAX_URI_LEN);
+
+    dwError = VmRESTGetHttpURI(
+                  pRequest,
+                  &ptr
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    strncpy(httpURI,ptr,(MAX_URI_LEN - 1));
+    ptr = NULL;
+
+    dwError = VmRestGetEndPointURIfromRequestURI(
+                  httpURI,
+                  endPointURI
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    ptr = endPointURI;
+
+    dwError = VmRestEngineGetEndPoint(
+                  endPointURI,
+                  &pEndPoint
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTGetPreSlashIndex(
+              pEndPoint->pszEndPointURI,
+              index,
+              &preSlashIndex
+              );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTCopyWCStringByIndex(
+                  endPointURI,
+                  pszWildCard,
+                  index,
+                  count,
+                  preSlashIndex
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    *ppszWildCard = pszWildCard;
+
+
+cleanup:
+    return dwError;
+error:
+    if (pszWildCard)
+    {
+        VmRESTFreeMemory(pszWildCard);
+        pszWildCard = NULL;
+    }
+    goto cleanup;
+}
+
+uint32_t
+VmRESTGetPreSlashIndex(
+    char*                            patternURI,
+    uint32_t                         wildCardIndex,
+    uint32_t*                        preSlashIndex
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char*                            ptr = NULL;
+    uint32_t                         slashCnt = 0;
+    uint32_t                         wcCharCnt = 0;
+
+    if (patternURI == NULL || preSlashIndex == NULL)
+    {
+        VMREST_LOG_ERROR("Invalid Params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    ptr = patternURI;
+    *preSlashIndex = 0;
+
+    while(*ptr != '\0')
+    {
+        if (*ptr == '*')
+        {
+            wcCharCnt++;
+        }
+        if (wcCharCnt == wildCardIndex)
+        {
+            break;
+        }
+        if (*ptr == '/')
+        {
+            slashCnt++;
+        }
+        ptr++;
+    }
+
+    *preSlashIndex = slashCnt;
+    
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTCopyWCStringByIndex(
+    char*                            requestEndPointURI,
+    char*                            des,
+    uint32_t                         wcIndex,
+    uint32_t                         totalWC,
+    uint32_t                         preSlashIndex
+    )
+{
+     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+     char*                            ptr = NULL;
+     uint32_t                         slashCnt = 0;
+     uint32_t                         copyBytes = 0;
+     char*                            lastChar = NULL;
+
+    if (requestEndPointURI == NULL || des == NULL)
+    {
+        VMREST_LOG_ERROR("Invalid Params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    ptr = requestEndPointURI;
+
+    while(*ptr != '\0')
+    {
+        if (*ptr == '/')
+        {
+            slashCnt++;
+        }
+        ptr++;
+        if(slashCnt == preSlashIndex)
+        {
+            break;
+        }
+    }
+
+    if (*ptr != '\0')
+    {
+        lastChar = strchr(ptr,'/');
+
+        if (lastChar != NULL)
+        {
+            copyBytes = lastChar - ptr; 
+            strncpy(des, ptr, copyBytes);
+            *(des + copyBytes) = '\0';
+        }
+        else if (wcIndex == totalWC)
+        {
+            lastChar = strchr(ptr, '\0');
+            if (lastChar != NULL)
+            {
+                copyBytes = lastChar - ptr;
+                strncpy(des, ptr, copyBytes);
+                *(des + copyBytes) = '\0';
+            }
+            else
+            {
+                dwError = BAD_REQUEST;
+            }
+        }
+        else
+        {
+            dwError = BAD_REQUEST;
+        }
+    }
+    else
+    {
+        /**** URL end with '/' - nothing to copy ****/
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+
+}
+    

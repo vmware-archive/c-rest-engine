@@ -158,7 +158,7 @@ VmRESTGetData(
     );
 
 /*
- * @brief Get the params associated in URI of HTTP req object.
+ * @brief Get the params associated with URI of HTTP req object.
  *
  * @param[in]                        Reference to HTTP Request object.
  * @param[in]                        Total params found in URL.
@@ -175,6 +175,36 @@ VmRESTGetParamsByIndex(
     uint32_t                         paramIndex,
     char**                           pszKey,
     char**                           pszValue
+    );
+
+/*
+ * @brief Get the number of wild card strings present in Endpoint.
+ *
+ * @param[in]                        Reference to HTTP Request object..
+ * @param[out]                       Pointer to result Value.
+ * @return Returns 0 for success
+ */
+VMREST_API
+uint32_t
+VmRESTGetWildCardCount(
+    PREST_REQUEST                    pRequest,
+    uint32_t*                        wildCardCount
+    );
+
+/*
+ * @brief Get the wild card string in request by index.
+ *
+ * @param[in]                        Reference to HTTP Request object.
+ * @param[in]                        Index for wild card string.
+ * @param[out]                       Pointer to resultant string.
+ * @return Returns 0 for success
+ */
+VMREST_API
+uint32_t
+VmRESTGetWildCardByIndex(
+    PREST_REQUEST                    pRequest,
+    uint32_t                         index,
+    char**                           ppszWildCard
     );
 
 /*

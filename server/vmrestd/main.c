@@ -716,7 +716,7 @@ int main(int argc, char *argv[])
 #else
     dwError = VmRESTInit(NULL,"/tmp/restconfig.txt");
 #endif
-    VmRegisterHandler("/v1/pkg", 0);
+    VmRegisterHandler("/v1/pkg/*/del/*", 0);
 
     VmRESTStart();
 
@@ -731,7 +731,7 @@ int main(int argc, char *argv[])
     
     dwError = VmRESTStop();
 
-    dwError = VmRESTUnRegisterHandler("/v1/pkg");
+    dwError = VmRESTUnRegisterHandler("/v1/pkg/*/del/*");
 
     VmRESTShutdown();
 
