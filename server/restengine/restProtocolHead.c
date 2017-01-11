@@ -641,6 +641,132 @@ VmRESTMatchEndPointURI(
     return 0;
 }
 
+uint32_t
+VmRESTGetPreSlashIndex(
+    char*                            patternURI,
+    uint32_t                         wildCardIndex,
+    uint32_t*                        preSlashIndex
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char*                            ptr = NULL;
+    uint32_t                         slashCnt = 0;
+    uint32_t                         wcCharCnt = 0;
+
+    if (patternURI == NULL || preSlashIndex == NULL)
+    {
+        VMREST_LOG_ERROR("Invalid Params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    ptr = patternURI;
+    *preSlashIndex = 0;
+
+    while(*ptr != '\0')
+    {
+        if (*ptr == '*')
+        {
+            wcCharCnt++;
+        }
+        if (wcCharCnt == wildCardIndex)
+        {
+            break;
+        }
+        if (*ptr == '/')
+        {
+            slashCnt++;
+        }
+        ptr++;
+    }
+
+    *preSlashIndex = slashCnt;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
+VmRESTCopyWCStringByIndex(
+    char*                            requestEndPointURI,
+    char*                            des,
+    uint32_t                         wcIndex,
+    uint32_t                         totalWC,
+    uint32_t                         preSlashIndex
+    )
+{
+     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+     char*                            ptr = NULL;
+     uint32_t                         slashCnt = 0;
+     uint32_t                         copyBytes = 0;
+     char*                            lastChar = NULL;
+
+    if (requestEndPointURI == NULL || des == NULL)
+    {
+        VMREST_LOG_ERROR("Invalid Params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    ptr = requestEndPointURI;
+
+    while(*ptr != '\0')
+    {
+        if (*ptr == '/')
+        {
+            slashCnt++;
+        }
+        ptr++;
+        if(slashCnt == preSlashIndex)
+        {
+            break;
+        }
+    }
+
+    if (*ptr != '\0')
+    {
+        lastChar = strchr(ptr,'/');
+
+        if (lastChar != NULL)
+        {
+            copyBytes = lastChar - ptr;
+            strncpy(des, ptr, copyBytes);
+            *(des + copyBytes) = '\0';
+        }
+        else if (wcIndex == totalWC)
+        {
+            lastChar = strchr(ptr, '\0');
+            if (lastChar != NULL)
+            {
+                copyBytes = lastChar - ptr;
+                strncpy(des, ptr, copyBytes);
+                *(des + copyBytes) = '\0';
+            }
+            else
+            {
+                dwError = BAD_REQUEST;
+            }
+        }
+        else
+        {
+            dwError = BAD_REQUEST;
+        }
+    }
+    else
+    {
+        /**** URL end with '/' - nothing to copy ****/
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+
+}
+
 /**** Exposed API to manupulate over params present in URI ****/
 
 uint32_t
@@ -864,130 +990,3 @@ error:
     }
     goto cleanup;
 }
-
-uint32_t
-VmRESTGetPreSlashIndex(
-    char*                            patternURI,
-    uint32_t                         wildCardIndex,
-    uint32_t*                        preSlashIndex
-    )
-{
-    uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    char*                            ptr = NULL;
-    uint32_t                         slashCnt = 0;
-    uint32_t                         wcCharCnt = 0;
-
-    if (patternURI == NULL || preSlashIndex == NULL)
-    {
-        VMREST_LOG_ERROR("Invalid Params");
-        dwError = VMREST_HTTP_INVALID_PARAMS;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    ptr = patternURI;
-    *preSlashIndex = 0;
-
-    while(*ptr != '\0')
-    {
-        if (*ptr == '*')
-        {
-            wcCharCnt++;
-        }
-        if (wcCharCnt == wildCardIndex)
-        {
-            break;
-        }
-        if (*ptr == '/')
-        {
-            slashCnt++;
-        }
-        ptr++;
-    }
-
-    *preSlashIndex = slashCnt;
-    
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
-}
-
-uint32_t
-VmRESTCopyWCStringByIndex(
-    char*                            requestEndPointURI,
-    char*                            des,
-    uint32_t                         wcIndex,
-    uint32_t                         totalWC,
-    uint32_t                         preSlashIndex
-    )
-{
-     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-     char*                            ptr = NULL;
-     uint32_t                         slashCnt = 0;
-     uint32_t                         copyBytes = 0;
-     char*                            lastChar = NULL;
-
-    if (requestEndPointURI == NULL || des == NULL)
-    {
-        VMREST_LOG_ERROR("Invalid Params");
-        dwError = VMREST_HTTP_INVALID_PARAMS;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    ptr = requestEndPointURI;
-
-    while(*ptr != '\0')
-    {
-        if (*ptr == '/')
-        {
-            slashCnt++;
-        }
-        ptr++;
-        if(slashCnt == preSlashIndex)
-        {
-            break;
-        }
-    }
-
-    if (*ptr != '\0')
-    {
-        lastChar = strchr(ptr,'/');
-
-        if (lastChar != NULL)
-        {
-            copyBytes = lastChar - ptr; 
-            strncpy(des, ptr, copyBytes);
-            *(des + copyBytes) = '\0';
-        }
-        else if (wcIndex == totalWC)
-        {
-            lastChar = strchr(ptr, '\0');
-            if (lastChar != NULL)
-            {
-                copyBytes = lastChar - ptr;
-                strncpy(des, ptr, copyBytes);
-                *(des + copyBytes) = '\0';
-            }
-            else
-            {
-                dwError = BAD_REQUEST;
-            }
-        }
-        else
-        {
-            dwError = BAD_REQUEST;
-        }
-    }
-    else
-    {
-        /**** URL end with '/' - nothing to copy ****/
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
-
-}
-    
