@@ -248,6 +248,7 @@ VmRestEngineAddEndpoint(
     size_t                           endPointURILen = 0;
     PREST_ENDPOINT                   pEndPoint = NULL;
     PREST_ENDPOINT                   temp = NULL;
+    char*                            hasSpace = NULL;
 
     /**** TODO: Add check to perform this only when engine is not running ****/
 
@@ -259,6 +260,15 @@ VmRestEngineAddEndpoint(
     BAIL_ON_VMREST_ERROR(dwError);
 
     endPointURILen = strlen(pEndPointURI);
+
+    /**** check for space in URL ****/
+    hasSpace = strchr(pEndPointURI, ' ');
+    if (hasSpace != NULL)
+    {
+        VMREST_LOG_ERROR("Space found in URL - Not Valid");
+        dwError =  VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     /**** If Endpoint already exists - return****/
     dwError = VmRestEngineGetEndPoint(
@@ -441,11 +451,20 @@ VmRestGetEndPointURIfromRequestURI(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            foundCharacter = NULL;
     uint64_t                         copyBytes = 0;
+    char*                            hasSpace = NULL;
     
     if (!pRequestURI || !endPointURI)
     {
         VMREST_LOG_ERROR("Request URI is NULL");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    hasSpace = strchr(pRequestURI, ' ');
+    if (hasSpace != NULL || (strlen(pRequestURI) == 0) || (strlen(pRequestURI) > MAX_URI_LEN))
+    {
+        VMREST_LOG_ERROR("Request URI has space or wrong length - Invalid");
+        dwError = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -477,11 +496,20 @@ VmRestGetParamsCountInReqURI(
     uint32_t                         ampCnt = 0;
     uint32_t                         eqCnt = 0;
     char*                            temp = NULL;
+    char*                            hasSpace = NULL;
 
     if (!pRequestURI || !paramCount)
     {
         VMREST_LOG_ERROR("Request URI or result pointer is NULL");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    hasSpace = strchr(pRequestURI, ' ');
+    if (hasSpace != NULL || strlen(pRequestURI) == 0 || strlen(pRequestURI) > MAX_URI_LEN)
+    {
+        VMREST_LOG_ERROR("Request URI has space or wrong length");
+        dwError = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 

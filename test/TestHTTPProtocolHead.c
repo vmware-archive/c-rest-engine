@@ -287,7 +287,7 @@ void Test_VmRESTHTTPGetReqVersionTest1(
     /**** TEST 1: valid case ****/
     strcpy(line, "POST /v1/pkg?x=y HTTP/1.1");
 
-    dwError = VmRESTHTTPGetReqURI(
+    dwError = VmRESTHTTPGetReqVersion(
                   line,
                   strlen(line),
                   version,
@@ -313,7 +313,7 @@ void Test_VmRESTHTTPGetReqVersionTest2(
     /**** TEST 2: Wrong version ****/
     strcpy(line, "POST /v1/pkg?x=y HTTP/0.9");
 
-    dwError = VmRESTHTTPGetReqURI(
+    dwError = VmRESTHTTPGetReqVersion(
                   line,
                   strlen(line),
                   version,
@@ -337,7 +337,7 @@ void Test_VmRESTHTTPGetReqVersionTest3(
     /**** TEST 3: No Version ****/
     strcpy(line, "POST /v1/pkg?x=y");
 
-    dwError = VmRESTHTTPGetReqURI(
+    dwError = VmRESTHTTPGetReqVersion(
                   line,
                   strlen(line),
                   version,
@@ -361,7 +361,7 @@ void Test_VmRESTHTTPGetReqVersionTest4(
     /**** TEST 4: empty sring ****/
     strcpy(line, "POST /v1/pkg?x=y ");
 
-    dwError = VmRESTHTTPGetReqURI(
+    dwError = VmRESTHTTPGetReqVersion(
                   line,
                   strlen(line),
                   version,
@@ -385,7 +385,7 @@ void Test_VmRESTHTTPGetReqVersionTest5(
     /**** TEST 5: Negative line length ****/
     strcpy(line, "");
 
-    dwError = VmRESTHTTPGetReqURI(
+    dwError = VmRESTHTTPGetReqVersion(
                   line,
                   (strlen(line) - 2),
                   version,
@@ -447,7 +447,7 @@ void Test_VmRESTHTTPPopulateHeaderTest2(
     memset(line, '\0', MAX_REQ_LIN_LEN);
 
     /**** TEST 2: host name with port number ****/
-    strcpy(line, "Host: 172.16.127.132:81");
+    strcpy(line, "Host:172.16.127.132:81");
 
     dwError = VmRESTHTTPPopulateHeader(
                   line,
@@ -509,7 +509,7 @@ void Test_VmRESTHTTPPopulateHeaderTest4(
     memset(line, '\0', MAX_REQ_LIN_LEN);
 
     /**** TEST 3: Both Header and value missing ****/
-    strcpy(line, " : ");
+    strcpy(line, ":");
 
     dwError = VmRESTHTTPPopulateHeader(
                   line,
@@ -536,8 +536,8 @@ void Test_VmRESTHTTPPopulateHeaderTest5(
 
     memset(line, '\0', MAX_REQ_LIN_LEN);
 
-    /**** TEST 5: Space after header and befor value ****/
-    strcpy(line, "Connection : close");
+    /**** TEST 5: Space before and after header and value both****/
+    strcpy(line, " Connection : close ");
 
     dwError = VmRESTHTTPPopulateHeader(
                   line,

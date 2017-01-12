@@ -477,7 +477,7 @@ void Test_SetURLParamsInRequestObjectTest2(
 
     dwError = VmRestParseParams(
                   "/v1/tdnf?MyName1=MyValue1&MyName2=MyValue2",
-                  1,
+                  2,
                   pRequest
                   );
     CuAssertIntEquals(tc, 0, dwError);
@@ -520,7 +520,7 @@ void Test_SetURLParamsInRequestObjectTest3(
 
     dwError = VmRestParseParams(
                   "/v1/tdnf",
-                  1,
+                  0,
                   pRequest
                   );
     CuAssertIntEquals(tc, 0, dwError);
@@ -551,7 +551,7 @@ void Test_SetURLParamsInRequestObjectTest4(
 
     dwError = VmRestParseParams(
                   "/v1/tdnf?",
-                  1,
+                  0,
                   pRequest
                   );
     CuAssertIntEquals(tc, 0, dwError);

@@ -375,6 +375,12 @@ VmHTTPShutdown(
 /********************* httpValidate.c *******************/
 
 uint32_t
+VmRESTTrimSpaces(
+    char*                            src,
+    char**                           des
+    );
+
+uint32_t
 VmRESTRemovePreSpace(
     char*                            src,
     char*                            dest

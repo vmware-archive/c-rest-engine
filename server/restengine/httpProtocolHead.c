@@ -249,10 +249,12 @@ VmRESTHTTPPopulateHeader(
     char                             local[MAX_REQ_LIN_LEN] = {0};
     char                             attribute[MAX_HTTP_HEADER_ATTR_LEN] = {0};
     char                             value[MAX_HTTP_HEADER_VAL_LEN] = {0};
+    char                             clearSpaces[MAX_HTTP_HEADER_VAL_LEN] = {0};
     char*                            temp = NULL;
     uint32_t                         i = 0;
     size_t                           attrLen = 0;
     size_t                           valLen  = 0;
+    char*                            ignoreSpace = NULL;
 
     buffer = line;
     temp = local;
@@ -265,13 +267,20 @@ VmRESTHTTPPopulateHeader(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+    memset(clearSpaces, '\0', MAX_HTTP_HEADER_VAL_LEN);
+
     while(buffer != NULL && i <= lineLen)
     {
         if ((*buffer == ':') && (attrLen  == 0))
         {
             buffer++;
             *temp = '\0';
-            strcpy(attribute,local);
+            dwError = VmRESTTrimSpaces(
+                          local,
+                          &ignoreSpace
+                          );
+            BAIL_ON_VMREST_ERROR(dwError);
+            strcpy(attribute, ignoreSpace);
             attrLen = strlen(attribute);
             memset(local,'\0', sizeof(local));
             temp = local;
@@ -284,7 +293,16 @@ VmRESTHTTPPopulateHeader(
     }
     *temp = '\0';
 
-    strcpy(value,local);
+    memset(clearSpaces, '\0', MAX_HTTP_HEADER_VAL_LEN);
+    ignoreSpace = NULL;
+    
+    dwError = VmRESTTrimSpaces(
+                  local,
+                  &ignoreSpace
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    strcpy(value, ignoreSpace);
+
     valLen = strlen(value);
 
     if (attrLen == 0 || valLen == 0)

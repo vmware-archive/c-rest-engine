@@ -15,6 +15,50 @@
 #include "includes.h"
 
 uint32_t
+VmRESTTrimSpaces(
+    char*                            src,
+    char**                           des
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char*                            end = NULL;
+
+    if (src == NULL)
+    {
+        VMREST_LOG_ERROR("Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    while(*src == ' ')
+    {
+        src++;
+    }
+
+    if(*src == '\0')
+    {
+        *des = src;
+        goto cleanup;
+    }
+    
+    end = src + strlen(src) - 1;
+
+    while((end > src) && (*end == ' '))
+    {
+        end--;
+    }
+
+    *(end + 1) = '\0';
+
+    *des = src;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+uint32_t
 VmRESTRemovePreSpace(
     char*                            src,
     char*                            dest
