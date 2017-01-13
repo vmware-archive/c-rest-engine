@@ -249,12 +249,10 @@ VmRESTHTTPPopulateHeader(
     char                             local[MAX_REQ_LIN_LEN] = {0};
     char                             attribute[MAX_HTTP_HEADER_ATTR_LEN] = {0};
     char                             value[MAX_HTTP_HEADER_VAL_LEN] = {0};
-    char                             clearSpaces[MAX_HTTP_HEADER_VAL_LEN] = {0};
     char*                            temp = NULL;
     uint32_t                         i = 0;
     size_t                           attrLen = 0;
     size_t                           valLen  = 0;
-    char*                            ignoreSpace = NULL;
 
     buffer = line;
     temp = local;
@@ -267,20 +265,13 @@ VmRESTHTTPPopulateHeader(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    memset(clearSpaces, '\0', MAX_HTTP_HEADER_VAL_LEN);
-
     while(buffer != NULL && i <= lineLen)
     {
         if ((*buffer == ':') && (attrLen  == 0))
         {
             buffer++;
             *temp = '\0';
-            dwError = VmRESTTrimSpaces(
-                          local,
-                          &ignoreSpace
-                          );
-            BAIL_ON_VMREST_ERROR(dwError);
-            strcpy(attribute, ignoreSpace);
+            strcpy(attribute,local);
             attrLen = strlen(attribute);
             memset(local,'\0', sizeof(local));
             temp = local;
@@ -292,17 +283,8 @@ VmRESTHTTPPopulateHeader(
         i++;
     }
     *temp = '\0';
-
-    memset(clearSpaces, '\0', MAX_HTTP_HEADER_VAL_LEN);
-    ignoreSpace = NULL;
     
-    dwError = VmRESTTrimSpaces(
-                  local,
-                  &ignoreSpace
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-    strcpy(value, ignoreSpace);
-
+    strcpy(value,local);
     valLen = strlen(value);
 
     if (attrLen == 0 || valLen == 0)
@@ -342,7 +324,7 @@ VmRESTParseHTTPReqLine(
     char                             URI[MAX_URI_LEN]={0};
     char                             version[MAX_VERSION_LEN] = {0};
 
-    if (lineLen > MAX_REQ_LIN_LEN || !line  || !pReqPacket || (*resStatus != OK))
+    if (lineLen > MAX_REQ_LIN_LEN || !line  || !pReqPacket || (*resStatus != OK) || lineNo == 0)
     {
        VMREST_LOG_ERROR("Invalid params");
        dwError =  VMREST_HTTP_INVALID_PARAMS;
@@ -657,6 +639,12 @@ VMRESTWriteStatusLineInResponseStream(
         bytesCount = (uint32_t)(bytesCount + len + 1);
         len = 0;
     }
+    else
+    {
+        VMREST_LOG_ERROR("HTTP version information missing in response");
+        dwError = INTERNAL_SERVER_ERROR;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
 
     len = strlen(pResPacket->statusLine->statusCode);
     if (len > 0)
@@ -667,6 +655,12 @@ VMRESTWriteStatusLineInResponseStream(
         curr = curr + 1;
         bytesCount = (uint32_t)(bytesCount + len + 1);
         len = 0;
+    }
+    else
+    {
+        VMREST_LOG_ERROR("HTTP status code information missing in response");
+        dwError = INTERNAL_SERVER_ERROR;
+        BAIL_ON_VMREST_ERROR(dwError);
     }
 
     len = strlen(pResPacket->statusLine->reason_phrase);

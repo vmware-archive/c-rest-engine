@@ -578,20 +578,41 @@ VmRESTSetHTTPMiscHeader(
     PVM_REST_HTTP_HEADER_NODE        temp = NULL;
     size_t                           headerLen = 0;
     size_t                           valueLen = 0;
+    char                             tempHeader[MAX_HTTP_HEADER_ATTR_LEN] = {0};
+    char                             tempValue[MAX_HTTP_HEADER_VAL_LEN] = {0};
+    char*                            noSpaceHeader = NULL;
+    char*                            noSpaceValue = NULL;
 
-    if (!miscHeaderQueue || !header || !value)
+    if (!miscHeaderQueue || !header || !value || (strlen(header) > MAX_HTTP_HEADER_ATTR_LEN) || (strlen(value) > MAX_HTTP_HEADER_VAL_LEN))
     {
         VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    headerLen = strlen(header);
-    valueLen = strlen(value);
+    memset(tempHeader, '\0', MAX_HTTP_HEADER_ATTR_LEN);
+    memset(tempValue, '\0', MAX_HTTP_HEADER_VAL_LEN);
 
-    if (headerLen >= MAX_HTTP_HEADER_ATTR_LEN || valueLen >= MAX_HTTP_HEADER_VAL_LEN)
+    strcpy(tempHeader, header);
+    dwError = VmRESTTrimSpaces(
+                  tempHeader,
+                  &noSpaceHeader
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    strcpy(tempValue, value);
+    dwError = VmRESTTrimSpaces(
+                  tempValue,
+                  &noSpaceValue
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    headerLen = strlen(noSpaceHeader);
+    valueLen = strlen(noSpaceValue);
+
+    if (headerLen == 0 || headerLen >= MAX_HTTP_HEADER_ATTR_LEN || valueLen == 0 || valueLen >= MAX_HTTP_HEADER_VAL_LEN)
     {
-        VMREST_LOG_ERROR("Header or value length too long");
+        VMREST_LOG_ERROR("Wrong header or Value length : Header Len %u, Value Len %u", headerLen,valueLen);
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -603,8 +624,9 @@ VmRESTSetHTTPMiscHeader(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    strcpy(node->header, header);
-    strcpy(node->value, value);
+    strcpy(node->header, noSpaceHeader);
+    strcpy(node->value, noSpaceValue);
+
     node->next = NULL;
 
     if (miscHeaderQueue->head == NULL)
@@ -624,6 +646,11 @@ VmRESTSetHTTPMiscHeader(
 cleanup:
     return dwError;
 error:
+    if (node != NULL)
+    {
+        VmRESTFreeMemory(node);
+        node = NULL;
+    }
     goto cleanup;
 }
 

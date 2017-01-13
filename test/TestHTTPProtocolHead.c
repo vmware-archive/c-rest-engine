@@ -980,7 +980,8 @@ void Test_VMRESTWriteChunkedMessageInResponseStreamTest3(
                   buffer,
                   &bytesWritten
                   );
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, bytesWritten, (strlen(src) + 6 + 2));
 }
 
 void Test_VMRESTWriteChunkedMessageInResponseStreamTest4(
@@ -996,7 +997,7 @@ void Test_VMRESTWriteChunkedMessageInResponseStreamTest4(
     memset(src, '\0', MAX_DATA_BUFFER_LEN);
 
     
-    /**** TEST 4: Wrong length of source data****/
+    /**** TEST 4: Wrong length of source data - Valid case ****/
     strcpy(src, "This is one chunked data");
     
     dwError = VMRESTWriteChunkedMessageInResponseStream(
@@ -1005,7 +1006,10 @@ void Test_VMRESTWriteChunkedMessageInResponseStreamTest4(
                   buffer,
                   &bytesWritten
                   );
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, bytesWritten, (strlen(src) + 6 - 2));
+
+    
 }
 
 void Test_VMRESTWriteChunkedMessageInResponseStreamTest5(
@@ -1145,21 +1149,21 @@ void Test_VMRESTWriteMessageBodyInResponseStreamTest4(
     dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
     CuAssertTrue(tc, !dwError);
 
-    /**** TEST 4: Negative content length****/
+    /**** TEST 4: Content with spaces only ****/
     dwError = VmRESTSetHttpHeader(
                   &pResponse,
                   "Content-Length",
-                  "-2");
+                  "5");
     CuAssertTrue(tc, !dwError);
 
-    strcpy(pResponse->messageBody->buffer, "");
+    strcpy(pResponse->messageBody->buffer, "     ");
 
     dwError = VMRESTWriteMessageBodyInResponseStream(
                   pResponse,
                   buffer,
                   &bytesWritten
                   );
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
 
     VmRESTFreeHTTPResponsePacket(&pResponse);
 }
@@ -1178,7 +1182,7 @@ void Test_VMRESTWriteMessageBodyInResponseStreamTest5(
     dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
     CuAssertTrue(tc, !dwError);
 
-    /**** TEST 5: Larger content length than data****/
+    /**** TEST 5: Larger content length than data - remaining data will be junk ****/
     dwError = VmRESTSetHttpHeader(
                   &pResponse,
                   "Content-Length",
@@ -1192,7 +1196,8 @@ void Test_VMRESTWriteMessageBodyInResponseStreamTest5(
                   buffer,
                   &bytesWritten
                   );
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, 20, bytesWritten);
 
     VmRESTFreeHTTPResponsePacket(&pResponse);
 }
@@ -1299,7 +1304,7 @@ void Test_VMRESTWriteStatusLineInResponseStreamTest4(
     dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
     CuAssertTrue(tc, !dwError);
 
-    /**** TEST 4:  Missing reason phrase****/
+    /**** TEST 4:  Missing reason phrase - This is optional - valid case ****/
     strcpy(pResponse->statusLine->version, "HTTP/1.1");
     strcpy(pResponse->statusLine->statusCode, "200");
 
@@ -1309,7 +1314,7 @@ void Test_VMRESTWriteStatusLineInResponseStreamTest4(
                   buffer,
                   &bytesWritten
                   );
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
     VmRESTFreeHTTPResponsePacket(&pResponse);
 }
 
