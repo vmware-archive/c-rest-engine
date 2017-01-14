@@ -39,6 +39,10 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 
 #define DEFAULT_WORKER_THR_CNT     "5"
 #define DEFAULT_CLIENT_CNT         "5"
+#define DEFAULT_DEBUG_FILE         "/tmp/restServer.log"
+#define MAX_WORKER_THR_CNT         100
+#define MAX_CLIENT_CNT             100
+#define MAX_PORT_NUMBER            99999
 
 typedef enum _HTTP_METHODS
 {

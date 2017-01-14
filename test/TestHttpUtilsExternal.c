@@ -52,11 +52,11 @@ void Test_VmRESTGetHttpMethodTest2(
 
     strcpy(pRequest->requestLine->method, "JUNK");
 
-    /**** TEST 2: Junk name case ****/
+    /**** TEST 2: Junk name case - Valid case Set should fail  ****/
     dwError = VmRESTGetHttpMethod(
                   pRequest,
                   &method);
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
 
     VmRESTFreeHTTPRequestPacket(&pRequest);
 }
@@ -180,11 +180,12 @@ void Test_VmRESTGetHttpVersionTest3(
 
     strcpy(pRequest->requestLine->version, "HTTP/0.9");
 
-    /**** TEST 3: Wrong version ****/
+    /**** TEST 3: Wrong version -valid case****/
     dwError = VmRESTGetHttpVersion(
                   pRequest,
                   &version);
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
+    CuAssertStrEquals(tc, "HTTP/0.9", version);
 
     VmRESTFreeHTTPRequestPacket(&pRequest);
 }
@@ -268,7 +269,8 @@ void Test_VmRESTGetHttpHeaderTest2(
                   pRequest,
                   "Content-Length",
                   &result);
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
+    CuAssertTrue(tc, !result);
 
     dwError = VmRESTGetHttpHeader(
                   pRequest,
@@ -456,13 +458,13 @@ void Test_VmRESTSetHttpHeaderTest7(
 {
     uint32_t                         dwError = 0;
     PREST_RESPONSE                   pResponse = NULL;
-    char                             value[4096] = {0};
+    char                             value[10000] = {0};
    
     dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
     CuAssertTrue(tc, !dwError);
     
-    memset(value, '\0', 4096);
-    memset(value,'A',4095);
+    memset(value, '\0', 10000);
+    memset(value,'A',9999);
 
     /**** TEST 7: too large header value length ****/
     dwError = VmRESTSetHttpHeader(
@@ -596,14 +598,16 @@ void Test_VmRESTSetHttpReasonPhraseTest2(
 {
     uint32_t                         dwError = 0;
     PREST_RESPONSE                   pResponse = NULL;
+    char                             phrase[10000] = {0};
 
     dwError = VmRESTAllocateHTTPResponsePacket(&pResponse);
     CuAssertTrue(tc, !dwError);
 
-    /**** TEST 2: Empty phrase ****/
+    memset(phrase,'B', 10000);
+    /**** TEST 2: Not null terminated string ****/
     dwError = VmRESTSetHttpReasonPhrase(
                   &pResponse,
-                  "");
+                  phrase);
     CuAssertTrue(tc, dwError);
 
     VmRESTFreeHTTPResponsePacket(&pResponse);

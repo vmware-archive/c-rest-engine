@@ -154,6 +154,7 @@ VmRESTGetHttpHeader(
     }
     else
     {
+       *ppResponse = NULL;
        //VMREST_LOG_DEBUG("%s","WARNING :: Header %s not found in request object", header);
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -570,13 +571,19 @@ VmRESTSetHttpStatusCode(
     pResponse = *ppResponse;
     statusLen = strlen(statusCode);
 
-    if (statusLen >= MAX_STATUS_LEN)
+    if (statusLen !=  3)
     {
-        VMREST_LOG_ERROR("Status length too large");
+        VMREST_LOG_ERROR("Invalid status length");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    /* TODO :: Check validity of Status Code */
+
+    if ((atoi(statusCode) < 100) || (atoi(statusCode) > 600))
+    {
+        VMREST_LOG_ERROR("Invalid status code %s", statusCode);
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }  
+    BAIL_ON_VMREST_ERROR(dwError);
 
     strcpy(pResponse->statusLine->statusCode, statusCode);
 
@@ -608,13 +615,20 @@ VmRESTSetHttpStatusVersion(
 
     versionLen = strlen(version);
 
-    if (versionLen > MAX_VERSION_LEN)
+    if (versionLen == 0 || versionLen > MAX_VERSION_LEN)
     {
         VMREST_LOG_ERROR("Bad version length");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+    if (!(strcmp(version, "HTTP/1.1") == 0) || (strcmp(version, "HTTP/1.0") == 0))
+    {
+        VMREST_LOG_ERROR("Not supported HTTP version: %s", version);
+        dwError = VMREST_HTTP_VALIDATION_FAILED;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+    
     strcpy(pResponse->statusLine->version, version);
 
 cleanup:
@@ -633,7 +647,8 @@ VmRESTSetHttpReasonPhrase(
     PREST_RESPONSE                   pResponse = NULL;
 
 
-    if (!ppResponse  || (*ppResponse == NULL) || !reasonPhrase)
+    if (!ppResponse  || (*ppResponse == NULL) || !reasonPhrase 
+        || (strlen(reasonPhrase) == 0) || (strlen(reasonPhrase) > MAX_REA_PHRASE_LEN))
     {
         VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;

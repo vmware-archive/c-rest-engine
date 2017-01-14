@@ -182,7 +182,8 @@ void Test_VmRESTGetHttpResponseHeaderTest3(
                   pResponse,
                   "Connection",
                   &result);
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
+    CuAssertTrue(tc, !result);
 
     VmRESTFreeHTTPResponsePacket(&pResponse);
 }
@@ -209,7 +210,8 @@ void Test_VmRESTGetHttpResponseHeaderTest4(
                   pResponse,
                   "blah",
                   &result);
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
+    CuAssertTrue(tc, !result);
 
     VmRESTFreeHTTPResponsePacket(&pResponse);
 }
@@ -311,13 +313,13 @@ void Test_VmRESTMapStatusCodeToEnumAndReasonPhraseTest5(
 {
     uint32_t                         dwError = 0;
     uint32_t                         result = 0;
-    char                             reasonPhrase[2] = {0};
+    char                             reasonPhrase[MAX_REA_PHRASE_LEN] = {0};
 
-    memset(reasonPhrase, '\0', 2);
+    memset(reasonPhrase, '\0', MAX_REA_PHRASE_LEN);
 
     /**** TEST 5: NULL reasonPhrase ****/
     dwError = VmRESTMapStatusCodeToEnumAndReasonPhrase(
-                  "400",
+                  NULL,
                   &result,
                   reasonPhrase);
     CuAssertTrue(tc, dwError);
@@ -377,7 +379,8 @@ void Test_VmRESTSetHttpRequestHeaderTest2(
                   pRequest,
                   "Accept",
                   &result);
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
+    CuAssertTrue(tc, !result);
 
     VmRESTFreeHTTPRequestPacket(&pRequest);
 }
@@ -622,11 +625,6 @@ void Test_VmRESTValidateConfigTest4(
     CuAssertStrEquals(tc, "/root/mycert.pem", pRESTConfig->ssl_certificate);
     CuAssertStrEquals(tc, "/root/mycert.pem", pRESTConfig->ssl_key);
 
-    /**** Defaults value for missing configs ****/
-    CuAssertStrEquals(tc, "5", pRESTConfig->client_count);
-    CuAssertStrEquals(tc, "/tmp/restServer.log", pRESTConfig->debug_log_file);
-    CuAssertStrEquals(tc, "5", pRESTConfig->worker_thread_count);
-
     VmRESTFreeMemory(pRESTConfig);
 
 }
@@ -677,11 +675,8 @@ void Test_VmRESTValidateConfigTest6(
     /**** TEST 6 :client count ****/
 
     dwError = VmRESTValidateConfig(pRESTConfig);
-    CuAssertTrue(tc, !dwError);
-    /**** Defaults to 5 *****/
-    CuAssertStrEquals(tc, "5", pRESTConfig->client_count);
+    CuAssertTrue(tc, dwError);
     VmRESTFreeMemory(pRESTConfig);
-
 }
 
 void Test_VmRESTValidateConfigTest7(
@@ -703,11 +698,8 @@ void Test_VmRESTValidateConfigTest7(
     /**** TEST 7 : Wrong thread count ****/
 
     dwError = VmRESTValidateConfig(pRESTConfig);
-    CuAssertTrue(tc, !dwError);
-    /**** Defaults to 5 *****/
-    CuAssertStrEquals(tc, "5", pRESTConfig->worker_thread_count);
+    CuAssertTrue(tc, dwError);
     VmRESTFreeMemory(pRESTConfig);
-
 }
 
 void Test_VmRESTValidateConfigTest8(
@@ -729,8 +721,6 @@ void Test_VmRESTValidateConfigTest8(
 
     dwError = VmRESTValidateConfig(pRESTConfig);
     CuAssertTrue(tc, !dwError);
-    /**** Defaults to /tmp/resSErver.log *****/
-    CuAssertStrEquals(tc, "/tmp/restServer.log", pRESTConfig->debug_log_file);
     VmRESTFreeMemory(pRESTConfig);
 
 }
@@ -784,6 +774,9 @@ void Test_VmRESTCopyConfigTest2(
     dwError = VmRESTCopyConfig(
                   &conf,
                   &pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
     CuAssertTrue(tc, dwError);
 
     VmRESTFreeMemory(pRESTConfig);
@@ -829,6 +822,9 @@ void Test_VmRESTCopyConfigTest4(
     dwError = VmRESTCopyConfig(
                   &conf,
                   &pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
     CuAssertTrue(tc, dwError);
 
     VmRESTFreeMemory(pRESTConfig);
@@ -849,6 +845,9 @@ void Test_VmRESTCopyConfigTest5(
     dwError = VmRESTCopyConfig(
                   &conf,
                   &pRESTConfig);
+    CuAssertTrue(tc, !dwError);
+
+    dwError = VmRESTValidateConfig(pRESTConfig);
     CuAssertTrue(tc, dwError);
 
     VmRESTFreeMemory(pRESTConfig);
@@ -873,8 +872,8 @@ void Test_VmRESTCopyConfigTest6(
                   &pRESTConfig);
     CuAssertTrue(tc, !dwError);
 
-    CuAssertStrEquals(tc, "5", pRESTConfig->client_count);
-    CuAssertStrEquals(tc, "5", pRESTConfig->worker_thread_count);
+    dwError = VmRESTValidateConfig(pRESTConfig);
+    CuAssertTrue(tc, dwError);
 
     VmRESTFreeMemory(pRESTConfig);
 
@@ -928,6 +927,7 @@ void Test_VmRESTGetChunkSizeTest1(
     CuAssertIntEquals(tc, 22, chunkSize);
     CuAssertIntEquals(tc, 4, skipBytes);
 
+
 }
 
 void Test_VmRESTGetChunkSizeTest2(
@@ -938,9 +938,8 @@ void Test_VmRESTGetChunkSizeTest2(
     char                             line[MAX_DATA_BUFFER_LEN] = {0};
     uint32_t                         skipBytes = 0;
     uint32_t                         chunkSize = 0;
-
     memset(line, '\0', MAX_DATA_BUFFER_LEN);
-    strcpy(line, "16");
+    strcpy(line, "14");
 
     /**** TEST 2: CRLF missinh ****/
 
@@ -949,7 +948,6 @@ void Test_VmRESTGetChunkSizeTest2(
                   &skipBytes,
                   &chunkSize);
     CuAssertTrue(tc, dwError);
-
 }
 
 void Test_VmRESTGetChunkSizeTest3(
@@ -962,8 +960,7 @@ void Test_VmRESTGetChunkSizeTest3(
     uint32_t                         chunkSize = 0;
 
     memset(line, '\0', MAX_DATA_BUFFER_LEN);
-    strcpy(line, "0x16\r\n");
-
+    strcpy(line, "0x15\r\n");
     /**** TEST 3: Valid Case ****/
 
     dwError = VmRESTGetChunkSize(
@@ -972,7 +969,7 @@ void Test_VmRESTGetChunkSizeTest3(
                   &chunkSize);
     CuAssertTrue(tc, !dwError);
 
-    CuAssertIntEquals(tc, 22, chunkSize);
+    CuAssertIntEquals(tc, 21, chunkSize);
     CuAssertIntEquals(tc, 6, skipBytes);
 
 }
@@ -987,7 +984,7 @@ void Test_VmRESTGetChunkSizeTest4(
     uint32_t                         chunkSize = 0;
 
     memset(line, '\0', MAX_DATA_BUFFER_LEN);
-    strcpy(line, "fadsffs\r\n");
+    strcpy(line, "ghj\r\n");
 
     /**** TEST 4: Invalid ****/
 
@@ -996,7 +993,6 @@ void Test_VmRESTGetChunkSizeTest4(
                   &skipBytes,
                   &chunkSize);
     CuAssertTrue(tc, dwError);
-
 }
 
 void Test_VmRESTGetChunkSizeTest5(
@@ -1009,7 +1005,7 @@ void Test_VmRESTGetChunkSizeTest5(
     uint32_t                         chunkSize = 0;
 
     memset(line, '\0', MAX_DATA_BUFFER_LEN);
-    strcpy(line, "\r\n16\r\n");
+    strcpy(line, " \r\n13\r\n");
 
     /**** TEST 5: Invalid Case ****/
 
@@ -1018,7 +1014,6 @@ void Test_VmRESTGetChunkSizeTest5(
                   &skipBytes,
                   &chunkSize);
     CuAssertTrue(tc, dwError);
-
 }
 
 void Test_VmRESTGetChunkSizeTest6(
@@ -1031,12 +1026,12 @@ void Test_VmRESTGetChunkSizeTest6(
     uint32_t                         chunkSize = 0;
 
     memset(line, '\0', MAX_DATA_BUFFER_LEN);
-    strcpy(line, "16\r\n");
+    strcpy(line, "\r\n12 \r\n");
 
-    /**** TEST 6: NULL line ****/
+    /**** TEST 6:Invalid Case ****/
 
     dwError = VmRESTGetChunkSize(
-                  NULL,
+                  line,
                   &skipBytes,
                   &chunkSize);
     CuAssertTrue(tc, dwError);
@@ -1052,7 +1047,7 @@ void Test_VmRESTGetChunkSizeTest7(
     uint32_t                         chunkSize = 0;
 
     memset(line, '\0', MAX_DATA_BUFFER_LEN);
-    strcpy(line, " 16\r\n");
+    strcpy(line, " 11\r\n");
 
     /**** TEST 7: Valid Case ****/
 
@@ -1062,9 +1057,29 @@ void Test_VmRESTGetChunkSizeTest7(
                   &chunkSize);
     CuAssertTrue(tc, !dwError);
 
-    CuAssertIntEquals(tc, 22, chunkSize);
-    CuAssertIntEquals(tc, 4, skipBytes);
+    CuAssertIntEquals(tc, 17, chunkSize);
+    CuAssertIntEquals(tc, 5, skipBytes);
+}
 
+void Test_VmRESTGetChunkSizeTest8(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char                             line[MAX_DATA_BUFFER_LEN] = {0};
+    uint32_t                         skipBytes = 0;
+    uint32_t                         chunkSize = 0;
+
+    memset(line, '\0', MAX_DATA_BUFFER_LEN);
+    strcpy(line, "0\r\n");
+
+    /**** TEST 8:Invalid Case ****/
+
+    dwError = VmRESTGetChunkSize(
+                  line,
+                  &skipBytes,
+                  &chunkSize);
+    CuAssertTrue(tc, !dwError);
 }
 
 void Test_VmRESTCopyDataWithoutCRLFTest1(
@@ -1159,7 +1174,7 @@ void Test_VmRESTCopyDataWithoutCRLFTest4(
 
     memset(src, '\0', MAX_DATA_BUFFER_LEN);
     memset(des, '\0', MAX_DATA_BUFFER_LEN);
-    strcpy(src, "\r\nThis\r\n is \r\n payload\r\n");
+    strcpy(src, "\r\n This\r\n is \r\n payload \r\n");
 
     /**** TEST 4: Valid Case ****/
 
@@ -1170,8 +1185,8 @@ void Test_VmRESTCopyDataWithoutCRLFTest4(
                   &actualBytes);
     CuAssertTrue(tc, !dwError);
 
-    CuAssertIntEquals(tc, 16, actualBytes);
-    CuAssertStrEquals(tc, "This is payload", des);
+    CuAssertIntEquals(tc, 18, actualBytes);
+    CuAssertStrEquals(tc, " This is  payload ", des);
 
 }
 
@@ -1272,6 +1287,7 @@ CuSuite* CuGetTestHttpUtilsInternalSuite(void)
     SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest5);
     SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest6);
     SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest7);
+    SUITE_ADD_TEST(suite, Test_VmRESTGetChunkSizeTest8);
     SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest1);
     SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest2);
     SUITE_ADD_TEST(suite, Test_VmRESTCopyDataWithoutCRLFTest3);

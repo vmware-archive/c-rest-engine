@@ -85,6 +85,7 @@ VmRESTGetHttpResponseHeader(
     else
     {
         VMREST_LOG_DEBUG("WARNING :: Header %s not found in request object", header);
+        response = NULL;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -481,19 +482,83 @@ VmRESTValidateConfig(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char                             lastPortChar = '\0';
+    size_t                           certLen = 0;
+    size_t                           keyLen = 0;
+    char                             portNo[MAX_SERVER_PORT_LEN] = {0};
+    size_t                           portLen = 0;
+
     if (!pRESTConfig)
     {
         dwError = REST_ENGINE_FAILURE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((pRESTConfig != NULL) && (strlen(pRESTConfig->server_port) == 0))
+    if (pRESTConfig->server_port != NULL)
+    {
+        portLen = strlen(pRESTConfig->server_port);
+    }
+
+    if ((portLen == 0) || (portLen > MAX_SERVER_PORT_LEN))
     {
         VMREST_LOG_ERROR("Configuration Validation failed: Port not specified");
         dwError = REST_ENGINE_FAILURE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
- 
+
+    strcpy(portNo, pRESTConfig->server_port);
+
+    lastPortChar = VmRESTUtilsGetLastChar(
+                       pRESTConfig->server_port
+                       );
+    if (lastPortChar == 's' || lastPortChar == 'S')
+    {
+         if (pRESTConfig->ssl_certificate != NULL)
+         {
+             certLen = strlen(pRESTConfig->ssl_certificate);
+         }
+         if (pRESTConfig->ssl_key != NULL)
+         {
+             keyLen = strlen(pRESTConfig->ssl_key);
+         }
+
+         if (keyLen == 0 || keyLen > MAX_PATH_LEN || certLen == 0 || certLen > MAX_PATH_LEN)
+         {
+             VMREST_LOG_ERROR("Bad SSL certificate length");
+             dwError = REST_ENGINE_INVALID_CONFIG;
+         }
+         BAIL_ON_VMREST_ERROR(dwError);
+
+         portNo[portLen - 1] = '\0';
+    }
+
+    if (atoi(portNo) == 0 || atoi(portNo) > MAX_PORT_NUMBER)
+    {
+        VMREST_LOG_ERROR("Invalid port %s", portNo);
+        dwError = REST_ENGINE_INVALID_CONFIG;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    if ((pRESTConfig->client_count != NULL) && (strlen(pRESTConfig->client_count) > 0))
+    { 
+        if((atoi(pRESTConfig->client_count) == 0) || (atoi(pRESTConfig->client_count) > MAX_CLIENT_CNT))
+        {
+            VMREST_LOG_ERROR("Invalid client Count %s", pRESTConfig->client_count);
+            dwError = REST_ENGINE_INVALID_CONFIG;
+            BAIL_ON_VMREST_ERROR(dwError);
+        }
+    }
+
+    if ((pRESTConfig->worker_thread_count != NULL) && (strlen(pRESTConfig->worker_thread_count) > 0))
+    {
+        if((atoi(pRESTConfig->worker_thread_count) == 0) || (atoi(pRESTConfig->worker_thread_count) > MAX_WORKER_THR_CNT))
+        {
+            VMREST_LOG_ERROR("Invalid Worker thread Count %s", pRESTConfig->worker_thread_count);
+            dwError = REST_ENGINE_INVALID_CONFIG;
+            BAIL_ON_VMREST_ERROR(dwError);
+        }
+    }
+    
 cleanup:
     return dwError;
 error:
@@ -539,6 +604,10 @@ VmRESTCopyConfig(
     if (pConfig->pDebugLogFile)
     {
         strncpy(pRESTConfig->debug_log_file, pConfig->pDebugLogFile, (MAX_PATH_LEN - 1));
+    }
+    else
+    {
+        strncpy(pRESTConfig->debug_log_file,DEFAULT_DEBUG_FILE, (MAX_PATH_LEN - 1));
     }
     if (pConfig->pClientCount) 
     {
@@ -733,6 +802,7 @@ VmRESTGetChunkSize(
     uint32_t                         count = 0;
     uint32_t                         done = 0;
     long int                         hexToDec = 0;
+    char*                            ignoreSpace = NULL;
 
     if (!lineStart || !skipBytes || !chunkSize)
     {
@@ -758,8 +828,27 @@ VmRESTGetChunkSize(
     }
     if (done)
     {
+        /**** Remove any space present in string ****/
+        dwError = VmRESTTrimSpaces(
+                      local,
+                      &ignoreSpace
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+
         /**** now the local buffer contains size in hex ****/
-        hexToDec = strtol(local,NULL,16);
+        hexToDec = strtol(ignoreSpace,NULL,16);
+
+        if (hexToDec == 0)
+        {
+            /**** This might be error or last chunk - identify it ****/
+            if (!((strcmp(ignoreSpace, "0") == 0) || (strcmp(ignoreSpace, "0x00") == 0) || (strcmp(ignoreSpace, "0x0") == 0)))
+            {
+                VMREST_LOG_ERROR("Invalid chunk size received");
+                dwError = BAD_REQUEST;
+                BAIL_ON_VMREST_ERROR(dwError);
+            }
+        }
         *chunkSize = (uint32_t)hexToDec;
         *skipBytes = count + 2;
     }
@@ -821,8 +910,11 @@ VmRESTCopyDataWithoutCRLF(
         res++;
         bytesCounter++;
     }
-    *temp = *res;
-    bytesCounter++;
+    if (bytesCounter ==  (maxBytes -1))
+    {
+        *temp = *res;
+        bytesCounter++;
+    }
     *actualBytes = bytesCounter - skip;
 
 cleanup:

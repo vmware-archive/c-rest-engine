@@ -23,7 +23,7 @@ VmRESTTrimSpaces(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            end = NULL;
 
-    if (src == NULL)
+    if (src == NULL || des == NULL)
     {
         VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;

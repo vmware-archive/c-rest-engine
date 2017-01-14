@@ -16,193 +16,153 @@
 #include "includes.h"
 
 
-void Test_VmRESTRemovePreSpaceTest1(
+void Test_VmRESTTrimSpacesTest1(
     CuTest* tc
     )
 {
     uint32_t                         dwError = 0;
     char                             src[64] = {0};
-    char                             des[64] = {0}; 
+    char*                            ignoreSpace = NULL;
 
     memset(src, '\0', 64);
-    memset(des, '\0', 64);
-
     strcpy(src, " Header:Value");
 
     /**** TEST 1: Valid Case ****/
-    dwError = VmRESTRemovePreSpace(
+    dwError = VmRESTTrimSpaces(
                   src,
-                  des);
+                  &ignoreSpace);
     CuAssertTrue(tc, !dwError);
-    CuAssertStrEquals(tc, "Header:Value", des);
+    CuAssertStrEquals(tc, "Header:Value", ignoreSpace);
               
 }
 
-void Test_VmRESTRemovePreSpaceTest2(
+void Test_VmRESTTrimSpacesTest2(
     CuTest* tc
     )
 {
     uint32_t                         dwError = 0;
     char                             src[64] = {0};
-    char                             des[64] = {0};
+    char*                            ignoreSpace = NULL;
 
     memset(src, '\0', 64);
-    memset(des, '\0', 64);
-
-    strcpy(src, "       Header:Value");
+    strcpy(src, "      Header:Value");
 
     /**** TEST 2: Valid Case ****/
-    dwError = VmRESTRemovePreSpace(
+    dwError = VmRESTTrimSpaces(
                   src,
-                  des);
+                  &ignoreSpace);
     CuAssertTrue(tc, !dwError);
-    CuAssertStrEquals(tc, "Header:Value", des);
-              
+    CuAssertStrEquals(tc, "Header:Value", ignoreSpace);
+
 }
 
-void Test_VmRESTRemovePreSpaceTest3(
+void Test_VmRESTTrimSpacesTest3(
     CuTest* tc
     )
 {
     uint32_t                         dwError = 0;
     char                             src[64] = {0};
-    char                             des[64] = {0};
+    char*                            ignoreSpace = NULL;
 
     memset(src, '\0', 64);
-    memset(des, '\0', 64);
-
-    strcpy(src, "Header:Value");
+    strcpy(src, "  Header : Valu e ");
 
     /**** TEST 3: Valid Case ****/
-    dwError = VmRESTRemovePreSpace(
+    dwError = VmRESTTrimSpaces(
                   src,
-                  des);
+                  &ignoreSpace);
     CuAssertTrue(tc, !dwError);
-    CuAssertStrEquals(tc, "Header:Value", des);
+    CuAssertStrEquals(tc, "Header : Valu e", ignoreSpace);
 
 }
 
-void Test_VmRESTRemovePreSpaceTest4(
+void Test_VmRESTTrimSpacesTest4(
     CuTest* tc
     )
 {
     uint32_t                         dwError = 0;
     char                             src[64] = {0};
-    char                             des[64] = {0};
+    char*                            ignoreSpace = NULL;
 
-    memset(src, '\0', 64);
-    memset(des, '\0', 64);
-
-    strcpy(src, "");
+    memset(src, 'B', 64);
 
     /**** TEST 4: Valid Case ****/
-    dwError = VmRESTRemovePreSpace(
+    dwError = VmRESTTrimSpaces(
                   src,
-                  des);
+                  &ignoreSpace);
     CuAssertTrue(tc, !dwError);
-    CuAssertStrEquals(tc, "", des);
+    CuAssertStrEquals(tc, src, ignoreSpace);
 
 }
 
-void Test_VmRESTRemovePostSpaceTest1(
+void Test_VmRESTTrimSpacesTest5(
     CuTest* tc
     )
 {
     uint32_t                         dwError = 0;
     char                             src[64] = {0};
-    char                             des[64] = {0};
+    char*                            ignoreSpace = NULL;
 
     memset(src, '\0', 64);
-    memset(des, '\0', 64);
+    strcpy(src, "    ");
 
-    strcpy(src, "Header:Value ");
-
-    /**** TEST 1: Valid Case ****/
-    dwError = VmRESTRemovePreSpace(
+    /**** TEST 5: Valid case ****/
+    dwError = VmRESTTrimSpaces(
                   src,
-                  des);
+                  &ignoreSpace);
     CuAssertTrue(tc, !dwError);
-    CuAssertStrEquals(tc, "Header:Value", des);
+    CuAssertStrEquals(tc, "", ignoreSpace);
 
 }
 
-void Test_VmRESTRemovePostSpaceTest2(
+void Test_VmRESTTrimSpacesTest6(
+    CuTest* tc
+    )
+{
+    uint32_t                         dwError = 0;
+    char*                            ignoreSpace = NULL;
+
+    /**** TEST 6: Invalid case  ****/
+    dwError = VmRESTTrimSpaces(
+                  NULL,
+                  &ignoreSpace);
+    CuAssertTrue(tc, dwError);
+
+}
+
+void Test_VmRESTTrimSpacesTest7(
     CuTest* tc
     )
 {
     uint32_t                         dwError = 0;
     char                             src[64] = {0};
-    char                             des[64] = {0};
 
     memset(src, '\0', 64);
-    memset(des, '\0', 64);
+    strcpy(src, " bhaj ");
 
-    strcpy(src, "Header:Value       ");
-
-    /**** TEST 2: Valid Case ****/
-    dwError = VmRESTRemovePreSpace(
+    /**** TEST 7: Invalid case  ****/
+    dwError = VmRESTTrimSpaces(
                   src,
-                  des);
-    CuAssertTrue(tc, !dwError);
-    CuAssertStrEquals(tc, "Header:Value", des);
-
+                  NULL);
+    CuAssertTrue(tc, dwError);
 }
 
-void Test_VmRESTRemovePostSpaceTest3(
-    CuTest* tc
-    )
-{
-    uint32_t                         dwError = 0;
-    char                             src[64] = {0};
-    char                             des[64] = {0};
 
-    memset(src, '\0', 64);
-    memset(des, '\0', 64);
 
-    strcpy(src, "Header:Value");
 
-    /**** TEST 3: Valid Case ****/
-    dwError = VmRESTRemovePreSpace(
-                  src,
-                  des);
-    CuAssertTrue(tc, !dwError);
-    CuAssertStrEquals(tc, "Header:Value", des);
-}
-
-void Test_VmRESTRemovePostSpaceTest4(
-    CuTest* tc
-    )
-{
-    uint32_t                         dwError = 0;
-    char                             src[64] = {0};
-    char                             des[64] = {0};
-
-    memset(src, '\0', 64);
-    memset(des, '\0', 64);
-
-    strcpy(src, "");
-
-    /**** TEST 4: Valid Case ****/
-    dwError = VmRESTRemovePreSpace(
-                  src,
-                  des);
-    CuAssertTrue(tc, !dwError);
-    CuAssertStrEquals(tc, "", des);
-}
 
 CuSuite* CuGetHttpValidateSuite(void)
 {
     CuSuite* suite = CuSuiteNew();
 
-    SUITE_ADD_TEST(suite, Test_VmRESTRemovePreSpaceTest1);
-    SUITE_ADD_TEST(suite, Test_VmRESTRemovePreSpaceTest2);
-    SUITE_ADD_TEST(suite, Test_VmRESTRemovePreSpaceTest3);
-    SUITE_ADD_TEST(suite, Test_VmRESTRemovePreSpaceTest4);
-    SUITE_ADD_TEST(suite, Test_VmRESTRemovePostSpaceTest1);
-    SUITE_ADD_TEST(suite, Test_VmRESTRemovePostSpaceTest2);
-    SUITE_ADD_TEST(suite, Test_VmRESTRemovePostSpaceTest3);
-    SUITE_ADD_TEST(suite, Test_VmRESTRemovePostSpaceTest4);
-        
+    SUITE_ADD_TEST(suite, Test_VmRESTTrimSpacesTest1);
+    SUITE_ADD_TEST(suite, Test_VmRESTTrimSpacesTest2);
+    SUITE_ADD_TEST(suite, Test_VmRESTTrimSpacesTest3);
+    SUITE_ADD_TEST(suite, Test_VmRESTTrimSpacesTest4);
+    SUITE_ADD_TEST(suite, Test_VmRESTTrimSpacesTest5);
+    SUITE_ADD_TEST(suite, Test_VmRESTTrimSpacesTest6);
+    SUITE_ADD_TEST(suite, Test_VmRESTTrimSpacesTest7);
+
     return suite;
 }
 

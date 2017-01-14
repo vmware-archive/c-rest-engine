@@ -1548,14 +1548,16 @@ void Test_VmRESTAddAllHeaderInResponseStreamTest7(
                   &pResponse,
                   "Content-Length",
                   "");
-    CuAssertTrue(tc, !dwError);
+    CuAssertTrue(tc, dwError);
 
     dwError = VmRESTAddAllHeaderInResponseStream(
                   pResponse,
                   buffer,
                   &bytesWritten
                   );
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, 2, bytesWritten);
+    
 
     VmRESTFreeHTTPResponsePacket(&pResponse);
 }
@@ -1579,14 +1581,15 @@ void Test_VmRESTAddAllHeaderInResponseStreamTest8(
                   &pResponse,
                   "",
                   "10");
-    CuAssertTrue(tc, !dwError);
+    CuAssertTrue(tc, dwError);
 
     dwError = VmRESTAddAllHeaderInResponseStream(
                   pResponse,
                   buffer,
                   &bytesWritten
                   );
-    CuAssertTrue(tc, dwError);
+    CuAssertTrue(tc, !dwError);
+    CuAssertIntEquals(tc, 2, bytesWritten);
 
     VmRESTFreeHTTPResponsePacket(&pResponse);
 }
