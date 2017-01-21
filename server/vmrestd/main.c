@@ -25,6 +25,8 @@
 
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )
 #define EVENT_BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
+#else
+#include "..\transport\win\includes.h"
 #endif
 
 uint32_t                         useFile = 0;
@@ -33,6 +35,7 @@ uint32_t                         cbIndex = 0;
 #define MAX_ARGUMENTS 10
 #define MAX_ARG_LEN 20
 #define MAX_COMMAND_LEN 100
+#define COMMAND_FILE_EXTENSION ".tcf"
 
 int     exitLoop = 0;
 
@@ -701,11 +704,11 @@ bool run_command_file( char* filepath, char* buffer, char** myargv )
 }
 
 
-#if 1
+
 #ifdef WIN32
 #include "..\transport\win\includes.h"
 #endif
-int main(int argc, char *argv[])
+int launch_server_sample()
 {
     uint32_t                         dwError = 0;
 
@@ -740,14 +743,64 @@ return dwError;
 
 }
 
-#endif
-#if 0
+
+int usage(int retval, char* errorText)
+{
+    printf("Error:  %s\nUsage:  vmrestd [-e command_file_path] [-i | -m monitor_directory_path]\n"
+           "(no params) Launch server test sample for /v1/pkg vroot; requires /tmp/restconfig.txt .\n"
+           " -r         Run Trident Command File - execute all commands, then exit or enter -i or -m mode\n"
+           " -i         Interactive mode (wait for command typed at console).\n"
+           " -m         Monitor directory mode - run Trident Command Files (.tcf) on modify - tipically\n"
+           "            files copied into directory (not implemented for Windows).\n",
+           errorText);
+    return retval;
+}
+
+
 int
 main (int argc, char *argv[])
 {
   int    retval = 0;
   int    i;
   char   buffer[MAX_COMMAND_LEN+1];
+  char*  command_file_path = NULL;
+  char*  monitor_directory_path = NULL;
+  bool   interactive = false;
+
+
+  if( argc == 1 )
+    return launch_server_sample();
+
+  for( i = 1; i < argc; )
+  {
+    if(strcmp(argv[i], "-r") == 0)
+    {
+        if(i+1 < argc)
+            command_file_path = argv[i+1];
+        else
+            return usage(1, "Command file path expected!");
+        i+=2;
+    }
+    else if(strcmp(argv[i], "-m") == 0)
+    {
+        if(i+1 < argc)
+            monitor_directory_path = argv[i+1];
+        else
+            return usage(1, "Directory path to monitor expected!");
+        i+=2;
+    }
+    else if(strcmp(argv[i], "-i") == 0)
+    {
+	interactive = true;
+	i++;
+    }
+    else
+        return usage( 1, "Invalid parameter!");
+  }
+
+  if(interactive && monitor_directory_path != NULL)
+    return usage( 1, "-i and -m options are incompatible!");
+
   char** myargv = malloc(MAX_ARGUMENTS * sizeof(char *));
   for (i =0; i < MAX_ARGUMENTS; i++)
   {
@@ -755,13 +808,12 @@ main (int argc, char *argv[])
   }
 
   init_command(buffer, (char**)myargv);
-
-  if( argc >=4 )
-      if( !run_command_file(argv[3], buffer, myargv) )
+  if( command_file_path != NULL )
+      if( !run_command_file(command_file_path, buffer, myargv) )
             goto clean;
 
 #ifndef WIN32
-  if( argc >= 2)
+  if( monitor_directory_path != NULL )
   {
     int    length;
     int    fd;
@@ -783,14 +835,9 @@ main (int argc, char *argv[])
         retval = 1;
         goto clean;
     }
-    wd = inotify_add_watch( fd, argv[1], IN_MODIFY );
+    wd = inotify_add_watch( fd, monitor_directory_path, IN_MODIFY );
 
-
-
-    if( argc >= 3 )
-        printf("@ Monitoring %s directory for command files with %s extension\n", argv[1], argv[2]);
-    else
-        printf("@ Monitoring %s directory for command files\n", argv[1]);
+    printf("@ Monitoring %s directory for command files with %s extension\n", monitor_directory_path, COMMAND_FILE_EXTENSION);
 
     while( exitLoop == 0  )
     {
@@ -807,10 +854,11 @@ main (int argc, char *argv[])
             struct inotify_event* event = (struct inotify_event*) &eventbuffer[ i ];
             if ( event->len > 0 && (event->mask & IN_MODIFY) && !(event->mask & IN_ISDIR) )
             {
-                if( argc == 2 || string_ends_with(event->name, argv[2]) )
+                if( string_ends_with(event->name, COMMAND_FILE_EXTENSION) )
                 {
-                    strcpy(filename, argv[1]);
-                    strcat(filename, "/");
+                    strcpy(filename, monitor_directory_path);
+                    if(!string_ends_with(filename, "/"))
+                        strcat(filename, "/");
                     strcat(filename, event->name);
                     stat(filename, &attr);
                     lastmodified = attr.st_mtime;
@@ -836,13 +884,14 @@ main (int argc, char *argv[])
   }
 #endif
 
-  while( exitLoop == 0 )
-  {
-      printf("VMREST_TEST_CLI > ");
-      fgets(buffer, MAX_COMMAND_LEN, stdin);
-      if ( !execute_command(buffer, myargv) )
-          break;
-  }
+  if(interactive)  
+    while( exitLoop == 0 )
+    {
+        printf("VMREST_TEST_CLI > ");
+        fgets(buffer, MAX_COMMAND_LEN, stdin);
+        if ( !execute_command(buffer, myargv) )
+            break;
+    }
 
 clean:
   for (i =0; i < MAX_ARGUMENTS; i++)
@@ -853,7 +902,4 @@ clean:
 
   return retval;
 }
-
-#endif
-
 
