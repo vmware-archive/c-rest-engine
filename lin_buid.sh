@@ -16,13 +16,18 @@ make -f Makefile.bootstrap DEBUG=1
 if [ $? -eq 0 ]; then
     if [ $install = true ]; then
 	rpm -e vmware-rest
+        port=$(cat ../docs/SampleRestEngineConfig.cfg | grep Port | cut -d' ' -f2)
+        version=$(cat package/rpm/vmware-rest.spec | grep Version | cut -d' ' -f2)
+	release=$(cat package/rpm/vmware-rest.spec | grep Release | cut -d' ' -f2)
 	pushd rpmbuild/RPMS/x86_64
-	rpm -ivh vmware-rest-1.0.0-0.x86_64.rpm
+	rpm -ivh vmware-rest-$version-$release.x86_64.rpm
 	popd
-	port=$(cat ../docs/SampleRestEngineConfig.cfg | grep Port | cut -d' ' -f2)
         iptables -A INPUT -p tcp --dport $port -j ACCEPT
+	iptables -A OUTPUT -p tcp --dport $port -j ACCEPT
 	cp ../docs/SampleRestEngineConfig.cfg /tmp/restconfig.txt
-	cp ../docs/SampleRestEngineStartCmd.txt /opt/vmware/sbin/
+	cp ../docs/RestEngineStart.tcf /opt/vmware/sbin/
+	cp ../docs/RestEngineStop.tcf /opt/vmware/sbin/
+	cp ../docs/RestStartStopRepeat.tcf /opt/vmware/sbin/
     fi
 else 
     if [ $install = true ]; then
