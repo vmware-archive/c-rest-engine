@@ -200,7 +200,7 @@ VmRESTSetHttpRequestHeader(
 
 uint32_t
 VmRESTParseAndPopulateConfigFile(
-    char*                            configFile,
+    char const*                      configFile,
     VM_REST_CONFIG**                 ppRESTConfig
     );
 
@@ -230,7 +230,7 @@ uint32_t
 VmRESTSetHTTPMiscHeader(
     PMISC_HEADER_QUEUE               miscHeaderQueue,
     char const*                      header,
-    char*                            value
+    char const*                      value
     );
 
 uint32_t
@@ -339,7 +339,7 @@ VmRESTCopyWCStringByIndex(
 uint32_t
 VmHTTPInit(
     PREST_CONF                       pConfig,
-    char*                            file
+    char const*                      file
     );
 
 uint32_t

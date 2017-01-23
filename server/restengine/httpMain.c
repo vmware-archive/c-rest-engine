@@ -18,7 +18,7 @@ int  vmrest_syslog_level;
 uint32_t
 VmHTTPInit(
     PREST_CONF                       pConfig,
-    char*                            file
+    char const*                      file
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;

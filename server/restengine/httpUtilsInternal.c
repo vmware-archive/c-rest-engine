@@ -358,7 +358,7 @@ error:
 
 uint32_t
 VmRESTParseAndPopulateConfigFile(
-    char*                            configFile,
+    char const*                      configFile,
     VM_REST_CONFIG**                 ppRESTConfig
     )
 {
@@ -639,7 +639,7 @@ uint32_t
 VmRESTSetHTTPMiscHeader(
     PMISC_HEADER_QUEUE               miscHeaderQueue,
     char const*                      header,
-    char*                            value
+    char const*                      value
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;

@@ -88,7 +88,7 @@ VMREST_API
 uint32_t
 VmRESTInit(
     PREST_CONF                       pConfig,
-    char*                            file
+    char const*                      file
     );
 
 /**
@@ -148,7 +148,7 @@ VmRESTFreeEndPoint(
 VMREST_API
 uint32_t
 VmRESTUnRegisterHandler(
-    char*                            pEndpointURI
+    char const*                      pEndpointURI
     );
 
 /*
@@ -260,8 +260,8 @@ VMREST_API
 uint32_t
 VmRESTSetFailureResponse(
     PREST_RESPONSE*                  ppResponse,
-    char*                            pErrorCode,
-    char*                            pErrorMessage
+    char const*                      pErrorCode,
+    char const*                      pErrorMessage
     );
 
 /*
@@ -277,7 +277,7 @@ VMREST_API
 uint32_t
 VmRESTSetData(
     PREST_RESPONSE*                  ppResponse,
-    char*                            buffer,
+    char const*                      buffer,
     uint32_t                         dataLen,
     uint32_t*                        done
     );
@@ -381,7 +381,7 @@ uint32_t
 VmRESTSetHttpHeader(
     PREST_RESPONSE*                  ppResponse,
     char const*                      pszName,
-    char*                            pValue
+    char const*                      pValue
     );
 
 /*
@@ -395,7 +395,7 @@ VMREST_API
 uint32_t
 VmRESTSetHttpStatusCode(
     PREST_RESPONSE*                  ppResponse,
-    char*                            statusCode
+    char const*                      statusCode
     );
 
 /*
@@ -409,7 +409,7 @@ VMREST_API
 uint32_t
 VmRESTSetHttpStatusVersion(
     PREST_RESPONSE*                  ppResponse,
-    char*                            version
+    char const*                      version
     );
 
 /*
@@ -423,7 +423,7 @@ VMREST_API
 uint32_t
 VmRESTSetHttpReasonPhrase(
     PREST_RESPONSE*                  ppResponse,
-    char*                            reasonPhrase
+    char const*                      reasonPhrase
     );
 
 /*
@@ -455,7 +455,7 @@ VMREST_API
 uint32_t
 VmRESTSetHttpPayload(
     PREST_RESPONSE*                  ppResponse,
-    char*                            buffer,
+    char const*                      buffer,
     uint32_t                         dataLen,
     uint32_t*                        done
     );

@@ -43,7 +43,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 uint32_t
 VmRESTInit(
     PREST_CONF                       pConfig,
-    char*                            file
+    char const*                      file
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -178,7 +178,7 @@ error:
 
 uint32_t
 VmRESTUnRegisterHandler(
-    char*                            pzEndPointURI
+    char const*                      pzEndPointURI
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -289,7 +289,7 @@ error:
 uint32_t
 VmRESTSetData(
     PREST_RESPONSE*                  ppResponse,
-    char*                            buffer,
+    char const*                      buffer,
     uint32_t                         dataLen,
     uint32_t*                        done
     )
@@ -373,8 +373,8 @@ error:
 uint32_t
 VmRESTSetFailureResponse(
     PREST_RESPONSE*                  ppResponse,
-    char*                            pErrorCode,
-    char*                            pErrorMessage
+    char const*                      pErrorCode,
+    char const*                      pErrorMessage
     )
 {   
     uint32_t                         dwError = REST_ENGINE_SUCCESS;

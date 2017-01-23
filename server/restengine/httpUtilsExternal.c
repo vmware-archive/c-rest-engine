@@ -459,7 +459,7 @@ error:
 uint32_t
 VmRESTSetHttpPayload(
     PREST_RESPONSE*                  ppResponse,
-    char*                            buffer,
+    char const*                      buffer,
     uint32_t                         dataLen,
     uint32_t*                        done
     )
@@ -566,7 +566,7 @@ uint32_t
 VmRESTSetHttpHeader(
     PREST_RESPONSE*                  ppResponse,
     char const*                      header,
-    char*                            value
+    char const*                      value
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -596,7 +596,7 @@ error:
 uint32_t
 VmRESTSetHttpStatusCode(
     PREST_RESPONSE*                  ppResponse,
-    char*                            statusCode
+    char const*                      statusCode
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -639,7 +639,7 @@ error:
 uint32_t
 VmRESTSetHttpStatusVersion(
     PREST_RESPONSE*                  ppResponse,
-    char*                            version
+    char const*                      version
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -683,7 +683,7 @@ error:
 uint32_t
 VmRESTSetHttpReasonPhrase(
     PREST_RESPONSE*                  ppResponse,
-    char*                            reasonPhrase
+    char const*                      reasonPhrase
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
