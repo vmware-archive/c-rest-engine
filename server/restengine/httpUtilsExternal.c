@@ -25,6 +25,7 @@ VmRESTGetHttpMethod(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     size_t                           methodLen = 0;
+    char*                            pMethod = NULL;
 
     if (!(pRequest) || !(pRequest->requestLine) || !(ppResponse))
     {
@@ -40,7 +41,18 @@ VmRESTGetHttpMethod(
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    *ppResponse = pRequest->requestLine->method;
+
+    dwError = VmRESTAllocateMemory(
+                 MAX_METHOD_LEN,
+                 (void **)&pMethod
+                 );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    memset(pMethod, '\0', MAX_METHOD_LEN);
+    strncpy(pMethod,pRequest->requestLine->method, (MAX_METHOD_LEN -1));
+           
+    *ppResponse = pMethod;
+
 cleanup:
     return dwError;
 error:
@@ -59,6 +71,7 @@ VmRESTGetHttpURI(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     size_t                           uriLen = 0;
+    char*                            pHttpURI = NULL;
 
     if (!(pRequest) || !(pRequest->requestLine) || !(ppResponse))
     {
@@ -74,7 +87,17 @@ VmRESTGetHttpURI(
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    *ppResponse = pRequest->requestLine->uri;
+
+    dwError = VmRESTAllocateMemory(
+                 MAX_URI_LEN,
+                 (void **)&pHttpURI
+                 );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    memset(pHttpURI, '\0', MAX_URI_LEN);
+    strncpy(pHttpURI,pRequest->requestLine->uri, (MAX_URI_LEN -1));
+
+    *ppResponse = pHttpURI;
 
 cleanup:
     return dwError;
@@ -94,6 +117,7 @@ VmRESTGetHttpVersion(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     size_t                           versionLen = 0;
+    char*                            pVersion = NULL;
 
     if (!(pRequest) || !(pRequest->requestLine) || !(ppResponse))
     {
@@ -109,7 +133,17 @@ VmRESTGetHttpVersion(
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    *ppResponse = pRequest->requestLine->version;
+
+    dwError = VmRESTAllocateMemory(
+                 MAX_VERSION_LEN,
+                 (void **)&pVersion
+                 );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    memset(pVersion, '\0', MAX_VERSION_LEN);
+    strncpy(pVersion, pRequest->requestLine->version, (MAX_VERSION_LEN -1));
+
+    *ppResponse = pVersion;
 
 cleanup:
     return dwError;
@@ -130,6 +164,8 @@ VmRESTGetHttpHeader(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     size_t                           headerValLen = 0;
+    char*                            headerValue = NULL;
+    char*                            temp = NULL;
 
     if (!(pRequest) || !(header) || !(ppResponse))
     {
@@ -141,23 +177,30 @@ VmRESTGetHttpHeader(
     dwError = VmRESTGetHTTPMiscHeader(
                   pRequest->miscHeader,
                   header,
-                  ppResponse
+                  &temp
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-    if (*ppResponse)
+    if (temp != NULL)
     {
-         headerValLen = strlen(*ppResponse);
-         if (headerValLen > MAX_HTTP_HEADER_VAL_LEN)
+         headerValLen = strlen(temp);
+         if (headerValLen == 0 || headerValLen > MAX_HTTP_HEADER_VAL_LEN)
          {
              dwError = VMREST_HTTP_VALIDATION_FAILED;
          }
+         BAIL_ON_VMREST_ERROR(dwError);
+         dwError = VmRESTAllocateMemory(
+                       MAX_HTTP_HEADER_VAL_LEN,
+                       (void **)&headerValue
+                       );
+         BAIL_ON_VMREST_ERROR(dwError);
+         memset(headerValue, '\0', MAX_HTTP_HEADER_VAL_LEN);
+         strncpy(headerValue, temp, (MAX_HTTP_HEADER_VAL_LEN - 1));
+         *ppResponse = headerValue;
     }
     else
     {
-       *ppResponse = NULL;
-       //VMREST_LOG_DEBUG("%s","WARNING :: Header %s not found in request object", header);
+        *ppResponse = NULL;
     }
-    BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     return dwError;

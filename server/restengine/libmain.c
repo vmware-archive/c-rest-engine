@@ -140,13 +140,36 @@ VmRESTFindEndpoint(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PREST_ENDPOINT                   temp = NULL;
+    PREST_ENDPOINT                   pEndPoint = NULL;
 
     dwError = VmRestEngineGetEndPoint(
                   (char*)pszEndpoint,
-                  ppEndpoint
+                  &temp
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
+    /**** Allocate and copy ****/
+    dwError = VmRESTAllocateEndPoint(
+                  &pEndPoint
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    strcpy(pEndPoint->pszEndPointURI,temp->pszEndPointURI);
+    if (temp->pHandler != NULL)
+    {
+        pEndPoint->pHandler->pfnHandleRequest = temp->pHandler->pfnHandleRequest;
+        pEndPoint->pHandler->pfnHandleCreate = temp->pHandler->pfnHandleCreate;
+        pEndPoint->pHandler->pfnHandleDelete = temp->pHandler->pfnHandleDelete;
+        pEndPoint->pHandler->pfnHandleUpdate = temp->pHandler->pfnHandleUpdate;
+        pEndPoint->pHandler->pfnHandleRead = temp->pHandler->pfnHandleRead;
+        pEndPoint->pHandler->pfnHandleOthers = temp->pHandler->pfnHandleOthers;
+        /**** Dont give the next pointer ****/
+        temp->next = NULL;
+    }
+
+    *ppEndpoint = pEndPoint;
+    
 cleanup:
     return dwError;
 error:
@@ -213,22 +236,52 @@ VmRESTShutdown(
 uint32_t
 VmRESTGetData(
     PREST_REQUEST                    pRequest,
-    char*                            response,
+    char**                           ppData,
     uint32_t*                        done
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char                             result[MAX_DATA_BUFFER_LEN] = {0};
+    char*                            pData = NULL;
 
+    if (ppData == NULL)
+    {
+        VMREST_LOG_ERROR("Invalid result pointer");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    memset(result, '\0', MAX_DATA_BUFFER_LEN);
     dwError = VmRESTGetHttpPayload(
                   pRequest,
-                  response,
+                  result,
                   done
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_DATA_BUFFER_LEN,
+                  (void**)&pData
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    memset(pData, '\0', MAX_DATA_BUFFER_LEN);
+    memcpy(pData,result,MAX_DATA_BUFFER_LEN);
+
+    *ppData = pData;
                   
 cleanup:
     return dwError;
 error:
+    if (pData != NULL)
+    {
+        VmRESTFreeMemory(pData);
+        pData = NULL;
+    }
+    if (ppData != NULL)
+    {
+        *ppData = NULL;
+    }
     goto cleanup;
 
 }

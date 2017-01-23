@@ -108,6 +108,7 @@ VmRESTStart(
  * @param[in]                        pszEndpoint Endpoint URL to register
  * @param[in]                        pHandler Callback functions registered for endpoint
  * @param[out]                       ppEndpoint Optionally return the endpoint registration object
+ *                                   NOT SUPPORTED CURRENTLY. Use Find API.
  * @return                           Returns 0 for Success
  */
 VMREST_API
@@ -132,6 +133,15 @@ VmRESTFindEndpoint(
     );
 
 /**
+ * @brief Free the pointer returned by VmRESTFindEndpoint API.
+ * @param[in]                        EndPoint pointer return by Find API
+ */
+VMREST_API
+void
+VmRESTFreeEndPoint(
+    PREST_ENDPOINT                   pEndPoint
+    );
+/**
  * @brief Unregister an endpoint
  * @return                           Returns 0 for success
  */
@@ -145,7 +155,7 @@ VmRESTUnRegisterHandler(
  * @brief Get Data received from client.
  *
  * @param[in]                        Reference to HTTP Request object.
- * @param[out]                       Payload buffer(must be allocated by caller).
+ * @param[out]                       Pointer to data buffer. Must be freed by caller.
  * @param[out]                       Identier to denote no more data to read.
  * @return                           Returns 0 for success
  */
@@ -153,7 +163,7 @@ VMREST_API
 uint32_t
 VmRESTGetData(
     PREST_REQUEST                    pRequest,
-    char*                            response,
+    char**                           ppData,
     uint32_t*                        done
     );
 
@@ -163,8 +173,8 @@ VmRESTGetData(
  * @param[in]                        Reference to HTTP Request object.
  * @param[in]                        Total params found in URL.
  * @param[in]                        Params number for this index.
- * @param[out]                       Pointer to result key .
- * @param[out]                       Pointer to result Value.
+ * @param[out]                       Pointer to result key.Must be freed by caller.
+ * @param[out]                       Pointer to result Value.Must be freed by caller.
  * @return Returns 0 for success
  */
 VMREST_API 
@@ -196,7 +206,7 @@ VmRESTGetWildCardCount(
  *
  * @param[in]                        Reference to HTTP Request object.
  * @param[in]                        Index for wild card string.
- * @param[out]                       Pointer to resultant string.
+ * @param[out]                       Pointer to resultant string.Must be freed by caller.
  * @return Returns 0 for success
  */
 VMREST_API
@@ -304,7 +314,7 @@ VmRESTShutdown(
  * @brief Retrieve method name associated with request http object.
  *
  * @param[in]                        Reference to HTTP Request object
- * @param[out]                       HTTP method present in request object.
+ * @param[out]                       HTTP method present in request object.(Freed by caller).
  * @return                           Returns 0 for success else Error code.
  */
 VMREST_API
@@ -318,7 +328,7 @@ VmRESTGetHttpMethod(
  * @brief Retrieve URI associated with request http object.
  *
  * @param[in]                        Reference to HTTP Request object.
- * @param[out]                       URI present in request object.
+ * @param[out]                       URI present in request object.(Freed by caller)
  * @return                           Returns 0 for success else error code.
  */
 VMREST_API
@@ -332,7 +342,7 @@ VmRESTGetHttpURI(
  * @brief Retrieve HTTP Version associated with request http object.
  *
  * @param[in]                        Reference to HTTP Request object.
- * @param[out]                       HTTP version (1.0/1.1) present in request object.
+ * @param[out]                       HTTP version (1.0/1.1) present in request object.(Freed by caller)
  * @return                           Returns 0 for success else error code.
  */
 VMREST_API 
@@ -347,7 +357,7 @@ VmRESTGetHttpVersion(
  *
  * @param[in]                        Reference to HTTP Request object.
  * @param[in]                        Header field to be retrieve.
- * @param[out]                       Value of header present in request object.
+ * @param[out]                       Value of header present in request object.(Freed by caller)
  * @return                           Returns 0 for success else error code.
  */
 VMREST_API 

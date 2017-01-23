@@ -1442,7 +1442,7 @@ VmSockPosixAcceptConnection(
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
-    VMREST_LOG_DEBUG("Accepted connection with fd %d", fd);
+    VMREST_LOG_DEBUG("Accepted connection with fd %d, listner fd %u", fd, pListener->fd);
     pSocket->fd = fd;
 
     pSocket->pAddr = &pSocket->addr;

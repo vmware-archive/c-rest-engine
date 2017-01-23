@@ -161,11 +161,6 @@ VmRESTAllocateEndPoint(
      PREST_ENDPOINT*                 ppEndPoint
      );
 
-void
-VmRESTFreeEndPoint(
-    PREST_ENDPOINT                   pEndPoint
-    );
-
 /***************** httpUtilsInternal.c ************/
 
 uint32_t

@@ -802,12 +802,14 @@ VmRESTGetParamsByIndex(
     PREST_REQUEST                    pRequest,
     uint32_t                         paramsCount,
     uint32_t                         paramIndex,
-    char**                           pszKey,
-    char**                           pszValue
+    char**                           ppszKey,
+    char**                           ppszValue
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         index = 0;
+    char*                            pszKey = NULL;
+    char*                            pszValue = NULL;
 
     if (paramIndex > paramsCount || paramIndex == 0) 
     {
@@ -816,18 +818,33 @@ VmRESTGetParamsByIndex(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (!pszKey || !pszValue)
+    if (!ppszKey || !ppszValue)
     {
         VMREST_LOG_ERROR("Result variables are NULL");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    index = paramIndex - 1; 
+    index = paramIndex - 1;
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_KEY_VAL_PARAM_LEN,
+                  (void **)&pszKey
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_KEY_VAL_PARAM_LEN,
+                  (void **)&pszValue              
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    memset(pszKey, '\0', MAX_KEY_VAL_PARAM_LEN);
+    memset(pszValue, '\0', MAX_KEY_VAL_PARAM_LEN);
     
     if ((pRequest != NULL) && (strlen(pRequest->paramArray[index].key) > 0))
     {
-        *pszKey = pRequest->paramArray[index].key;
+        strncpy(pszKey,pRequest->paramArray[index].key,(MAX_KEY_VAL_PARAM_LEN -1));
     }
     else
     {
@@ -837,24 +854,36 @@ VmRESTGetParamsByIndex(
 
     if ((pRequest != NULL) && (strlen(pRequest->paramArray[index].value) > 0))
     {
-        *pszValue = pRequest->paramArray[index].value;
+        strncpy(pszValue,pRequest->paramArray[index].value,(MAX_KEY_VAL_PARAM_LEN -1));
     }
     else
     {
         VMREST_LOG_DEBUG("WARNING: Value Not Found for index %u", paramIndex);
-        *pszValue = NULL;
     }
-    
+
+    *ppszKey = pszKey;
+    *ppszValue = pszValue;    
+
 cleanup:
     return dwError;
 error:
-    if (pszKey)
+    if (pszKey != NULL)
     {
-        *pszKey = NULL;
+        VmRESTFreeMemory(pszKey);
+        pszKey = NULL;
     }
-    if (pszValue)
+    if (pszValue != NULL)
     {
-        *pszValue = NULL;
+        VmRESTFreeMemory(pszValue);
+        pszValue = NULL;
+    }
+    if (ppszKey != NULL)
+    {
+        *ppszKey = NULL;
+    }
+    if (ppszValue != NULL)
+    {
+        *ppszValue = NULL;
     }
     goto cleanup;
 }
@@ -919,6 +948,10 @@ VmRESTGetWildCardCount(
 cleanup:
     return dwError;
 error:
+    if (wildCardCount != NULL)
+    {
+        *wildCardCount = 0;
+    }
     goto cleanup;
 }
 

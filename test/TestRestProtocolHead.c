@@ -626,7 +626,7 @@ void Test_SetURLParamsInRequestObjectTest6(
                   &value);
     CuAssertIntEquals(tc, 0, dwError);
     CuAssertStrEquals(tc, "EmptyKey", key);
-    CuAssertStrEquals(tc, NULL, value);
+    CuAssertStrEquals(tc, "", value);
     
     VmRESTFreeHTTPRequestPacket(&pRequest);
 }

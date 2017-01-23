@@ -37,7 +37,7 @@ VmHandleTDNFVersionGet(
     )
 {
     uint32_t                         dwError = 0;
-    char                             buffer[MAX_DATA_LEN] = {0};
+    char*                            buffer = NULL;
     uint32_t                         done = 0;
 
     memset(buffer, '\0', MAX_DATA_LEN);
@@ -50,7 +50,7 @@ VmHandleTDNFVersionGet(
     {
         dwError = VmRESTGetData(
                       pRequest,
-                      buffer,
+                      &buffer,
                       &done
                       );
         if (strlen(buffer) > 0)
@@ -101,7 +101,7 @@ VmHandleTDNFVersionSet(
     )
 {
     uint32_t                         dwError = 0;
-    char                             buffer[MAX_DATA_LEN] = {0};
+    char*                            buffer = NULL;
     uint32_t                         done = 0;
     char*                            key = NULL;
     char*                            value = NULL;
@@ -115,7 +115,7 @@ VmHandleTDNFVersionSet(
     {
         dwError = VmRESTGetData(
                       pRequest,
-                      buffer,
+                      &buffer,
                       &done
                       );
         if (strlen(buffer) > 0)
@@ -267,7 +267,7 @@ VmHandlePackageRead(
     )
 {
     uint32_t                         dwError = 0;
-    char                             buffer[MAX_DATA_LEN] = {0};
+    char*                            buffer = NULL;
     uint32_t                         done = 0;
     char*                            key = NULL;
     char*                            value = NULL;
@@ -281,7 +281,7 @@ VmHandlePackageRead(
     {
         dwError = VmRESTGetData(
                       pRequest,
-                      buffer,
+                      &buffer,
                       &done
                       );
         if (strlen(buffer) > 0)
@@ -480,7 +480,8 @@ VmHandleEchoData(
     )
 {
     uint32_t                         dwError = 0;
-    char                             buffer[4097] = {0};
+    char*                            buffer = NULL; //[4097] = {0};
+    char                             buffer1[4097] = {0};
     uint32_t                         done = 0;
     char*                            res = NULL;
     FILE*                            fp = NULL;
@@ -489,7 +490,7 @@ VmHandleEchoData(
 //    uint32_t                         wcCount = 0;
 //    char*                            wildcard = NULL;
 
-    memset(buffer, '\0', MAX_DATA_LEN);
+    //memset(buffer, '\0', MAX_DATA_LEN);
     memset(size, '\0', 10);
 
     dwError = VmRESTGetHttpMethod(
@@ -536,7 +537,7 @@ VmHandleEchoData(
     {
         dwError = VmRESTGetData(
                       pRequest,
-                      buffer,
+                      &buffer,
                       &done
                       );
         BAIL_ON_VMREST_ERROR(dwError);
@@ -546,7 +547,8 @@ VmHandleEchoData(
             fwrite(buffer, strlen(buffer), 1, fp);
 
         }
-        memset(buffer, '\0', 4097);
+        free(buffer);
+        buffer = NULL;
     }
     fclose(fp);
     fp = NULL;
@@ -566,15 +568,15 @@ VmHandleEchoData(
         BAIL_ON_VMREST_ERROR(61);
     }
 
-    memset(buffer, '\0', 4097);
-    bytesRead = fread(buffer, 1, 4096, fp);
+    memset(buffer1, '\0', 4097);
+    bytesRead = fread(buffer1, 1, 4096, fp);
    
     if (bytesRead < 4096 )
     {
         // check this
-        buffer[4096] = '\0';
+        buffer1[4096] = '\0';
         dwError = VmRESTUtilsConvertInttoString(
-                          strlen(buffer),
+                          strlen(buffer1),
                           size);
         BAIL_ON_VMREST_ERROR(dwError);
 
@@ -598,12 +600,12 @@ VmHandleEchoData(
 
         dwError = VmRESTSetData(
                   ppResponse,
-                  buffer,
+                  buffer1,
                   bytesRead,
                   &done
                   );
-        memset(buffer, '\0', 4097);
-        bytesRead = fread(buffer, 1, 4096, fp);
+        memset(buffer1, '\0', 4097);
+        bytesRead = fread(buffer1, 1, 4096, fp);
         
     }
     fclose(fp);
