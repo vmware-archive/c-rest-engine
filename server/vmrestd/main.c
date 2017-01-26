@@ -39,6 +39,33 @@ uint32_t                         cbIndex = 0;
 
 int     exitLoop = 0;
 
+REST_PROVIDER gRestProviders[] = {
+    {
+        "EchoData",
+        {
+            &VmRESTHandleHTTP_REQUEST,
+            &VmHandleEchoData,
+            &VmHandleEchoData,
+            &VmHandleEchoData,
+            &VmHandleEchoData,
+            &VmHandlePackageOTHERS
+        },
+    },
+
+    {
+        "Package",
+        {
+            &VmRESTHandleHTTP_REQUEST,
+            &VmHandlePackageWrite,
+            &VmHandlePackageRead,
+            &VmHandlePackageUpdate,
+            &VmHandlePackageDelete,
+            &VmHandlePackageOTHERS
+        }
+    }
+};
+
+
 void printHelp(void)
 {
     printf("\nUsage:\n");
@@ -97,46 +124,19 @@ void printRestEngineHelp(void)
 }
 
 
-uint32_t
-VmRegisterHandler(
-    char*                            URI,
-    uint32_t                         index
-    )
+PREST_PROVIDER
+GetRESTProvider( char* providerName )
 {
-    uint32_t                         dwError = 0;
-    /**** Call helper in global with resource specific pointer ****
-
-    VmAppStoreEndpoint(
-        index,
-        &VmHandlePackageWrite,
-        &VmHandlePackageRead,
-        &VmHandlePackageUpdate,
-        &VmHandlePackageDelete
-        );
-    */
-     VmAppStoreEndpoint(
-        index,
-        &VmHandleEchoData,
-        &VmHandleEchoData,
-        &VmHandleEchoData,
-        &VmHandleEchoData
-        );
-        
-
- 
-
-     dwError = VmRESTRegisterHandler(
-                  URI,
-                  &(gVmEndPointHandler[index]),
-                  NULL
-                  );
-     BAIL_ON_VMREST_ERROR(dwError);
-
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
+    for( int i = 0; i < sizeof(gRestProviders)/sizeof(REST_PROVIDER); i++ )
+    {
+        if( strcmp(providerName, gRestProviders[i].name) == 0 )
+        {
+            return &gRestProviders[i];
+        }
+    }
+    return NULL;
 }
+
 
 #ifndef WIN32
 
@@ -257,6 +257,7 @@ void readOptionEndPoint(int argc, char *argv[])
     int                              c = 0;
     int                              option_index = 0;
     uint32_t                         dwError = 0;
+    static PREST_PROVIDER            pProvider =  &gRestProviders[0];
 
     if (argc <= 1)
     {
@@ -268,6 +269,7 @@ void readOptionEndPoint(int argc, char *argv[])
     {
         struct option long_options[] =
         {
+            {"provider",          optional_argument, 0, 'p'},
             {"registerURI",       required_argument, 0, 'r'},
             {"deregisterURI",     required_argument, 0, 'd'},
             {"exit",              no_argument,       0, 'e'},
@@ -275,7 +277,7 @@ void readOptionEndPoint(int argc, char *argv[])
             {0, 0, 0, 0}
         };
 
-        c = getopt_long (argc, argv, "r:d:eh", long_options, &option_index);
+        c = getopt_long (argc, argv, "p:r:d:eh", long_options, &option_index);
 
         if (c == -1)
         {
@@ -298,12 +300,33 @@ void readOptionEndPoint(int argc, char *argv[])
                 printf ("\n");
                 break;
 
+            case 'p':
+                if( optarg == NULL || strcmp(optarg, "") == 0 )
+                {
+                    printf ("Current REST Provider for future Endpoint registrations is %s\n", pProvider->name);
+                }
+                else
+                {
+                    PREST_PROVIDER pNewProvider = GetRESTProvider( optarg );
+                    if (pNewProvider)
+                    {
+                        pProvider = pNewProvider;
+                        printf("REST Provider %s set successfully for future Endpoint registrations\n", optarg);
+                    }
+                    else
+                    {
+                        printf ("ERROR: Setting REST Provider %s failed; no such provider name\n", optarg );
+                    }
+                }
+                break;
+
             case 'r':
-                printf ("Registering REST Endpoint for URI %s\n", optarg);
-                dwError = VmRegisterHandler(
-                              optarg,
-                              cbIndex++
-                              );
+                printf ("Registering REST Endpoint for URI %s and Provider %s\n", optarg, pProvider->name);
+                dwError = VmRESTRegisterHandler(
+                               optarg,
+                               &pProvider->restProcessor,
+                               NULL
+                               );
                 if (!dwError)
                 {
                     printf("REST endpoint %s registered successfully\n", optarg);
@@ -311,7 +334,6 @@ void readOptionEndPoint(int argc, char *argv[])
                 else
                 {
                     printf ("ERROR: Registering REST Endpoint for URI %s failed, Error code %u\n", optarg, dwError);
-                    exitLoop = 1;
                 }
                 
                 break;
@@ -328,7 +350,6 @@ void readOptionEndPoint(int argc, char *argv[])
                 else
                 {
                     printf ("ERROR: removing REST Endpoint for URI %s failed, Error code %u\n", optarg, dwError);
-                    exitLoop = 1;
                 }
                 break;
 
@@ -438,7 +459,6 @@ void readOptionRestEngine(int argc, char *argv[])
                 else
                 {
                     printf ("ERROR: Unable to initialize Rest Engine, Error code %u ....\n",dwError);
-                    exitLoop = 1;
                 }
 
                 if (pConfig)
@@ -540,7 +560,6 @@ void readOptionServer(int argc, char *argv[])
                 else
                 {
                     printf ("ERROR: Unable to start server, Error code %u ....\n",dwError);
-                    exitLoop = 1;
                 }
 
                 break;
@@ -556,7 +575,6 @@ void readOptionServer(int argc, char *argv[])
                 else
                 {
                     printf ("ERROR: Unable to stop server, Error code %u ....\n",dwError);
-                    exitLoop = 1;
                 }
                 break;
 
@@ -712,14 +730,14 @@ int launch_server_sample()
 {
     uint32_t                         dwError = 0;
 
-    printf("Bingo: %u\n", dwError);
+    printf("Starting: %s\n", gRestProviders[0].name);
 
 #ifdef WIN32 
     dwError = VmRESTInit(NULL,"c:\\tmp\\restconfig.txt");
 #else
     dwError = VmRESTInit(NULL,"/tmp/restconfig.txt");
 #endif
-    VmRegisterHandler("/v1/pkg", 0);
+    VmRESTRegisterHandler("/v1/pkg", &gRestProviders[0].restProcessor, NULL);
 
     VmRESTStart();
 
@@ -746,7 +764,7 @@ return dwError;
 
 int usage(int retval, char* errorText)
 {
-    printf("Error:  %s\nUsage:  vmrestd [-e command_file_path] [-i | -m monitor_directory_path]\n"
+    printf("Error:  %s\nUsage:  vmrestd [-r command_file_path] [-i | -m monitor_directory_path]\n"
            "(no params) Launch server test sample for /v1/pkg vroot; requires /tmp/restconfig.txt .\n"
            " -r         Run Trident Command File - execute all commands, then exit or enter -i or -m mode\n"
            " -i         Interactive mode (wait for command typed at console).\n"

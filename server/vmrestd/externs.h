@@ -16,6 +16,4 @@ extern VMREST_GLOBALS gVMRESTGlobals;
 
 extern PREST_PROCESSOR gpVmRestHandlers;
 
-extern REST_PROCESSOR gVmEndPointHandler[MAX_RESOURCE];
-
 extern VMRESTD_CONFIG restdConfig;
