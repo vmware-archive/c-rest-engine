@@ -15,6 +15,12 @@
 
 #include "includes.h"
 
+static uint32_t
+VmRESTSecureSocket(
+    char*                   certificate,
+    char*                   key
+    );
+
 
 static DWORD
 VmSockWinAcceptConnection(
@@ -39,6 +45,68 @@ static DWORD WINAPI
 VmSockWinListenerThreadProc(
     LPVOID                  pThreadParam
     );
+
+static
+uint32_t
+VmRESTSecureSocket(
+    char*                            certificate,
+    char*                            key
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    int                              ret = 0;
+    const SSL_METHOD*                method = NULL;
+    SSL_CTX*                         context = NULL;
+
+    if (key == NULL || certificate == NULL)
+    {
+        VMREST_LOG_ERROR("Invalid params");
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    SSL_load_error_strings();
+    SSLeay_add_ssl_algorithms();
+    method = SSLv23_server_method();
+    context = SSL_CTX_new (method);
+    if (!context) 
+	{
+		dwError = VMREST_TRANSPORT_SSL_CONFIG_ERROR;
+        VMREST_LOG_ERROR("SSL Context NULL");
+    }
+	BAIL_ON_VMREST_ERROR(dwError);
+
+    if (SSL_CTX_use_certificate_file(context, certificate, SSL_FILETYPE_PEM) <= 0) 
+	{
+         dwError = VMREST_TRANSPORT_SSL_CERTIFICATE_ERROR;
+         VMREST_LOG_ERROR("SSL Certificate cannot be used");
+    }
+	BAIL_ON_VMREST_ERROR(dwError);
+
+    if (SSL_CTX_use_PrivateKey_file(context, key, SSL_FILETYPE_PEM) <= 0)
+	{
+        dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_ERROR;
+        VMREST_LOG_ERROR("SSL key cannot be used");
+    }
+	BAIL_ON_VMREST_ERROR(dwError);
+
+    if (!SSL_CTX_check_private_key(context)) 
+	{
+        dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_CHECK_ERROR;
+        VMREST_LOG_ERROR("SSL Error in private key");
+	}
+	BAIL_ON_VMREST_ERROR(dwError);
+
+    gSockSSLInfo.sslContext = context;
+	
+cleanup:
+    return dwError;
+
+error:
+    dwError = VMREST_TRANSPORT_SSL_ERROR;
+    goto cleanup;
+}
+
 
 /**
  * @brief Opens a client socket
@@ -207,10 +275,14 @@ VmSockWinOpenServer(
     USHORT               usPort,
     int                  iListenQueueSize,
     VM_SOCK_CREATE_FLAGS dwFlags,
-    PVM_SOCKET*          ppSocket
+    PVM_SOCKET*          ppSocket,
+	char*                sslcert,
+	char*                sslKey
     )
 {
     DWORD dwError = 0;
+	
+
     union
     {
 #ifdef AF_INET6
@@ -258,6 +330,24 @@ VmSockWinOpenServer(
     if (dwFlags & VM_SOCK_CREATE_FLAGS_NON_BLOCK)
     {
         dwSockFlags = WSA_FLAG_OVERLAPPED;
+    }
+
+    /**** Check if connection is over SSL ****/
+    if(dwFlags & VM_SOCK_IS_SSL)
+    {
+        //SSL_library_init();
+		char *sslCert = "./MYCERT.crt";
+		char *sslKey = "./MYKEY.key";
+        dwError = VmRESTSecureSocket(
+                      sslCert,
+                      sslKey
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+        gSockSSLInfo.isSecure = 1;
+    }
+    else
+    {
+        gSockSSLInfo.isSecure = 0;
     }
 
     socket = WSASocketW(
@@ -323,6 +413,8 @@ VmSockWinOpenServer(
     BAIL_ON_VMREST_ERROR(dwError);
 
     pSocket->pStreamBuffer = NULL;
+	pSocket->fd = socket;
+	pSocket->ssl = NULL;
     pSocket->refCount = 1;
     pSocket->type = VM_SOCK_TYPE_LISTENER;
 
@@ -340,8 +432,12 @@ VmSockWinOpenServer(
 
     *ppSocket = pSocket;
 
-cleanup:
 
+    OpenSSL_add_all_algorithms();
+	
+	 
+cleanup:
+    
     return dwError;
 
 error:
@@ -806,52 +902,22 @@ VmSockWinRead(
     pIoContext->IoBuffer.addrLen = sizeof pIoContext->IoBuffer.clientAddr;
     pOverlapped = (pSocket->pEventQueue) ? &pIoContext->Overlapped : NULL;
 
-    if (pSocket->protocol == VM_SOCK_PROTOCOL_UDP)
+    if (pSocket->protocol == VM_SOCK_PROTOCOL_TCP)
     {
-        VMREST_LOG_DEBUG(
-                "WSA WSARecvFrom - Socket: %d Address: %p, Event: %d, Size: %d",
-                pSocket->hSocket,
-                (DWORD)pIoBuffer,
-                pIoContext->eventType,
-                pIoBuffer->dwExpectedSize);
-
-        sockError = WSARecvFrom(
-                            pSocket->hSocket,
-                            &wsaBuff,
-                            1,
-                            &dwBytesRead,
-                            &dwFlags,
-                            (struct sockaddr*)&pIoContext->IoBuffer.clientAddr,
-                            &pIoContext->IoBuffer.addrLen,
-                            pOverlapped,
-                            NULL);
-
-        VMREST_LOG_DEBUG(
-                "WSA WSARecvFrom - Status: %d Byes Transfered : %d ",
-                sockError,
-                dwBytesRead);
-
-        if (sockError == SOCKET_ERROR)
-        {
-            dwError = WSAGetLastError();
-            BAIL_ON_VMREST_ERROR(dwError);
-        }
-        else if (pSocket->pEventQueue)
-        {
-            dwError = ERROR_IO_PENDING;
-        }
-    }
-    else if (pSocket->protocol == VM_SOCK_PROTOCOL_TCP)
-    {
-
-        VMREST_LOG_DEBUG(
-                "WSA WSARecv - Socket: %d Address: %p, Event: %d, Size: %d",
-                pSocket->hSocket,
-                (DWORD)pIoBuffer,
-                pIoContext->eventType,
-                pIoBuffer->dwExpectedSize); 
-
-        sockError = WSARecv(
+         if (gSockSSLInfo.isSecure && (pSocket->ssl != NULL))
+         {
+             sockError = SSL_read(pSocket->ssl, wsaBuff.buf, wsaBuff.len);
+			 if (sockError < 0)
+			 {
+                  dwError = 101;
+				  VMREST_LOG_ERROR("SSL read failed, sockError = %u", sockError);
+			 }
+			 BAIL_ON_VMREST_ERROR(dwError);
+			 dwBytesRead = sockError;
+         }
+		 else if(pSocket->hSocket > 0)
+		 {
+             sockError = WSARecv(
                         pSocket->hSocket,
                         &wsaBuff,
                         1,
@@ -860,21 +926,18 @@ VmSockWinRead(
                         pOverlapped,
                         NULL);
 
-        VMREST_LOG_DEBUG(
-                "WSA WSARecv - Status: %d Byes Transfered : %d ",
-                sockError,
-                dwBytesRead);
-
-        if (sockError == SOCKET_ERROR)
-        {
-            dwError = WSAGetLastError();
-            BAIL_ON_VMREST_ERROR(dwError);
+            if (sockError == SOCKET_ERROR)
+            {
+                dwError = WSAGetLastError();
+				dwError = 110;
+                BAIL_ON_VMREST_ERROR(dwError);
+            }
+            else if (pSocket->pEventQueue)
+            {
+                dwError = 0 ; //ERROR_IO_PENDING;
+            }
         }
-        else if (pSocket->pEventQueue)
-        {
-            dwError = 0 ; //ERROR_IO_PENDING;
-        }
-    }
+	}
 
     pIoContext->IoBuffer.dwBytesTransferred = dwBytesRead;
     pIoContext->IoBuffer.dwCurrentSize += dwBytesRead;
@@ -914,6 +977,10 @@ VmSockWinWrite(
     DWORD dwFlags = 0;
     WSABUF wsaBuff = { 0 };
     LPOVERLAPPED pOverlapped = NULL;
+	DWORD        dwBytesToWrite = 0;
+	DWORD        bytes = 0;
+	DWORD        bytesLeft = 0;
+	DWORD        bytesWritten = 0;
 
     if (!pSocket || !pIoBuffer)
     {
@@ -928,48 +995,28 @@ VmSockWinWrite(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
+	dwBytesToWrite = pIoBuffer->dwExpectedSize;
+	bytes = dwBytesToWrite;
+	bytesLeft = bytes;
+
     wsaBuff.buf = pIoBuffer->pData + pIoBuffer->dwCurrentSize;
     wsaBuff.len = pIoBuffer->dwExpectedSize - pIoBuffer->dwCurrentSize;
     pOverlapped = (pSocket->pEventQueue) ? &pIoContext->Overlapped : NULL;
 
-    if (pSocket->protocol == VM_SOCK_PROTOCOL_UDP)
+    if (pSocket->protocol == VM_SOCK_PROTOCOL_TCP)
     {
-        if (!pClientAddress || addrLength <= 0)
-        {
-            dwError = ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMREST_ERROR(dwError);
-        }
+		while(bytesWritten < bytes)
+		{
+            if (gSockSSLInfo.isSecure && (pSocket->ssl != NULL))
+            {    
+                 dwBytesWritten = SSL_write(pSocket->ssl,(pIoBuffer->pData + bytesWritten),bytesLeft);
+            }
+			else if (pSocket->hSocket > 0)
+			{
+                 wsaBuff.buf = pIoBuffer->pData + bytesWritten;
+                 wsaBuff.len = bytesLeft;
 
-        memcpy_s(
-            &pIoBuffer->clientAddr,
-            sizeof pIoBuffer->clientAddr,
-            pClientAddress, addrLength);
-
-        VMREST_LOG_DEBUG("WSA SendTo - Address: %p, Event: %d, Size: %d",
-            (DWORD)pIoBuffer, pIoContext->eventType, pIoBuffer->dwExpectedSize);
-
-        sockError = WSASendTo(
-                            pSocket->hSocket,
-                            &wsaBuff,
-                            1,
-                            &dwBytesWritten,
-                            dwFlags,
-                            (struct sockaddr*)&pIoBuffer->clientAddr,
-                            addrLength,
-                            pOverlapped,
-                            NULL);
-
-        VMREST_LOG_DEBUG(
-                "WSA WSASendTo - Status: %d Byes Transfered : %d ",
-                sockError,
-                dwBytesWritten);
-    }
-    else if (pSocket->protocol == VM_SOCK_PROTOCOL_TCP)
-    {
-        VMREST_LOG_DEBUG("WSA WSASend - Address: %p, Event: %d, Size: %d",
-            (DWORD)pIoBuffer, pIoContext->eventType, pIoBuffer->dwExpectedSize);
-
-        sockError = WSASend(
+                 sockError = WSASend(
                         pSocket->hSocket,
                         &wsaBuff,
                         1,
@@ -978,22 +1025,40 @@ VmSockWinWrite(
                         pOverlapped,
                         NULL);
 
-        VMREST_LOG_DEBUG(
-                "WSA WSASendTo - Status: %d Byes Transfered : %d ",
-                sockError,
-                dwBytesWritten);
+                 if (sockError == SOCKET_ERROR)
+                 {
+                     dwError = WSAGetLastError();
+                     BAIL_ON_VMREST_ERROR(dwError);
+                 }
+                 else if (pSocket->pEventQueue)
+                 {
+                     dwError = 0 ; //ERROR_IO_PENDING;
+                 }
+			}
+
+            if (dwBytesWritten >= 0)
+            {
+                 bytesWritten += dwBytesWritten;
+                 bytesLeft -= dwBytesWritten;
+                 VMREST_LOG_DEBUG("Bytes written this write %d, Total bytes written %u", dwBytesWritten, bytesWritten);
+                 dwBytesWritten = 0;
+            }
+            else
+            {
+                if (errno == 11)
+                {
+                     dwBytesWritten = 0;
+                     continue;
+                 }
+                 VMREST_LOG_ERROR("Write failed with errorno %d", errno);
+                 dwError = 601;
+                 BAIL_ON_VMREST_ERROR(dwError);
+             }
+
+		} //while
     }
 
-    if (sockError == SOCKET_ERROR)
-    {
-        dwError = WSAGetLastError();
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-    else if (pSocket->pEventQueue)
-    {
-        dwError = 0 ; //ERROR_IO_PENDING;
-    }
-
+    
     pIoContext->IoBuffer.dwBytesTransferred = dwBytesWritten;
     pIoContext->IoBuffer.dwCurrentSize += dwBytesWritten;
 
@@ -1035,7 +1100,6 @@ VmSockWinRelease(
     PVM_SOCKET           pSocket
     )
 {
-	VMREST_LOG_DEBUG("%s", "Sock Release called");
     if (pSocket)
     {
         if (InterlockedDecrement(&pSocket->refCount) == 0)
@@ -1094,7 +1158,6 @@ VmSockWinFreeSocket(
     PVM_SOCKET  pSocket
     )
 {   
-	VMREST_LOG_DEBUG("Freeing Socket %p", pSocket);
     if (pSocket->hSocket != INVALID_SOCKET)
     {
         CancelIo((HANDLE)pSocket->hSocket);
@@ -1230,6 +1293,9 @@ VmSockWinAcceptConnection(
     PVM_SOCK_IO_BUFFER pIoBuffer = NULL;
     PVM_SOCK_IO_CONTEXT pIoContext = NULL;
     PVM_STREAM_BUFFER                pStrmBuf = NULL;
+	SSL*                             ssl = NULL;
+	DWORD                            cntRty = 0;
+	int err = 0;
 
     if (!pListenSocket ||
         !pListenSocket->hSocket ||
@@ -1240,11 +1306,6 @@ VmSockWinAcceptConnection(
         dwError = ERROR_INVALID_SERVER_STATE;
         BAIL_ON_VMREST_ERROR(dwError);
     }
-
-  /*  dwError = VmRESTAllocateMemory(
-                    sizeof(*pClientSocket),
-                    (PVOID*)&pClientSocket);
-    BAIL_ON_VMREST_ERROR(dwError); */
 
 	dwError = VmRESTAllocateMemory(
                     sizeof(VM_SOCKET),
@@ -1257,12 +1318,48 @@ VmSockWinAcceptConnection(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
+    if (gSockSSLInfo.isSecure)
+	{
+        ssl = SSL_new(gSockSSLInfo.sslContext);
+		if (!ssl)
+		{
+            dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
+			VMREST_LOG_ERROR("Error in SSL_new");
+		}
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        SSL_set_fd(ssl, clientSocket);
+
+retry:
+		err = SSL_accept (ssl);
+		if (err == -1)
+		{
+             if (cntRty <= 500000)
+			 {
+                 cntRty++;
+				 goto retry;
+			 }
+			 else
+			 {
+                  VMREST_LOG_ERROR("SSL Accept failed dwError = %d error code %d", err, SSL_get_error(ssl,err));
+			      dwError = 101;
+				  BAIL_ON_VMREST_ERROR(dwError);
+			 }
+		}
+		pClientSocket->ssl = ssl;
+	}
+	else
+	{
+        pClientSocket->ssl = NULL;
+	}
+          
     pStrmBuf->dataProcessed = 0;
     pStrmBuf->dataRead = 0;
     memset(pStrmBuf->pData, '\0', 4096);
 
     pClientSocket->pStreamBuffer = pStrmBuf;
     pClientSocket->hSocket = clientSocket;
+	pClientSocket->fd = clientSocket;
     pClientSocket->pEventQueue = pListenSocket->pEventQueue;
     pClientSocket->protocol = pListenSocket->protocol;
     pClientSocket->type = VM_SOCK_TYPE_SERVER;
@@ -1360,12 +1457,6 @@ VmSockWinAllocateIoBuffer(
     pIoContext->eventType = eventType;
     pIoContext->IoBuffer.dwExpectedSize = dwSize;
     pIoContext->IoBuffer.pData = pIoContext->DataBuffer;
-
-    VMREST_LOG_INFO("Buffer Allocated - Address: %p, Event: %d, Size: %d", 
-        (DWORD)&pIoContext->IoBuffer, 
-        pIoContext->eventType, 
-        pIoContext->IoBuffer.dwExpectedSize);
-
     *ppIoBuffer = &(pIoContext->IoBuffer);
 
 cleanup:
@@ -1393,7 +1484,6 @@ VmSockWinFreeIoBuffer(
     )
 {
     PVM_SOCK_IO_CONTEXT pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
-    VMREST_LOG_INFO("Freeing Io Buffer - Address: %p, Event: %d, Size: %d", (DWORD)pIoBuffer, pIoContext->eventType, pIoBuffer->dwCurrentSize);
 	if (pIoContext)
 	{
 	    VmRESTFreeMemory(pIoContext);

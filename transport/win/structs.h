@@ -23,6 +23,8 @@ typedef struct _VM_SOCKET
     PVM_STREAM_BUFFER                pStreamBuffer;
     HANDLE                           hThreadListen;
     struct sockaddr_storage          addr;
+	int                              fd;
+	SSL*                             ssl;
     int                              addrLen;
 } VM_SOCKET;
 
@@ -41,3 +43,8 @@ typedef struct _VM_SOCK_IO_CONTEXT
     CHAR                             DataBuffer[1];
 } VM_SOCK_IO_CONTEXT, *PVM_SOCK_IO_CONTEXT;
 
+typedef struct _SOCK_SSL_INFO
+{
+    SSL_CTX*                         sslContext;
+    uint32_t                         isSecure;
+} SOCK_SSL_INFO;

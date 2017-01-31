@@ -162,7 +162,7 @@ VmHTTPStop(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    VMREST_LOG_DEBUG("Shutting down rest engine ....");
+    VMREST_LOG_DEBUG("%s","Shutting down rest engine ....");
     VmRESTShutdownProtocolServer();
     BAIL_ON_VMREST_ERROR(dwError);
 

@@ -43,3 +43,5 @@ VM_SOCK_PACKAGE gVmSockWinPackage =
 };
 
 PVM_SOCK_PACKAGE gpVmWinSockPackage = &gVmSockWinPackage;
+
+SOCK_SSL_INFO gSockSSLInfo = {0};

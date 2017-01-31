@@ -282,7 +282,7 @@ VmRESTSockWorkerThreadProc(
     {
         VM_SOCK_EVENT_TYPE eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
 
-         VMREST_LOG_DEBUG("blocked....");
+//         VMREST_LOG_DEBUG("blocked....");
         dwError = VmwSockWaitForEvent(
                         pSockContext->pEventQueue,
                         -1,
@@ -723,25 +723,24 @@ VmsockPosixGetXBytes(
                         &pIoBuffer
                         );
         BAIL_ON_VMREST_ERROR(dwError);
-
         dwError = VmwSockRead(
                             pSocket,
                             pIoBuffer);
-
+		VMREST_LOG_DEBUG("SockRead(), dwError = %u, dataRead %u", dwError, pIoBuffer->dwBytesTransferred);
         if (dwError == ERROR_SUCCESS)
         {
             memset(pStreamBuffer->pData, '\0', MAX_DATA_BUFFER_LEN);
             memcpy(pStreamBuffer->pData, pIoBuffer->pData,pIoBuffer->dwBytesTransferred);
-            pStreamBuffer->dataProcessed = 0;
-            pStreamBuffer->dataRead = pIoBuffer->dwBytesTransferred;
-            BAIL_ON_VMREST_ERROR(dwError);
+			pStreamBuffer->dataProcessed = 0;
+			pStreamBuffer->dataRead = pIoBuffer->dwBytesTransferred;
+			BAIL_ON_VMREST_ERROR(dwError);
         }
         else if (dwError == ERROR_IO_PENDING)
         {
             // fail for linux?
 #ifndef WIN32
             pIoBuffer = NULL;
-#endif
+#endif 
         }
         else
         {
@@ -759,7 +758,6 @@ VmsockPosixGetXBytes(
             goto readAgain;
         }
         */
-
         remainingBytes = bytesRequested - dataAvailableInCache;
         dataIndex = 0;
 

@@ -3,7 +3,7 @@ sbin_PROGRAMS = vmrestd
 vmrestd_SOURCES = \
     globals.c \
     httpHandlers.c \
-    main.c \
+    lin_main.c \
     signal.c \
     tdnf.c
 

@@ -407,7 +407,7 @@ VmRESTParseAndPopulateHTTPHeaders(
        *resStatus = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-
+    
     while(1)
     {
         if (bytesRead >= (packetLen - 4))
@@ -1104,6 +1104,7 @@ VmRESTProcessIncomingData(
                   &resStatus
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+
     VMREST_LOG_DEBUG("Header parsing done : return code %u", dwError);
 
     /**** 3: If Expect:100-continue is received, send the continue message back to client ****/

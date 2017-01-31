@@ -13,6 +13,7 @@
  */
 
 #include "includes.h"
+int vmrest_syslog_level;
 
 uint32_t
 VmRESTCommonInit(

@@ -33,7 +33,6 @@ VMware REST Library
 %{_sbindir}/vmrestd
 %{_includedir}/vmrest.h
 %{_lib64dir}/librestengine.*
-%{_lib64dir}/libvmsock.*
 
 # %doc ChangeLog README COPYING
 

@@ -45,7 +45,7 @@ VmRESTUtilsGetLastChar(
 
     if (src == NULL || (strlen(src) > MAX_SERVER_PORT_LEN))
     {
-        VMREST_LOG_DEBUG("VmRESTUtilsGetLastChar(): Invalid Params");
+        VMREST_LOG_DEBUG("%s","VmRESTUtilsGetLastChar(): Invalid Params");
         return ret;
     }
     temp = src;

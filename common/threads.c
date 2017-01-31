@@ -199,7 +199,7 @@ VmRESTAllocateCondition(
 
     if ( ppCondition == NULL )
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR("%s","Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }

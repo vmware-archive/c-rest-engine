@@ -97,5 +97,4 @@ rest_publish: rest_package
 	mkdir -p $(PUBLISH_DIR)/lin64/lib64
 	$(CP) -prf $(PKGDIR)/rpmtmp/usr/lib/vmware-rest/include/* $(PUBLISH_DIR)/lin64/include
 	$(CP) -prf $(PKGDIR)/rpmtmp/usr/lib/vmware-rest/lib64/librestengine.so* $(PUBLISH_DIR)/lin64/lib64/
-	$(CP) -prf $(PKGDIR)/rpmtmp/usr/lib/vmware-rest/lib64/libvmsock.so* $(PUBLISH_DIR)/lin64/lib64/
 	$(CP) -prf $(PKGDIR)/RPMS/x86_64/*.rpm $(PUBLISH_DIR)

@@ -40,7 +40,8 @@ typedef unsigned __int8 uint8_t;
 #include <assert.h>
 #include <Ws2tcpip.h>
 #include <stdio.h>
-
+#include "openssl\ssl.h"
+#include "openssl\err.h"
 #include <vmsock.h>
 #include <vmrestdefines.h>
 #include <vmrestcommon.h>
@@ -50,3 +51,4 @@ typedef unsigned __int8 uint8_t;
 #include "structs.h"
 #include "externs.h"
 #include "prototypes.h"
+
