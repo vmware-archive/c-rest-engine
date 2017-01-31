@@ -411,6 +411,11 @@ VmRESTValidateHTTPRequestURI(
     *result = PASS;
 
 cleanup:
+    if (host != NULL)
+    {
+        VmRESTFreeMemory(host);
+        host = NULL;
+    }
     return dwError;
 error:
     goto cleanup;
@@ -469,6 +474,12 @@ VmRESTValidateHTTPContentType(
     }
 
 cleanup:
+    if (contentType != NULL)
+    {
+        VmRESTFreeMemory(contentType);
+        contentType = NULL;
+    }
+
     if (dup)
     {
         free(dup);
@@ -532,6 +543,12 @@ VmRESTValidateAccept(
     }
 
 cleanup:
+    if (accept != NULL)
+    {
+        VmRESTFreeMemory(accept);
+        accept = NULL;
+    }
+
     if (dup)
     {
         free(dup);
@@ -594,6 +611,12 @@ VmRESTValidateAcceptCharSet(
     }
 
 cleanup:
+    if (acceptCharSet != NULL)
+    {
+        VmRESTFreeMemory(acceptCharSet);
+        acceptCharSet = NULL;
+    }
+
     if (dup)
     {
         free(dup);

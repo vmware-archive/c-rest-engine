@@ -294,12 +294,6 @@ VmRestEngineGetEndPoint(
     );
 
 uint32_t
-VmRestGetEndPointURIfromRequestURI(
-    char*                            pRequestURI,
-    char*                            endPointURI
-    );
-
-uint32_t
 VmRestGetParamsCountInReqURI(
     char*                            pRequestURI,
     uint32_t*                        paramCount

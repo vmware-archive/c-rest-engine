@@ -1045,6 +1045,11 @@ VmRESTCloseClient(
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
+    if (connection != NULL)
+    {
+        VmRESTFreeMemory(connection);
+        connection = NULL;
+    }
     return dwError;
 error:
     goto cleanup;
@@ -1130,13 +1135,23 @@ VmRESTProcessIncomingData(
              BAIL_ON_VMREST_ERROR(dwError);
              memset(httpURI, '\0',MAX_URI_LEN);
              strncpy(httpURI,ptr,(MAX_URI_LEN - 1));
-             ptr = NULL;
+             if (ptr != NULL)
+             {
+                 VmRESTFreeMemory(ptr);
+                 ptr = NULL;
+             }
 
              dwError = VmRestGetEndPointURIfromRequestURI(
                            httpURI,
-                           endPointURI
+                           &ptr
                            );
              BAIL_ON_VMREST_ERROR(dwError);
+             strncpy(endPointURI,ptr,(MAX_URI_LEN - 1));
+             if (ptr != NULL)
+             {
+                 VmRESTFreeMemory(ptr);
+                 ptr = NULL;
+             }
 
              dwError = VmRestEngineGetEndPoint(
                             endPointURI,
@@ -1177,6 +1192,12 @@ VmRESTProcessIncomingData(
         pIntResPacket = NULL;
     }
 
+    if (expect != NULL)
+    {
+        VmRESTFreeMemory(expect);
+        expect = NULL;
+    }
+
     /**** 4. Set the total payload information in request object ****/
 
     dwError = VmRESTGetHttpHeader(
@@ -1205,6 +1226,18 @@ VmRESTProcessIncomingData(
     {
         dwError = LENGTH_REQUIRED;
         BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    if (contentLen != NULL)
+    {
+        VmRESTFreeMemory(contentLen);
+        contentLen = NULL;
+    }
+
+    if (transferEncoding != NULL)
+    {
+        VmRESTFreeMemory(transferEncoding);
+        transferEncoding = NULL;
     }
 
     /**** 6. Give application the callback ****/

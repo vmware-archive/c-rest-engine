@@ -315,7 +315,7 @@ void Test_EndPointURIManupulationTest1(
     )
 {
     uint32_t  dwError = 0;
-    char      endPointURI[128] = {0};
+    char*     endPointURI = NULL;
     uint32_t  paramsCount = 0;
 
     memset(endPointURI, '\0', 128);
@@ -323,7 +323,7 @@ void Test_EndPointURIManupulationTest1(
     /**** TEST 1: Valid Endpoint URI ****/
     dwError = VmRestGetEndPointURIfromRequestURI(
                   "/v1/pkg?x=y",
-                  endPointURI
+                  &endPointURI
                   );
     CuAssertIntEquals(tc, 0, dwError);
     CuAssertStrEquals(tc, "/v1/pkg", endPointURI);
@@ -340,14 +340,14 @@ void Test_EndPointURIManupulationTest2(
     )
 {
     uint32_t  dwError = 0;
-    char      endPointURI[128] = {0};
+    char*     endPointURI = NULL;
     uint32_t  paramsCount = 0;
 
     /**** TEST 2: Valid Endpoint URI with multiple params****/
     memset(endPointURI, '\0', 128);
     dwError = VmRestGetEndPointURIfromRequestURI(
                   "/v1/tdnf/version?x=y&PkgName=flex&Version=5",
-                  endPointURI
+                  &endPointURI
                   );
     CuAssertIntEquals(tc, 0, dwError);
     CuAssertStrEquals(tc, "/v1/tdnf/version", endPointURI);
@@ -364,7 +364,7 @@ void Test_EndPointURIManupulationTest3(
     )
 {
     uint32_t  dwError = 0;
-    char      endPointURI[128] = {0};
+    char*     endPointURI = NULL;
     uint32_t  paramsCount = 0;
 
 
@@ -372,7 +372,7 @@ void Test_EndPointURIManupulationTest3(
     memset(endPointURI, '\0', 128);
     dwError = VmRestGetEndPointURIfromRequestURI(
                   "/v1/restserver",
-                  endPointURI
+                  &endPointURI
                   );
     CuAssertIntEquals(tc, 0, dwError);
     CuAssertStrEquals(tc, "/v1/restserver", endPointURI);
@@ -389,7 +389,7 @@ void Test_EndPointURIManupulationTest4(
     )
 {
     uint32_t  dwError = 0;
-    char      endPointURI[128] = {0};
+    char*     endPointURI = NULL;
     uint32_t  paramsCount = 0;
 
 
@@ -397,7 +397,7 @@ void Test_EndPointURIManupulationTest4(
     memset(endPointURI, '\0', 128);
     dwError = VmRestGetEndPointURIfromRequestURI(
                   "/v1   restserver",
-                  endPointURI
+                  &endPointURI
                   );
     CuAssertTrue(tc, dwError);
 
@@ -412,14 +412,14 @@ void Test_EndPointURIManupulationTest5(
     )
 {
     uint32_t  dwError = 0;
-    char      endPointURI[128] = {0};
+    char*     endPointURI = NULL;
     uint32_t  paramsCount = 0;
 
     /**** TEST 5: Empty URL ****/
     memset(endPointURI, '\0', 128);
     dwError = VmRestGetEndPointURIfromRequestURI(
                   "",
-                  endPointURI
+                  &endPointURI
                   );
     CuAssertTrue(tc, dwError);
 

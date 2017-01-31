@@ -47,8 +47,11 @@ VmRestEngineHandler(
     BAIL_ON_VMREST_ERROR(dwError);
     memset(httpMethod, '\0', MAX_METHOD_LEN);
     strncpy(httpMethod,ptr, (MAX_METHOD_LEN - 1));
-    ptr = NULL;
-
+    if (ptr != NULL)
+    {
+        VmRESTFreeMemory(ptr);
+        ptr = NULL;
+    }
     VMREST_LOG_DEBUG("HTTP method %s", httpMethod);
 
     /**** 3. Get the URI ****/
@@ -60,16 +63,27 @@ VmRestEngineHandler(
     BAIL_ON_VMREST_ERROR(dwError);
     memset(httpURI, '\0',MAX_URI_LEN);
     strncpy(httpURI,ptr,(MAX_URI_LEN - 1));
-    ptr = NULL;
+    if (ptr != NULL)
+    {
+        VmRESTFreeMemory(ptr);
+        ptr = NULL;
+    }
 
     VMREST_LOG_DEBUG("HTTP URI %s", httpURI);
 
     /**** 4. Get the End point from URI ****/
     dwError = VmRestGetEndPointURIfromRequestURI(
                   httpURI,
-                  endPointURI
+                  &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+    memset(endPointURI, '\0',MAX_URI_LEN);
+    strncpy(endPointURI,ptr,(MAX_URI_LEN - 1));
+    if (ptr != NULL)
+    {
+        free(ptr);
+        ptr = NULL;
+    }
 
     VMREST_LOG_DEBUG("EndPoint URI %s", endPointURI);
 
@@ -437,50 +451,6 @@ cleanup:
     {
         dwError = NOT_FOUND;
     }
-    return dwError;
-error:
-    goto cleanup;
-}
-
-uint32_t
-VmRestGetEndPointURIfromRequestURI(
-    char*                            pRequestURI,
-    char*                            endPointURI
-    )
-{
-    uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    char*                            foundCharacter = NULL;
-    uint64_t                         copyBytes = 0;
-    char*                            hasSpace = NULL;
-    
-    if (!pRequestURI || !endPointURI)
-    {
-        VMREST_LOG_ERROR("Request URI is NULL");
-        dwError =  VMREST_HTTP_INVALID_PARAMS;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    hasSpace = strchr(pRequestURI, ' ');
-    if (hasSpace != NULL || (strlen(pRequestURI) == 0) || (strlen(pRequestURI) > MAX_URI_LEN))
-    {
-        VMREST_LOG_ERROR("Request URI has space or wrong length - Invalid");
-        dwError = BAD_REQUEST;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    foundCharacter = strchr(pRequestURI, '?');
-    if (foundCharacter != NULL)
-    {
-        copyBytes = foundCharacter - pRequestURI;
-        strncpy(endPointURI,pRequestURI, copyBytes);
-        *(endPointURI + copyBytes) = '\0';
-    }
-    else
-    {
-        strcpy(endPointURI,pRequestURI);
-    }
-
-cleanup:
     return dwError;
 error:
     goto cleanup;
@@ -918,13 +888,23 @@ VmRESTGetWildCardCount(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
     strncpy(httpURI,ptr,(MAX_URI_LEN - 1));
-    ptr = NULL;
+    if (ptr != NULL)
+    {
+        VmRESTFreeMemory(ptr);
+        ptr = NULL;
+    }
     
     dwError = VmRestGetEndPointURIfromRequestURI(
                   httpURI,
-                  endPointURI
+                  &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+    strncpy(endPointURI, ptr, (MAX_URI_LEN - 1));
+    if (ptr != NULL)
+    {
+        VmRESTFreeMemory(ptr);
+        ptr = NULL;    
+    }
 
     dwError = VmRestEngineGetEndPoint(
                   endPointURI,
@@ -1007,14 +987,23 @@ VmRESTGetWildCardByIndex(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
     strncpy(httpURI,ptr,(MAX_URI_LEN - 1));
-    ptr = NULL;
+    if (ptr != NULL)
+    {
+        VmRESTFreeMemory(ptr);
+        ptr = NULL;
+    }
 
     dwError = VmRestGetEndPointURIfromRequestURI(
                   httpURI,
-                  endPointURI
+                  &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-    ptr = endPointURI;
+    strncpy(endPointURI,ptr,(MAX_URI_LEN - 1));
+    if (ptr != NULL)
+    {
+        VmRESTFreeMemory(ptr);
+        ptr = NULL;
+    }
 
     dwError = VmRestEngineGetEndPoint(
                   endPointURI,
@@ -1023,10 +1012,10 @@ VmRESTGetWildCardByIndex(
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTGetPreSlashIndex(
-              pEndPoint->pszEndPointURI,
-              index,
-              &preSlashIndex
-              );
+                  pEndPoint->pszEndPointURI,
+                  index,
+                  &preSlashIndex
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTCopyWCStringByIndex(
@@ -1048,6 +1037,70 @@ error:
     {
         VmRESTFreeMemory(pszWildCard);
         pszWildCard = NULL;
+    }
+    goto cleanup;
+}
+
+uint32_t
+VmRestGetEndPointURIfromRequestURI(
+    char const*                      pRequestURI,
+    char**                           ppszEndPointURI
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char*                            foundCharacter = NULL;
+    uint64_t                         copyBytes = 0;
+    char*                            hasSpace = NULL;
+    char*                            pszEndPointURI = NULL;
+
+    if (!pRequestURI || !ppszEndPointURI)
+    {
+        VMREST_LOG_ERROR("Request URI is NULL");
+        dwError =  VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    hasSpace = strchr(pRequestURI, ' ');
+    if (hasSpace != NULL || (strlen(pRequestURI) == 0) || (strlen(pRequestURI) > MAX_URI_LEN))
+    {
+        VMREST_LOG_ERROR("Request URI has space or wrong length - Invalid");
+        dwError = BAD_REQUEST;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (void **)&pszEndPointURI
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    memset(pszEndPointURI, '\0', MAX_URI_LEN);
+
+    foundCharacter = strchr(pRequestURI, '?');
+    if (foundCharacter != NULL)
+    {
+        copyBytes = foundCharacter - pRequestURI;
+        strncpy(pszEndPointURI,pRequestURI, copyBytes);
+        *(pszEndPointURI + copyBytes) = '\0';
+    }
+    else
+    {
+        strcpy(pszEndPointURI,pRequestURI);
+    }
+
+    *ppszEndPointURI = pszEndPointURI;
+
+cleanup:
+    return dwError;
+error:
+    if (pszEndPointURI != NULL)
+    {
+        VmRESTFreeMemory(pszEndPointURI);
+        pszEndPointURI = NULL;
+    }
+    if (ppszEndPointURI)
+    {
+        *ppszEndPointURI = NULL;
     }
     goto cleanup;
 }

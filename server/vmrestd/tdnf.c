@@ -37,10 +37,10 @@ VmHandleTDNFVersionGet(
     )
 {
     uint32_t                         dwError = 0;
-    char*                            buffer = NULL;
+    char                             buffer[MAX_DATA_LEN + 1] = {0};
     uint32_t                         done = 0;
 
-    memset(buffer, '\0', MAX_DATA_LEN);
+    memset(buffer, '\0', (MAX_DATA_LEN + 1));
 
   //  write(1,"\nPayload for tdnf version GET: ", 31);
 
@@ -50,14 +50,14 @@ VmHandleTDNFVersionGet(
     {
         dwError = VmRESTGetData(
                       pRequest,
-                      &buffer,
+                      buffer,
                       &done
                       );
         if (strlen(buffer) > 0)
         {
             //write(1,buffer,strlen(buffer));
         }
-        memset(buffer, '\0', MAX_DATA_LEN);
+        memset(buffer, '\0', (MAX_DATA_LEN +1));
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -101,7 +101,7 @@ VmHandleTDNFVersionSet(
     )
 {
     uint32_t                         dwError = 0;
-    char*                            buffer = NULL;
+    char                             buffer[MAX_DATA_LEN] = {0};
     uint32_t                         done = 0;
     char*                            key = NULL;
     char*                            value = NULL;
@@ -115,7 +115,7 @@ VmHandleTDNFVersionSet(
     {
         dwError = VmRESTGetData(
                       pRequest,
-                      &buffer,
+                      buffer,
                       &done
                       );
         if (strlen(buffer) > 0)
@@ -146,6 +146,18 @@ VmHandleTDNFVersionSet(
                   &value
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+
+    if (key)
+    {
+        free(key);
+        key = NULL;
+    }
+
+    if (value)
+    {
+        free(value);
+        value = NULL;
+    }
 
 
     /**** Example Call the version set api  ****/
@@ -267,7 +279,7 @@ VmHandlePackageRead(
     )
 {
     uint32_t                         dwError = 0;
-    char*                            buffer = NULL;
+    char                             buffer[MAX_DATA_LEN] = {0};
     uint32_t                         done = 0;
     char*                            key = NULL;
     char*                            value = NULL;
@@ -281,7 +293,7 @@ VmHandlePackageRead(
     {
         dwError = VmRESTGetData(
                       pRequest,
-                      &buffer,
+                      buffer,
                       &done
                       );
         if (strlen(buffer) > 0)
@@ -318,8 +330,16 @@ VmHandlePackageRead(
       //  write(1,key, strlen(key));
       //  write(1,value, 4);
 
-        key = NULL;
-        value = NULL;
+        if (key)
+        {
+            free(key);
+            key = NULL;
+        }
+        if (value)
+        {
+            free(value);
+            value = NULL;
+        }
         done++;
     }
     done = 0;
@@ -480,7 +500,7 @@ VmHandleEchoData(
     )
 {
     uint32_t                         dwError = 0;
-    char*                            buffer = NULL; //[4097] = {0};
+    char                             buffer[4097] = {0};
     char                             buffer1[4097] = {0};
     uint32_t                         done = 0;
     char*                            res = NULL;
@@ -490,7 +510,7 @@ VmHandleEchoData(
 //    uint32_t                         wcCount = 0;
 //    char*                            wildcard = NULL;
 
-    //memset(buffer, '\0', MAX_DATA_LEN);
+    memset(buffer, '\0', 4097);
     memset(size, '\0', 10);
 
     dwError = VmRESTGetHttpMethod(
@@ -537,7 +557,7 @@ VmHandleEchoData(
     {
         dwError = VmRESTGetData(
                       pRequest,
-                      &buffer,
+                      buffer,
                       &done
                       );
         BAIL_ON_VMREST_ERROR(dwError);
@@ -547,8 +567,7 @@ VmHandleEchoData(
             fwrite(buffer, strlen(buffer), 1, fp);
 
         }
-        free(buffer);
-        buffer = NULL;
+        memset(buffer, '\0', 4097);
     }
     fclose(fp);
     fp = NULL;

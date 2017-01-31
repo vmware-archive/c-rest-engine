@@ -141,6 +141,7 @@ void
 VmRESTFreeEndPoint(
     PREST_ENDPOINT                   pEndPoint
     );
+
 /**
  * @brief Unregister an endpoint
  * @return                           Returns 0 for success
@@ -151,11 +152,97 @@ VmRESTUnRegisterHandler(
     char const*                      pEndpointURI
     );
 
+/**
+ * @brief Get the endpoint URI from http URI.(Truncate URL by '?' character)
+ * @param[in]                        Http URI
+ * @param[out]                       Endpoint URI.Must be freed by caller.
+ */
+VMREST_API
+uint32_t
+VmRestGetEndPointURIfromRequestURI(
+    char const*                      pRequestURI,
+    char**                           endPointURI
+    );
+
+/*
+ * @brief Retrieve method name associated with request http object.
+ *
+ * @param[in]                        Reference to HTTP Request object
+ * @param[out]                       HTTP method present in request object.(Freed by caller).
+ * @return                           Returns 0 for success else Error code.
+ */
+VMREST_API
+uint32_t
+VmRESTGetHttpMethod(
+    PREST_REQUEST                    pRequest,
+    char**                           ppResponse
+    );
+
+/*
+ * @brief Retrieve URI associated with request http object.
+ *
+ * @param[in]                        Reference to HTTP Request object.
+ * @param[out]                       URI present in request object.(Freed by caller)
+ * @return                           Returns 0 for success else error code.
+ */
+VMREST_API
+uint32_t
+VmRESTGetHttpURI(
+    PREST_REQUEST                    pRequest,
+    char**                           ppResponse
+    );
+
+/*
+ * @brief Retrieve HTTP Version associated with request http object.
+ *
+ * @param[in]                        Reference to HTTP Request object.
+ * @param[out]                       HTTP version (1.0/1.1) present in request object.(Freed by caller)
+ * @return                           Returns 0 for success else error code.
+ */
+VMREST_API
+uint32_t
+VmRESTGetHttpVersion(
+    PREST_REQUEST                    pRequest,
+    char**                           ppResponse
+    );
+
+/*
+ * @brief Retrieve Value of HTTP header associated with request http object.
+ *
+ * @param[in]                        Reference to HTTP Request object.
+ * @param[in]                        Header field to be retrieve.
+ * @param[out]                       Value of header present in request object.(Freed by caller)
+ * @return                           Returns 0 for success else error code.
+ */
+VMREST_API
+uint32_t
+VmRESTGetHttpHeader(
+    PREST_REQUEST                    pRequest,
+    char const*                      pszName,
+    char**                           ppszResponse
+    );
+
+/*
+ * @brief Set given value to given HTTP header in the response http object.
+ *
+ * @param[in]                        Reference to HTTP Response object.
+ * @param[in]                        Header field to be set.
+ * @param[in]                        Value of header field to be set.
+ * @return Returns 0 for success
+ */
+VMREST_API
+uint32_t
+VmRESTSetHttpHeader(
+    PREST_RESPONSE*                  ppResponse,
+    char const*                      pszName,
+    char const*                      pValue
+    );
+
 /*
  * @brief Get Data received from client.
  *
  * @param[in]                        Reference to HTTP Request object.
- * @param[out]                       Pointer to data buffer. Must be freed by caller.
+ * @param[out]                       Pre allocated Data buffer.
  * @param[out]                       Identier to denote no more data to read.
  * @return                           Returns 0 for success
  */
@@ -163,7 +250,7 @@ VMREST_API
 uint32_t
 VmRESTGetData(
     PREST_REQUEST                    pRequest,
-    char**                           ppData,
+    char*                            pBuffer,
     uint32_t*                        done
     );
 
@@ -309,80 +396,6 @@ VmRESTShutdown(
 * releases, these will be depricated.
 *
 *****************************************************************************/
-
-/*
- * @brief Retrieve method name associated with request http object.
- *
- * @param[in]                        Reference to HTTP Request object
- * @param[out]                       HTTP method present in request object.(Freed by caller).
- * @return                           Returns 0 for success else Error code.
- */
-VMREST_API
-uint32_t
-VmRESTGetHttpMethod(
-    PREST_REQUEST                    pRequest,
-    char**                           ppResponse
-    );
-
-/*
- * @brief Retrieve URI associated with request http object.
- *
- * @param[in]                        Reference to HTTP Request object.
- * @param[out]                       URI present in request object.(Freed by caller)
- * @return                           Returns 0 for success else error code.
- */
-VMREST_API
-uint32_t
-VmRESTGetHttpURI(
-    PREST_REQUEST                    pRequest,
-    char**                           ppResponse
-    );
-
-/*
- * @brief Retrieve HTTP Version associated with request http object.
- *
- * @param[in]                        Reference to HTTP Request object.
- * @param[out]                       HTTP version (1.0/1.1) present in request object.(Freed by caller)
- * @return                           Returns 0 for success else error code.
- */
-VMREST_API 
-uint32_t
-VmRESTGetHttpVersion(
-    PREST_REQUEST                    pRequest,
-    char**                           ppResponse
-    );
-
-/*
- * @brief Retrieve Value of HTTP header associated with request http object.
- *
- * @param[in]                        Reference to HTTP Request object.
- * @param[in]                        Header field to be retrieve.
- * @param[out]                       Value of header present in request object.(Freed by caller)
- * @return                           Returns 0 for success else error code.
- */
-VMREST_API 
-uint32_t
-VmRESTGetHttpHeader(
-    PREST_REQUEST                    pRequest,
-    char const*                      pszName,
-    char**                           ppszResponse
-    );
-
-/*
- * @brief Set given value to given HTTP header in the response http object.
- *
- * @param[in]                        Reference to HTTP Response object.
- * @param[in]                        Header field to be set.
- * @param[in]                        Value of header field to be set.
- * @return Returns 0 for success
- */
-VMREST_API 
-uint32_t
-VmRESTSetHttpHeader(
-    PREST_RESPONSE*                  ppResponse,
-    char const*                      pszName,
-    char const*                      pValue
-    );
 
 /*
  * @brief Set given value to HTTP reponse object status line.

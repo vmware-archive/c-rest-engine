@@ -236,54 +236,23 @@ VmRESTShutdown(
 uint32_t
 VmRESTGetData(
     PREST_REQUEST                    pRequest,
-    char**                           ppData,
+    char*                            pBuffer,
     uint32_t*                        done
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    char                             result[MAX_DATA_BUFFER_LEN] = {0};
-    char*                            pData = NULL;
 
-    if (ppData == NULL)
-    {
-        VMREST_LOG_ERROR("Invalid result pointer");
-        dwError = VMREST_HTTP_INVALID_PARAMS;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    memset(result, '\0', MAX_DATA_BUFFER_LEN);
     dwError = VmRESTGetHttpPayload(
                   pRequest,
-                  result,
+                  pBuffer,
                   done
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTAllocateMemory(
-                  MAX_DATA_BUFFER_LEN,
-                  (void**)&pData
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    memset(pData, '\0', MAX_DATA_BUFFER_LEN);
-    memcpy(pData,result,MAX_DATA_BUFFER_LEN);
-
-    *ppData = pData;
                   
 cleanup:
     return dwError;
 error:
-    if (pData != NULL)
-    {
-        VmRESTFreeMemory(pData);
-        pData = NULL;
-    }
-    if (ppData != NULL)
-    {
-        *ppData = NULL;
-    }
     goto cleanup;
-
 }
 
 uint32_t
@@ -364,6 +333,11 @@ VmRESTSetSuccessResponse(
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
+    if (connection != NULL)
+    {
+        VmRESTFreeMemory(connection);
+        connection = NULL;
+    }
     return dwError;
 error:
     goto cleanup;
