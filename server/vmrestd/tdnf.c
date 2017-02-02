@@ -15,6 +15,7 @@
 #include "includes.h"
 #include <stdio.h>
 
+char   EchoDataVroot[MAX_DIRECTORY_LENGTH] = "/tmp";
 
 uint32_t
 VmRESTUtilsConvertInttoString(
@@ -509,6 +510,9 @@ VmHandleEchoData(
     char                             size[10] = {0};
 //    uint32_t                         wcCount = 0;
 //    char*                            wildcard = NULL;
+    char                             rcvdDataFilepath[MAX_DIRECTORY_LENGTH + 80];
+
+    
 
     memset(buffer, '\0', 4097);
     memset(size, '\0', 10);
@@ -545,7 +549,9 @@ VmHandleEchoData(
     write(1,wildcard,strlen(wildcard));
     printf("WC String 2 = %s", wildcard);
 */
-    fp  = fopen("/tmp/rcvdData", "w");
+    strncpy(rcvdDataFilepath, EchoDataVroot, MAX_DIRECTORY_LENGTH-1);
+    strcat(rcvdDataFilepath, "/rcvdData");
+    fp  = fopen(rcvdDataFilepath, "w");
     if (fp == NULL)
     {
         BAIL_ON_VMREST_ERROR(60);
@@ -581,7 +587,7 @@ VmHandleEchoData(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    fp  = fopen("/tmp/rcvdData", "r");
+    fp  = fopen(rcvdDataFilepath, "r");
     if (fp == NULL)
     {
         BAIL_ON_VMREST_ERROR(61);

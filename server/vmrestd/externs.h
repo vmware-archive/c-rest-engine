@@ -17,3 +17,5 @@ extern VMREST_GLOBALS gVMRESTGlobals;
 extern PREST_PROCESSOR gpVmRestHandlers;
 
 extern VMRESTD_CONFIG restdConfig;
+
+extern char EchoDataVroot[MAX_DIRECTORY_LENGTH];

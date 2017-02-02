@@ -15,10 +15,12 @@
 #define MAX_RESOURCE          10
 #define MAX_DATA_LEN          4096
 #define MAX_CONFIG_PARAMS_LEN 20
+#define MAX_DIRECTORY_LENGTH  256
 
 
 typedef struct _REST_PROVIDER
 {
     char                name[MAX_CONFIG_PARAMS_LEN];
+    char*               vroot;
     REST_PROCESSOR      restProcessor;
 } REST_PROVIDER, *PREST_PROVIDER;

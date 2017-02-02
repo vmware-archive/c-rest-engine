@@ -37,6 +37,7 @@ int     exitLoop = 0;
 REST_PROVIDER gRestProviders[] = {
     {
         "EchoData",
+        EchoDataVroot,
         {
             &VmRESTHandleHTTP_REQUEST,
             &VmHandleEchoData,
@@ -49,6 +50,7 @@ REST_PROVIDER gRestProviders[] = {
 
     {
         "Package",
+        NULL,
         {
             &VmRESTHandleHTTP_REQUEST,
             &VmHandlePackageWrite,
@@ -80,10 +82,11 @@ void printConfigHelp(void)
     printf("config [OPTIONS...]                  Provide Configuration params to REST engine\n");
     printf("-f,  --FILE <File path>              Read Configuration from file\n");
     printf("-p,  --port <Port number>            Server port on which server will be listening\n");
+    printf("-l,  --logfile <File path>           Log file path, defaults to /tmp/restServer.log/\n");
     printf("-k,  --sslKeyPath <File path>        SSL key file path for secure communication\n");
     printf("-c,  --sslCertPath <File path>       SSL certificate file path for secure communication\n");
-    printf("-C,  --clientCnt <Number>            Maximum count of client supported,defaults to 5\n");
-    printf("-W,  --workerThrCnt <Number>         Maximum count of worker threads,defaults to 5\n");
+    printf("-C,  --clientCnt <Number>            Maximum count of client supported, defaults to 5\n");
+    printf("-W,  --workerThrCnt <Number>         Maximum count of worker threads, defaults to 5\n");
     printf("-e,  --exit                          Exit the test client\n");
     printf("-h,  --help                          See this message\n\n");
 }
@@ -102,6 +105,8 @@ void printEndPointHelp(void)
 {
     printf("\nUsage:\n");
     printf("endpoint [OPTIONS...]                Register/deregister the REST endpoint\n");
+    printf("-p,  --provider <Name>               Set Provider for future endpoint registrations\n");
+    printf("-v,  --vroot <Directory>             Set Virtual root directory for current Provider, defaults to /tmp\n");
     printf("-r,  --registerURI <End Point URI>   Register EndPoint\n");
     printf("-d,  --deregisterURI <End Point URI> Deregister EndPoint\n");
     printf("-e,  --exit                          Exit the test client\n");
@@ -261,6 +266,7 @@ void readOptionEndPoint(int argc, char *argv[])
         struct option long_options[] =
         {
             {"provider",          optional_argument, 0, 'p'},
+            {"vroot",             optional_argument, 0, 'v'},
             {"registerURI",       required_argument, 0, 'r'},
             {"deregisterURI",     required_argument, 0, 'd'},
             {"exit",              no_argument,       0, 'e'},
@@ -268,7 +274,7 @@ void readOptionEndPoint(int argc, char *argv[])
             {0, 0, 0, 0}
         };
 
-        c = getopt_long (argc, argv, "p:r:d:eh", long_options, &option_index);
+        c = getopt_long (argc, argv, "p:v:r:d:eh", long_options, &option_index);
 
         if (c == -1)
         {
@@ -307,6 +313,25 @@ void readOptionEndPoint(int argc, char *argv[])
                     else
                     {
                         printf ("ERROR: Setting REST Provider %s failed; no such provider name\n", optarg );
+                    }
+                }
+                break;
+
+            case 'v':
+                if(pProvider->vroot == NULL)
+                {
+                    printf("Provider %s doesn't support setting vroot\n", pProvider->name);
+                }
+                else
+                {
+                    if( optarg == NULL || strcmp(optarg, "") == 0 )
+                    {
+                        printf ("vroot directory for current REST Provider %s is %s\n", pProvider->name, pProvider->vroot);
+                    }
+                    else                    
+                    {
+                        strncpy(pProvider->vroot, optarg, MAX_DIRECTORY_LENGTH-1);                   
+                        printf("vroot directory for current Provider %s set successfully to %s\n", pProvider->name, pProvider->vroot);
                     }
                 }
                 break;
