@@ -1287,6 +1287,11 @@ cleanup:
     return dwError;
 error:
     VMREST_LOG_ERROR("Something failed, dwError = %u", dwError);
+    if (expect != NULL)
+    {
+        VmRESTFreeMemory(expect);
+        expect = NULL;
+    }
     if (pIntResPacket)
     {
         VmRESTFreeHTTPResponsePacket(

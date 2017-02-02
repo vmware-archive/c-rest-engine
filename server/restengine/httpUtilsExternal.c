@@ -446,6 +446,17 @@ tryagain1:
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
+    if (contentLength != NULL)
+    {
+        VmRESTFreeMemory(contentLength);
+        contentLength = NULL;
+    }
+    if (transferEncoding != NULL)
+    {
+        VmRESTFreeMemory(transferEncoding);
+        transferEncoding = NULL;
+    }
+
     return dwError;
 error:
     response = NULL;
