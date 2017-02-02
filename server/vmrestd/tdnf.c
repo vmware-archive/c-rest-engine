@@ -522,9 +522,11 @@ VmHandleEchoData(
                   &res);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    free(res);
-    res= NULL;
-
+    if (res != NULL)
+    {
+        free(res);
+        res= NULL;
+    }
 /*    dwError = VmRESTGetWildCardCount(
                   pRequest,
                   &wcCount);
