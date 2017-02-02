@@ -714,6 +714,7 @@ bool run_command_file( char* filepath, char* buffer, char** myargv )
 int launch_server_sample()
 {
     uint32_t                         dwError = 0;
+    uint32_t                         cnt = 0;
 
     printf("Starting: %s\n", gRestProviders[0].name);
 
@@ -723,9 +724,10 @@ int launch_server_sample()
 
     VmRESTStart();
 
-    while(1)
+    while(cnt < 20)
     {
-        usleep(10);
+        sleep(1);
+        cnt++;
     }
     
     dwError = VmRESTStop();

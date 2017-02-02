@@ -1029,6 +1029,9 @@ VmSockPosixRead(
     int                              flags   = 0;
     ssize_t                          nRead   = 0;
     DWORD                            dwBufSize = 0;
+    uint32_t                         tryCnt = 0;
+    uint32_t                         maxTry = 50000;
+    uint32_t                         errorCode = 0;
 
     if (!pSocket || !pIoBuffer || !pIoBuffer->pData)
     {
@@ -1051,9 +1054,11 @@ VmSockPosixRead(
 
     bLocked = TRUE;
 
+tryAgain:
     if (gSockSSLInfo.isSecure && (pSocket->ssl != NULL))
     {
         nRead = SSL_read(pSocket->ssl, pIoBuffer->pData + pIoBuffer->dwCurrentSize, dwBufSize);
+        errorCode = SSL_get_error(pSocket->ssl, nRead);
     }
     else if (pSocket->fd > 0)
     {
@@ -1064,10 +1069,17 @@ VmSockPosixRead(
                 flags,
                 (struct sockaddr*)&pIoBuffer->clientAddr,
                 &pIoBuffer->addrLen);
+        errorCode = errno;
     }
 
-    if (nRead < 0)
+    if (nRead < 0 && tryCnt < maxTry && (errorCode == EAGAIN || errorCode == SSL_ERROR_WANT_READ))
     {
+        tryCnt++;
+        goto tryAgain;
+    }
+    else if (nRead < 0)
+    {
+        VMREST_LOG_ERROR("Socket Read failed");
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
