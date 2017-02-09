@@ -16,6 +16,7 @@
 #define MAX_DATA_LEN          4096
 #define MAX_CONFIG_PARAMS_LEN 20
 #define MAX_DIRECTORY_LENGTH  256
+#define MAX_IN_MEM_PAYLOAD_LEN 100000
 
 
 typedef struct _REST_PROVIDER

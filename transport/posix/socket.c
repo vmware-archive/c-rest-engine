@@ -722,13 +722,8 @@ retry:
                         {
                             pSocket->ssl = NULL;
                         }
-
-                        dwError = VmSockPosixEventQueueAdd_inlock(
-                                      pQueue,
-                                      pSocket);
-                        BAIL_ON_POSIX_SOCK_ERROR(dwError);
-
-                        eventType = VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION;
+                        /**** We dont need to add accepted FD to poller ****/
+                        eventType = VM_SOCK_EVENT_TYPE_DATA_AVAILABLE;
 
                         break;
 
@@ -754,18 +749,7 @@ retry:
             }
             else
             {
-                if (pEventSocket->inUse == 0)
-                {
-                    /**** Assigning one socket to one thread only ****/
-                    pSocket = VmSockPosixAcquireSocket(pEventSocket);
-                    eventType = VM_SOCK_EVENT_TYPE_DATA_AVAILABLE;
-                    pSocket->inUse = 1;
-                }
-                else
-                {
-                    eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
-                    pSocket = pEventSocket;
-                }
+                /**** Do nothing ****/
             }
         }
         pQueue->iReady++;
@@ -1127,10 +1111,6 @@ VmSockPosixWrite(
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
-    /**** TODO: Fix this. Call this api in loop rather loop inside this function
-     dwBytesToWrite = pIoBuffer->dwExpectedSize - pIoBuffer->dwCurrentSize; 
-    ****/
-
     dwBytesToWrite = pIoBuffer->dwExpectedSize;
 
     bytes = dwBytesToWrite;
@@ -1238,9 +1218,6 @@ VmSockPosixAcquireSocket(
 {
     if (pSocket)
     {
-        /**** TODO: Fix this. Atomic increment.
-        InterlockedIncrement(&pSocket->refCount);
-        ****/
         pSocket->refCount++;
     }
     return pSocket;
@@ -1253,9 +1230,6 @@ VmSockPosixReleaseSocket(
 {
     if (pSocket)
     {
-        /**** TODO: Fix this. Atomic decrement.
-         if (InterlockedDecrement(&pSocket->refCount) == 0)
-        ****/
         if (--(pSocket->refCount) == 0)
         {
             VmSockPosixFreeSocket(pSocket);

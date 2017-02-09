@@ -501,6 +501,113 @@ VmHandleEchoData(
     )
 {
     uint32_t                         dwError = 0;
+    uint32_t                         done = 0;
+    char                             AllData[MAX_IN_MEM_PAYLOAD_LEN] = {0};
+    char                             buffer[4097] = {0};
+    int                              nRead = 0;
+    int                              nWrite = 0;
+    uint32_t                         bytesLeft = 0;
+    char                             size[10] = {0};    
+    int                              resLength = 0;
+    uint32_t                         index = 0;
+
+    memset(buffer, '\0', 4097);
+    memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
+    memset(size, '\0', 10);
+
+    while(done != 1)
+    {
+        dwError = VmRESTGetData(
+                      pRequest,
+                      buffer,
+                      &done
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        nRead = strlen(buffer);        
+
+        if (nRead > 0)
+        {
+            memcpy((AllData + index),buffer,nRead);
+            index += nRead;
+
+        }
+        memset(buffer, '\0', 4097);
+        nRead = 0;
+    }
+
+    dwError = VmRESTSetSuccessResponse(
+                  pRequest,
+                  ppResponse
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    memset(buffer, '\0', 4097);
+
+    resLength = strlen(AllData);
+   
+    if (resLength < 4096 )
+    {
+        dwError = VmRESTUtilsConvertInttoString(
+                          resLength,
+                          size);
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        dwError = VmRESTSetDataLength(
+                  ppResponse,
+                  size
+                  );
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmRESTSetDataLength(
+                  ppResponse,
+                  NULL
+                  );
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    done = 0;
+    index = 0;
+    bytesLeft = resLength;
+
+    memset(buffer, '\0', 4097);
+
+    while(done != 1)
+    {
+        nWrite = (bytesLeft > 4096) ? 4096: bytesLeft;
+        memcpy(buffer, (AllData + index), nWrite); 
+
+        dwError = VmRESTSetData(
+                  ppResponse,
+                  buffer,
+                  nWrite,
+                  &done
+                  );
+        index = index + nWrite;
+        bytesLeft = bytesLeft - nWrite;
+        memset(buffer, '\0', 4097);
+        
+    }
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+
+#if 0
+
+uint32_t
+VmHandleEchoData(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    )
+{
+    uint32_t                         dwError = 0;
     char                             buffer[4097] = {0};
     char                             buffer1[4097] = {0};
     uint32_t                         done = 0;
@@ -651,3 +758,4 @@ error:
     }
     goto cleanup;
 }
+#endif

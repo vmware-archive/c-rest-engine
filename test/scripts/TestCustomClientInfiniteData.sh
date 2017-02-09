@@ -1,6 +1,6 @@
 # !/bin/bash
 TOPDIR=`pwd`
-IPADDR="172.16.127.129"
+IPADDR="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
 PORT="81"
 
 # Compile from source in the same directory

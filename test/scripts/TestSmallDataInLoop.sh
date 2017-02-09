@@ -3,7 +3,7 @@ TOPDIR=`pwd`
 INDIR=$TOPDIR/data/input
 OUTDIR=$TOPDIR/data/out
 EXPECTEDDIR=$TOPDIR/data/expected
-IPADDR="172.16.127.129"
+IPADDR="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
 PORT="81"
 
 #=========================== TEST 1 : Echo Small data =========================================

@@ -310,13 +310,9 @@ VmRESTSockWorkerThreadProc(
         }
         else
         {
-            if (pSocket != pSockContext->pListenerUDP)
-            {
-                VmRESTDisconnectClient(pSocket);
-                pSocket = NULL;
-            }
+            pSocket = NULL;
             pIoBuffer = NULL;
-        //    dwError = 0;
+            dwError = 0;
         }
         BAIL_ON_VMREST_ERROR(dwError);
    
@@ -357,12 +353,12 @@ VmRESTHandleSocketEvent(
             break;
 
         case VM_SOCK_EVENT_TYPE_CONNECTION_CLOSED:
-
             VmRESTOnDisconnect(pSocket, pIoBuffer);
             break;
+
         case VM_SOCK_EVENT_TYPE_UNKNOWN:
-             /**** This is for case when hot fd is returned twice as process and read on fd is not protected under mutex ****/
-             /**** DO NOTHING ****/
+             dwError = ERROR_INVALID_STATE;
+             BAIL_ON_VMREST_ERROR(dwError);
              break;
 
         default:
@@ -568,12 +564,11 @@ VmRESTTcpReceiveNewData(
                        );
          BAIL_ON_VMREST_ERROR(dwError);
      }
-     VmwSockRelease(pSocket);
-     VmRESTDisconnectClient(pSocket);
 
-     VMREST_LOG_DEBUG("%s","Calling closed connection....");
 
 cleanup:
+    VMREST_LOG_DEBUG("%s","Calling closed connection....");
+    VmRESTDisconnectClient(pSocket);
 
     return dwError;
 
