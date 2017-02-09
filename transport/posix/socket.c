@@ -620,6 +620,7 @@ VmSockPosixWaitForEvent(
     SSL*                             ssl = NULL;
     uint32_t                         try = MAX_RETRY_ATTEMPTS;
     uint32_t                         cntRty = 0;
+    uint32_t                         freeEventQueue = 0;
 
     if (!pQueue || !ppSocket || !pEventType)
     {
@@ -738,6 +739,12 @@ retry:
                 if (pQueue->bShutdown)
                 {
                     pQueue->thrCnt--;
+                    if (pQueue->thrCnt == 0)
+                    {
+                        freeEventQueue = 1;
+                    }
+
+                    VMREST_LOG_DEBUG("SHUTDOWN thread count %u", pQueue->thrCnt);
                     dwError = ERROR_SHUTDOWN_IN_PROGRESS;
                     BAIL_ON_POSIX_SOCK_ERROR(dwError);
                 }
@@ -775,7 +782,7 @@ cleanup:
     }
 
     // This needs to happen after we unlock mutex
-    if (dwError == ERROR_SHUTDOWN_IN_PROGRESS && pQueue->thrCnt == 0)
+    if (dwError == ERROR_SHUTDOWN_IN_PROGRESS && freeEventQueue == 1)
     {
         VmSockPosixFreeEventQueue(pQueue);
     }
