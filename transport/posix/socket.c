@@ -744,7 +744,6 @@ retry:
                         freeEventQueue = 1;
                     }
 
-                    VMREST_LOG_DEBUG("SHUTDOWN thread count %u", pQueue->thrCnt);
                     dwError = ERROR_SHUTDOWN_IN_PROGRESS;
                     BAIL_ON_POSIX_SOCK_ERROR(dwError);
                 }
