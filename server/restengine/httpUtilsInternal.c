@@ -922,3 +922,56 @@ cleanup:
 error:
     goto cleanup;
 }
+
+VOID 
+VmRESTDecodeEncodedURLString(
+    PCSTR                            src,
+    PSTR                             dst
+    )
+{
+    char first = '\0';
+    char second = '\0';
+
+    while (*src) 
+    {
+        if ((*src == '%') && ((first = src[1]) && (second = src[2])) && (isxdigit(first) && isxdigit(second))) 
+        {
+            if (first >= 'a')
+            {
+                first -= 'a'-'A';
+            }
+            if (first >= 'A')
+            {
+                first -= ('A' - 10);
+            }
+            else
+            {
+                first -= '0';
+            }
+            if (second >= 'a')
+            {
+                second -= 'a'-'A';
+            }
+            if (second >= 'A')
+            {
+                second -= ('A' - 10);
+            }
+            else
+            {
+                second -= '0';
+            }
+            *dst++ = 16*first+second;
+            src += 3;
+        } 
+        else if (*src == '+') 
+        {
+           *dst++ = ' ';
+           src++;
+        } 
+        else 
+        {
+            *dst++ = *src++;
+        }
+    }
+    *dst++ = '\0';
+}

@@ -510,10 +510,47 @@ VmHandleEchoData(
     char                             size[10] = {0};    
     int                              resLength = 0;
     uint32_t                         index = 0;
+    char*                            key = NULL;
+    char*                            value = NULL;
 
     memset(buffer, '\0', 4097);
     memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
     memset(size, '\0', 10);
+
+    done = 0;
+    write(1,"\nParams.....:", 14);
+    while (done < paramsCount)
+    {
+        dwError = VmRESTGetParamsByIndex(
+                      pRequest,
+                      paramsCount,
+                      (done +1),
+                      &key,
+                      &value
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        //write(1,"\nParams.....:", 14);
+        write(1,key, strlen(key));
+        write(1,":", 1);
+        write(1,value, strlen(value));
+        write(1,"\n", 1);
+
+        if (key)
+        {
+            free(key);
+            key = NULL;
+        }
+        if (value)
+        {
+            free(value);
+            value = NULL;
+        }
+        done++;
+    }
+    done = 0;
+
+
 
     while(done != 1)
     {

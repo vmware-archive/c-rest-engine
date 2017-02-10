@@ -95,7 +95,11 @@ VmRESTGetHttpURI(
     BAIL_ON_VMREST_ERROR(dwError);
 
     memset(pHttpURI, '\0', MAX_URI_LEN);
-    strncpy(pHttpURI,pRequest->requestLine->uri, (MAX_URI_LEN -1));
+
+    VmRESTDecodeEncodedURLString(
+       pRequest->requestLine->uri,
+       pHttpURI
+       );
 
     *ppResponse = pHttpURI;
 

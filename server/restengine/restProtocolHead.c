@@ -98,7 +98,7 @@ VmRestEngineHandler(
     /**** 5. Get Params count ****/
 
     dwError = VmRestGetParamsCountInReqURI(
-                  httpURI,
+                  pRequest->requestLine->uri,
                   &paramsCount
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -107,15 +107,16 @@ VmRestEngineHandler(
 
     /**** 6. Parse and populate all params in request URL ****/
 
-    dwError = VmRestParseParams(
-                  httpURI,
-                  paramsCount,
-                  pRequest
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    VMREST_LOG_DEBUG("Params parsing done, returned code %u", dwError);
-           
+    if (paramsCount > 0)
+    {
+        dwError = VmRestParseParams(
+                      pRequest->requestLine->uri,
+                      paramsCount,
+                      pRequest
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+        VMREST_LOG_DEBUG("Params parsing done, returned code %u", dwError);
+    }
 
     /**** 7. Give App CB based on HTTP method and registered endpoint ****/
 
@@ -558,6 +559,16 @@ VmRestParseParams(
 
     key = strchr(pRequestURI, '?');
 
+    if (key == NULL)
+    {
+        /**** Check if '?' is present in encoded format ****/
+        key = strstr(pRequestURI, "%3F");
+        if (key != NULL)
+        {
+           key = key + 2;
+        }
+    }
+
     while (i < paramsCount)
     {
         if (key)
@@ -814,7 +825,9 @@ VmRESTGetParamsByIndex(
     
     if ((pRequest != NULL) && (strlen(pRequest->paramArray[index].key) > 0))
     {
-        strncpy(pszKey,pRequest->paramArray[index].key,(MAX_KEY_VAL_PARAM_LEN -1));
+        VmRESTDecodeEncodedURLString(
+            pRequest->paramArray[index].key,
+            pszKey);
     }
     else
     {
@@ -824,7 +837,9 @@ VmRESTGetParamsByIndex(
 
     if ((pRequest != NULL) && (strlen(pRequest->paramArray[index].value) > 0))
     {
-        strncpy(pszValue,pRequest->paramArray[index].value,(MAX_KEY_VAL_PARAM_LEN -1));
+        VmRESTDecodeEncodedURLString(
+            pRequest->paramArray[index].value,
+            pszValue);
     }
     else
     {
@@ -1060,10 +1075,9 @@ VmRestGetEndPointURIfromRequestURI(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    hasSpace = strchr(pRequestURI, ' ');
-    if (hasSpace != NULL || (strlen(pRequestURI) == 0) || (strlen(pRequestURI) > MAX_URI_LEN))
+    if ((strlen(pRequestURI) == 0) || (strlen(pRequestURI) > MAX_URI_LEN))
     {
-        VMREST_LOG_ERROR("Request URI has space or wrong length - Invalid");
+        VMREST_LOG_ERROR("Request URI has wrong length - Invalid");
         dwError = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1087,6 +1101,14 @@ VmRestGetEndPointURIfromRequestURI(
     {
         strcpy(pszEndPointURI,pRequestURI);
     }
+
+    hasSpace = strchr(pszEndPointURI, ' ');
+    if (hasSpace != NULL)
+    {
+        VMREST_LOG_ERROR("Endpoint URI has space - Invalid");
+        dwError = BAD_REQUEST;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     *ppszEndPointURI = pszEndPointURI;
 

@@ -260,6 +260,12 @@ VmRESTCopyDataWithoutCRLF(
     uint32_t*                        actualBytes
     );
 
+VOID
+VmRESTDecodeEncodedURLString(
+    PCSTR                            src,
+    PSTR                             dst
+    );
+
 /***************** restProtocolHead.c  ************/
 
 uint32_t
