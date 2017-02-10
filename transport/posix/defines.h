@@ -58,6 +58,6 @@ typedef enum
 
 /**** Transport internal error codes ****/
 #define VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED    5100
-#define MAX_RETRY_ATTEMPTS                     5000
+#define MAX_RETRY_ATTEMPTS                     50000
 
 

@@ -698,6 +698,8 @@ VmSockPosixWaitForEvent(
                         dwError = VmSockPosixSetNonBlocking(pSocket);
                         BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
+                        
+
                         /**** If conn is over SSL, do the needful ****/
                         if (gSockSSLInfo.isSecure)
                         {
@@ -713,6 +715,7 @@ retry:
                                  }
                                  else
                                  {
+                                     VMREST_LOG_ERROR("SSL accept failed");
                                      dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
                                      BAIL_ON_VMREST_ERROR(dwError);
                                  }
