@@ -282,7 +282,6 @@ VmRESTSockWorkerThreadProc(
     {
         VM_SOCK_EVENT_TYPE eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
 
-//         VMREST_LOG_DEBUG("blocked....");
         dwError = VmwSockWaitForEvent(
                         pSockContext->pEventQueue,
                         -1,
@@ -292,9 +291,6 @@ VmRESTSockWorkerThreadProc(
 
         if (dwError == ERROR_SHUTDOWN_IN_PROGRESS)
         {
-            VMREST_LOG_INFO(
-                "%s shutdown in progress, exit sock worker loop.",
-                __FUNCTION__);
             break;
         }
         dwError = VmRESTHandleSocketEvent(

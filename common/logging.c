@@ -60,6 +60,7 @@ VmRESTLogTerminate()
     {
        fclose( logFile );
     }
+    logFile = NULL;
 }
 
 void

@@ -38,6 +38,14 @@
 #define REST_ENGINE_INVALID_REST_PROCESSER              103
 #define REST_ENGINE_ENDPOINT_EXISTS                     104
 #define REST_ENGINE_ENDPOINT_BAD_URI                    105
+#define REST_ENGINE_INVALID_CONFIG_PORT                 106
+#define REST_ENGINE_INVALID_CONFIG_SSL_CERT             107
+#define REST_ENGINE_INVALID_CONFIG_CLT_CNT              108
+#define REST_ENGINE_INVALID_CONFIG_WKR_THR_CNT          109
+#define REST_ENGINE_BAD_CONFIG_FILE_PATH                110
+
+
+
 
 #ifndef WIN32
 #define ERROR_NOT_SUPPORTED                             100

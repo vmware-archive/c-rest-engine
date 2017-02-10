@@ -388,7 +388,7 @@ VmRESTParseAndPopulateConfigFile(
     if (fp == NULL)
     {
         VMREST_LOG_ERROR("Unable to open config file");
-        dwError = REST_ENGINE_INVALID_CONFIG;
+        dwError = REST_ENGINE_BAD_CONFIG_FILE_PATH;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -490,6 +490,7 @@ VmRESTValidateConfig(
 
     if (!pRESTConfig)
     {
+        VMREST_LOG_ERROR("No rest engine config provided");
         dwError = REST_ENGINE_FAILURE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -502,7 +503,7 @@ VmRESTValidateConfig(
     if ((portLen == 0) || (portLen > MAX_SERVER_PORT_LEN))
     {
         VMREST_LOG_ERROR("Configuration Validation failed: Port not specified");
-        dwError = REST_ENGINE_FAILURE;
+        dwError = REST_ENGINE_INVALID_CONFIG_PORT;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -525,7 +526,7 @@ VmRESTValidateConfig(
          if (keyLen == 0 || keyLen > MAX_PATH_LEN || certLen == 0 || certLen > MAX_PATH_LEN)
          {
              VMREST_LOG_ERROR("Bad SSL certificate length");
-             dwError = REST_ENGINE_INVALID_CONFIG;
+             dwError = REST_ENGINE_INVALID_CONFIG_SSL_CERT;
          }
          BAIL_ON_VMREST_ERROR(dwError);
 
@@ -535,7 +536,7 @@ VmRESTValidateConfig(
     if (atoi(portNo) == 0 || atoi(portNo) > MAX_PORT_NUMBER)
     {
         VMREST_LOG_ERROR("Invalid port %s", portNo);
-        dwError = REST_ENGINE_INVALID_CONFIG;
+        dwError = REST_ENGINE_INVALID_CONFIG_PORT;
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
@@ -544,7 +545,7 @@ VmRESTValidateConfig(
         if((atoi(pRESTConfig->client_count) == 0) || (atoi(pRESTConfig->client_count) > MAX_CLIENT_CNT))
         {
             VMREST_LOG_ERROR("Invalid client Count %s", pRESTConfig->client_count);
-            dwError = REST_ENGINE_INVALID_CONFIG;
+            dwError = REST_ENGINE_INVALID_CONFIG_CLT_CNT;
             BAIL_ON_VMREST_ERROR(dwError);
         }
     }
@@ -554,7 +555,7 @@ VmRESTValidateConfig(
         if((atoi(pRESTConfig->worker_thread_count) == 0) || (atoi(pRESTConfig->worker_thread_count) > MAX_WORKER_THR_CNT))
         {
             VMREST_LOG_ERROR("Invalid Worker thread Count %s", pRESTConfig->worker_thread_count);
-            dwError = REST_ENGINE_INVALID_CONFIG;
+            dwError = REST_ENGINE_INVALID_CONFIG_WKR_THR_CNT;
             BAIL_ON_VMREST_ERROR(dwError);
         }
     }
