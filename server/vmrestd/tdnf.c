@@ -622,6 +622,7 @@ VmHandleEchoData(
                   nWrite,
                   &done
                   );
+        BAIL_ON_VMREST_ERROR(dwError);
         index = index + nWrite;
         bytesLeft = bytesLeft - nWrite;
         memset(buffer, '\0', 4097);
@@ -778,6 +779,7 @@ VmHandleEchoData(
                   bytesRead,
                   &done
                   );
+        BAIL_ON_VMREST_ERROR(dwError);
         memset(buffer1, '\0', 4097);
         bytesRead = fread(buffer1, 1, 4096, fp);
         
