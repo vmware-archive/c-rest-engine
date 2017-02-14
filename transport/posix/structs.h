@@ -55,5 +55,6 @@ typedef struct _SOCK_SSL_INFO
 {
     SSL_CTX*                         sslContext;
     uint32_t                         isSecure;
+    uint32_t                         isQueueInUse;
 } SOCK_SSL_INFO;
 

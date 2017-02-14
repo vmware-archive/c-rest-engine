@@ -482,6 +482,15 @@ VmSockPosixCreateEventQueue(
     DWORD                            dwError = REST_ENGINE_SUCCESS;
     PVM_SOCK_EVENT_QUEUE             pQueue = NULL;
 
+    if (gSockSSLInfo.isQueueInUse == 1)
+    {
+        VMREST_LOG_ERROR("Previous Instance of library still running.... Try Later !!!");
+        dwError = REST_ENGINE_PREV_INSTANCE_NOT_CLEAN;        
+    }
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+    gSockSSLInfo.isQueueInUse = 1;
+
     if (!ppQueue)
     {
         VMREST_LOG_ERROR("Invalid params");
@@ -787,6 +796,7 @@ cleanup:
     if (dwError == ERROR_SHUTDOWN_IN_PROGRESS && freeEventQueue == 1)
     {
         VmSockPosixFreeEventQueue(pQueue);
+        gSockSSLInfo.isQueueInUse = 0;
     }
 
     return dwError;
