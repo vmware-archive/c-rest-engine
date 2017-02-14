@@ -302,6 +302,8 @@ VmRestEngineAddEndpoint(
 
     temp = NULL;
 
+    
+
     /**** Allocate and Assign Endpoint ****/
     dwError = VmRESTAllocateEndPoint(
                   &pEndPoint
@@ -438,6 +440,14 @@ VmRestEngineGetEndPoint(
                         temp->pszEndPointURI,
                         pEndPointURI
                         );
+            if (found == 0)
+            {
+                found = VmRESTMatchEndPointURI(
+                            pEndPointURI,
+                            temp->pszEndPointURI
+                            );
+            }
+
             if(found == 1)
             {
                 *ppEndPoint = temp;
