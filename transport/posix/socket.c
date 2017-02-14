@@ -482,15 +482,6 @@ VmSockPosixCreateEventQueue(
     DWORD                            dwError = REST_ENGINE_SUCCESS;
     PVM_SOCK_EVENT_QUEUE             pQueue = NULL;
 
-    if (gSockSSLInfo.isQueueInUse == 1)
-    {
-        VMREST_LOG_ERROR("Previous Instance of library still running.... Try Later !!!");
-        dwError = REST_ENGINE_PREV_INSTANCE_NOT_CLEAN;        
-    }
-    BAIL_ON_POSIX_SOCK_ERROR(dwError);
-
-    gSockSSLInfo.isQueueInUse = 1;
-
     if (!ppQueue)
     {
         VMREST_LOG_ERROR("Invalid params");
@@ -546,6 +537,8 @@ VmSockPosixCreateEventQueue(
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     *ppQueue = pQueue;
+    gSockSSLInfo.isQueueInUse = 1;
+
     VMREST_LOG_DEBUG("Event queue creation successful");
 
 cleanup:
@@ -824,6 +817,8 @@ VmSockPosixCloseEventQueue(
     PVM_SOCK_EVENT_QUEUE             pQueue
     )
 {
+    uint32_t                         retry = 0;
+
     if (pQueue)
     {
         if (pQueue->pSignalWriter)
@@ -832,6 +827,18 @@ VmSockPosixCloseEventQueue(
             pQueue->bShutdown = 1;
             write(pQueue->pSignalWriter->fd, szBuf, sizeof(szBuf));
         }
+    }
+
+    /**** Worker threads are detached threads, give them some time for cleanup. Block upto 10 seconds *****/
+
+    while(retry < 10)
+    {
+        if (gSockSSLInfo.isQueueInUse == 0)
+        {
+           break;
+        }
+        sleep(1);
+        retry++;
     }
 }
 
