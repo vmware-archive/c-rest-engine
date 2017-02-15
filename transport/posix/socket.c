@@ -74,6 +74,7 @@ VmRESTSecureSocket(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     int                              ret = 0;
+    long                             options = 0;
     const SSL_METHOD*                method = NULL;
     SSL_CTX*                         context = NULL;
 
@@ -86,7 +87,7 @@ VmRESTSecureSocket(
 
     OpenSSL_add_all_algorithms();
     SSL_load_error_strings();
-    method = SSLv3_server_method();
+    method = SSLv23_server_method();
     context = SSL_CTX_new(method);
     if ( context == NULL )
     {
@@ -95,6 +96,20 @@ VmRESTSecureSocket(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+    options = SSL_CTX_get_options(context);
+
+    options = options | SSL_OP_NO_TLSv1|SSL_OP_NO_SSLv3|SSL_OP_NO_SSLv2;
+
+    options = SSL_CTX_set_options(context, options);
+
+    ret = SSL_CTX_set_cipher_list(context, "!aNULL:kECDH+AESGCM:ECDH+AESGCM:RSA+AESGCM:kECDH+AES:ECDH+AES:RSA+AES");
+    if (ret == 0)
+    {
+        VMREST_LOG_ERROR("SSL_CTX_set_cipher_list() : Cannot apply security approved cipher suites");
+        dwError = VMREST_TRANSPORT_SSL_INVALID_CIPHER_SUITES;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+ 
     ret = SSL_CTX_use_certificate_file(context, certificate, SSL_FILETYPE_PEM);
     if (ret <= 0)
     {
