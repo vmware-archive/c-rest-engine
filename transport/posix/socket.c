@@ -1553,6 +1553,12 @@ VmSockPosixFreeEventQueue(
     PVM_SOCK_EVENT_QUEUE             pQueue
     )
 {
+    if (!pQueue)
+    {
+        VMREST_LOG_ERROR("pQueue is NULL");
+        return;
+    }
+    
     if (pQueue->pSignalReader)
     {   
         VmSockPosixFreeSocket(pQueue->pSignalReader);

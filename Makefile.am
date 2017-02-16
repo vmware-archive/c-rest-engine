@@ -4,5 +4,4 @@ SUBDIRS = \
     include \
     common \
     transport \
-    server \
-    test
+    server

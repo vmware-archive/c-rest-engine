@@ -30,37 +30,68 @@ VmRESTHandleHTTP_REQUEST(
 
     memset(buffer, '\0', 56);
 
-    BAIL_ON_VMREST_ERROR(dwError);
-
 
     dwError = VmRESTGetHttpMethod(pRequest, &ptr);
-//    write(1,"\nMethod: ", 9);
-//    write(1,ptr,5);
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (ptr)
+    {
+        free(ptr);
+        ptr = NULL;
+    }
+    
 
     dwError = VmRESTGetHttpURI(pRequest, &ptr);
-//    write(1,"\nURI: ", 6);
-//    write(1,ptr,56);
+    BAIL_ON_VMREST_ERROR(dwError);
+    if (ptr)
+    {
+        free(ptr);
+        ptr = NULL;
+    }
 
     dwError = VmRESTGetHttpVersion(pRequest, &ptr);
+    BAIL_ON_VMREST_ERROR(dwError);
+    if (ptr)
+    {
+        free(ptr);
+        ptr = NULL;
+    }
+
  //   write(1,"\nVer: ", 6);
 //    write(1,ptr,8);
 
     dwError = VmRESTGetHttpHeader(pRequest,"Connection", &ptr);
+    BAIL_ON_VMREST_ERROR(dwError);
+    if (ptr)
+    {
+        free(ptr);
+        ptr = NULL;
+    }
+
   //  write(1,"\nConnection: ", 12);
   //  write(1,ptr,11);
 
     dwError = VmRESTGetHttpHeader(pRequest,"Transfer-Encoding", &ptr);
     if ((ptr != NULL) && (strlen(ptr) > 0))
     {
+       free(ptr);
+       ptr = NULL;
       //  write(1,"\nTransfer-Encoding: ", 20);
       //  write(1,ptr,8);
     }
     else
     {
         dwError = VmRESTGetHttpHeader(pRequest,"Content-Length", &ptr);
+        BAIL_ON_VMREST_ERROR(dwError);
+        if (ptr)
+        {
+            free(ptr);
+            ptr = NULL;
+        }
        // write(1,"\nContent-Length: ", 17);
       //  write(1,ptr,3);
     }
+
 
    // write(1,"\nPayload: ", 9);
     /**** Get the payload ****/
@@ -119,7 +150,12 @@ VmRESTHandleHTTP_REQUEST(
    // write(1, "\nThis is App CB for Method", 26);
 
 cleanup:
-
+    if (ptr)
+    {
+       free(ptr);
+       ptr = NULL;
+    }
+    
     return dwError;
 
 error:

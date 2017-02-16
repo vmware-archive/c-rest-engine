@@ -495,10 +495,7 @@ VmRESTValidateConfig(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (pRESTConfig->server_port != NULL)
-    {
-        portLen = strlen(pRESTConfig->server_port);
-    }
+    portLen = strlen(pRESTConfig->server_port);
 
     if ((portLen == 0) || (portLen > MAX_SERVER_PORT_LEN))
     {
@@ -514,14 +511,8 @@ VmRESTValidateConfig(
                        );
     if (lastPortChar == 's' || lastPortChar == 'S')
     {
-         if (pRESTConfig->ssl_certificate != NULL)
-         {
-             certLen = strlen(pRESTConfig->ssl_certificate);
-         }
-         if (pRESTConfig->ssl_key != NULL)
-         {
-             keyLen = strlen(pRESTConfig->ssl_key);
-         }
+         certLen = strlen(pRESTConfig->ssl_certificate);
+         keyLen = strlen(pRESTConfig->ssl_key);
 
          if (keyLen == 0 || keyLen > MAX_PATH_LEN || certLen == 0 || certLen > MAX_PATH_LEN)
          {
@@ -540,7 +531,7 @@ VmRESTValidateConfig(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    if ((pRESTConfig->client_count != NULL) && (strlen(pRESTConfig->client_count) > 0))
+    if (strlen(pRESTConfig->client_count) > 0)
     { 
         if((atoi(pRESTConfig->client_count) == 0) || (atoi(pRESTConfig->client_count) > MAX_CLIENT_CNT))
         {
@@ -550,7 +541,7 @@ VmRESTValidateConfig(
         }
     }
 
-    if ((pRESTConfig->worker_thread_count != NULL) && (strlen(pRESTConfig->worker_thread_count) > 0))
+    if ((strlen(pRESTConfig->worker_thread_count) > 0))
     {
         if((atoi(pRESTConfig->worker_thread_count) == 0) || (atoi(pRESTConfig->worker_thread_count) > MAX_WORKER_THR_CNT))
         {
@@ -881,7 +872,7 @@ VmRESTCopyDataWithoutCRLF(
     char*                            res = NULL;
     uint32_t                         skip = 0;
 
-    if (!src || !des || !actualBytes || maxBytes < 0 || maxBytes > MAX_DATA_BUFFER_LEN)
+    if (!src || !des || !actualBytes || maxBytes > MAX_DATA_BUFFER_LEN)
     {
         VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;

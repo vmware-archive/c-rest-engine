@@ -516,7 +516,7 @@ VMRESTWriteChunkedMessageInResponseStream(
     char                             chunkSize[HTTP_CHUNCKED_DATA_LEN] = {0};
     size_t                           chunkLen = 0;
 
-    if (!buffer || srcSize < 0 || srcSize > MAX_DATA_BUFFER_LEN)
+    if (!buffer || srcSize > MAX_DATA_BUFFER_LEN)
     {
         VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;

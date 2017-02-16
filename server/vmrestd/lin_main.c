@@ -22,7 +22,7 @@
 #include <time.h>
 
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )
-#define EVENT_BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
+#define EVENT_BUF_LEN ( 1024 * ( EVENT_SIZE + 16 ) )
 
 uint32_t                         useFile = 0;
 uint32_t                         cbIndex = 0;
@@ -840,7 +840,7 @@ main (int argc, char *argv[])
     int    length;
     int    fd;
     int    wd;
-    char   eventbuffer[EVENT_BUF_LEN];
+    char   eventbuffer[EVENT_BUF_LEN] = {0};
     char   filename[1024];
     time_t lastmodified;
     struct stat attr;

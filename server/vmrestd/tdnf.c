@@ -104,8 +104,6 @@ VmHandleTDNFVersionSet(
     uint32_t                         dwError = 0;
     char                             buffer[MAX_DATA_LEN] = {0};
     uint32_t                         done = 0;
-    char*                            key = NULL;
-    char*                            value = NULL;
 
     memset(buffer, '\0', MAX_DATA_LEN);
 
@@ -138,28 +136,6 @@ VmHandleTDNFVersionSet(
         dwError  = 100;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTGetParamsByIndex(
-                  pRequest,
-                  paramsCount,
-                  1,
-                  &key,
-                  &value
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    if (key)
-    {
-        free(key);
-        key = NULL;
-    }
-
-    if (value)
-    {
-        free(value);
-        value = NULL;
-    }
-
 
     /**** Example Call the version set api  ****/
 
@@ -243,7 +219,6 @@ VmHandlePackageOTHERS(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-
     dwError = VmRESTSetSuccessResponse(
                   pRequest,
                   ppResponse
@@ -265,6 +240,12 @@ VmHandlePackageOTHERS(
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
+    if (httpMethod)
+    {
+        free(httpMethod);
+        httpMethod = NULL;
+    }
+
     return dwError;
 error:
     goto cleanup;
@@ -282,8 +263,8 @@ VmHandlePackageRead(
     uint32_t                         dwError = 0;
     char                             buffer[MAX_DATA_LEN] = {0};
     uint32_t                         done = 0;
-    char*                            key = NULL;
-    char*                            value = NULL;
+  //  char*                            key = NULL;
+   // char*                            value = NULL;
 
     memset(buffer, '\0', MAX_DATA_LEN);
 
@@ -316,6 +297,7 @@ VmHandlePackageRead(
     BAIL_ON_VMREST_ERROR(dwError);
 
     
+    /*
     while (done < paramsCount)
     {
         dwError = VmRESTGetParamsByIndex(
@@ -343,6 +325,7 @@ VmHandlePackageRead(
         }
         done++;
     }
+    */
     done = 0;
 
     dwError = VmRESTSetSuccessResponse(
@@ -510,16 +493,16 @@ VmHandleEchoData(
     char                             size[10] = {0};    
     int                              resLength = 0;
     uint32_t                         index = 0;
-    char*                            key = NULL;
-    char*                            value = NULL;
+   // char*                            key = NULL;
+   // char*                            value = NULL;
 
     memset(buffer, '\0', 4097);
     memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
     memset(size, '\0', 10);
 
     done = 0;
-    write(1,"\nParams.....:", 14);
-    while (done < paramsCount)
+    //write(1,"\nParams.....:", 14);
+  /*  while (done < paramsCount)
     {
         dwError = VmRESTGetParamsByIndex(
                       pRequest,
@@ -549,7 +532,7 @@ VmHandleEchoData(
         done++;
     }
     done = 0;
-
+    */
 
 
     while(done != 1)
@@ -565,8 +548,16 @@ VmHandleEchoData(
 
         if (nRead > 0)
         {
-            memcpy((AllData + index),buffer,nRead);
-            index += nRead;
+            if ((index + nRead)< MAX_IN_MEM_PAYLOAD_LEN)
+            {
+                memcpy((AllData + index),buffer,nRead);
+                index += nRead;
+            }
+            else
+            {
+                dwError = 500;
+            }
+            BAIL_ON_VMREST_ERROR(dwError);
 
         }
         memset(buffer, '\0', 4097);
@@ -608,6 +599,12 @@ VmHandleEchoData(
     done = 0;
     index = 0;
     bytesLeft = resLength;
+
+    if (bytesLeft >= MAX_IN_MEM_PAYLOAD_LEN)
+    {
+        dwError = 400;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     memset(buffer, '\0', 4097);
 

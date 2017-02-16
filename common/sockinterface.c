@@ -354,7 +354,6 @@ VmRESTHandleSocketEvent(
 
         case VM_SOCK_EVENT_TYPE_UNKNOWN:
              dwError = ERROR_INVALID_STATE;
-             BAIL_ON_VMREST_ERROR(dwError);
              break;
 
         default:
