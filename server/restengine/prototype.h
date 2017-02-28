@@ -266,6 +266,12 @@ VmRESTDecodeEncodedURLString(
     PSTR                             dst
     );
 
+uint32_t
+VmRESTGetResponseBufferSize(
+    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket,
+    uint32_t*                        pSize
+    );
+
 /***************** restProtocolHead.c  ************/
 
 uint32_t

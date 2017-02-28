@@ -134,8 +134,24 @@ VmRESTInitProtocolServer(
     lastPortChar = VmRESTUtilsGetLastChar(
                        gpRESTConfig->server_port
                        );
-    if (lastPortChar == 's' || lastPortChar == 'S')
+
+    if (lastPortChar == 'p' || lastPortChar == 'P')
     {
+        VMREST_LOG_DEBUG("Server initing in plain text wire connection mode");
+        temp = gpRESTConfig->server_port;
+        while(temp != NULL)
+        {
+            if (*temp == 'p' || *temp == 'P')
+            {
+                *temp = '\0';
+                break;
+            }
+            temp++;
+        }
+    }
+    else
+    {
+        VMREST_LOG_DEBUG("Server initing in encrypted wire connection mode");
         if (strlen(gpRESTConfig->ssl_certificate) == 0 || strlen(gpRESTConfig->ssl_key) == 0)
         {
             VMREST_LOG_ERROR("Invalid SSL params");
@@ -145,16 +161,6 @@ VmRESTInitProtocolServer(
         dwFlags = dwFlags | VM_SOCK_IS_SSL;
         sslCert = gpRESTConfig->ssl_certificate;
         sslKey = gpRESTConfig->ssl_key;
-        temp = gpRESTConfig->server_port;
-        while(temp != NULL)
-        {
-            if (*temp == 's' || *temp == 'S')
-            {
-                *temp = '\0';
-                break;
-            }
-            temp++;
-        }
     }
 
     /**** Handle IPv4 case ****/

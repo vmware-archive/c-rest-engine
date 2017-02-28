@@ -20,7 +20,7 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 /* HTTP protocol header defines */
 
 #define MAX_METHOD_LEN             32
-#define MAX_URI_LEN                255
+#define MAX_URI_LEN                512
 #define MAX_VERSION_LEN            32
 #define MAX_STATUS_LEN              4
 #define MAX_REA_PHRASE_LEN         32
@@ -28,7 +28,7 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define HTTP_CHUNCKED_DATA_LEN      6
 #define HTTP_MIN_CHUNK_DATA_LEN     3
 
-#define MAX_KEY_VAL_PARAM_LEN      256
+#define MAX_KEY_VAL_PARAM_LEN      128
 #define MAX_URL_PARAMS_ARR_SIZE    10
 #define MAX_EXTRA_CRLF_BUF_SIZE    10
 #define MAX_DATA_BUFFER_LEN        4096
@@ -42,7 +42,7 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define DEFAULT_DEBUG_FILE         "/tmp/restServer.log"
 #define MAX_WORKER_THR_CNT         50000
 #define MAX_CLIENT_CNT             50000
-#define MAX_PORT_NUMBER            99999
+#define MAX_PORT_NUMBER            65535
 
 typedef enum _HTTP_METHODS
 {

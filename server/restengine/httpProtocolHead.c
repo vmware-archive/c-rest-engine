@@ -265,13 +265,16 @@ VmRESTHTTPPopulateHeader(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+    memset(attribute,'\0',MAX_HTTP_HEADER_ATTR_LEN);
+    memset(value,'\0',MAX_HTTP_HEADER_VAL_LEN);
+
     while(buffer != NULL && i <= lineLen)
     {
         if ((*buffer == ':') && (attrLen  == 0))
         {
             buffer++;
             *temp = '\0';
-            strcpy(attribute,local);
+            strncpy(attribute,local,(MAX_HTTP_HEADER_ATTR_LEN - 1));
             attrLen = strlen(attribute);
             memset(local,'\0', sizeof(local));
             temp = local;
@@ -284,7 +287,7 @@ VmRESTHTTPPopulateHeader(
     }
     *temp = '\0';
     
-    strcpy(value,local);
+    strncpy(value,local,(MAX_HTTP_HEADER_VAL_LEN - 1));
     valLen = strlen(value);
 
     if (attrLen == 0 || valLen == 0)
@@ -746,6 +749,7 @@ VmRESTSendHeader(
     uint32_t                         totalBytes = 0;
     uint32_t                         bytes = 0;
     char*                            curr = NULL;
+    uint32_t                         size = 0;
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket = NULL;
 
     if (!ppResPacket  || (*ppResPacket == NULL))
@@ -755,9 +759,16 @@ VmRESTSendHeader(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    /**** TODO: Fix this. changes at max 10 header node in response ****/
+    /**** Get the size of buffer big enough to hold response packet ****/
+    dwError = VmRESTGetResponseBufferSize(
+                  *ppResPacket,
+                  &size
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** Allocate buffer to hold stream data *****/
     dwError = VmRESTAllocateMemory(
-                  (sizeof(VM_REST_HTTP_HEADER_NODE) * 10),
+                  size,
                   (void**)&buffer
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -895,6 +906,7 @@ VmRESTSendHeaderAndPayload(
     uint32_t                         totalBytes = 0;
     uint32_t                         bytes = 0;
     char*                            curr = NULL;
+    uint32_t                         size = 0;
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket = NULL;
 
     if (!ppResPacket || (*ppResPacket == NULL))
@@ -904,8 +916,20 @@ VmRESTSendHeaderAndPayload(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+    dwError = VmRESTGetResponseBufferSize(
+                  *ppResPacket,
+                  &size
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** This fuction is called only when size of payload is 
+          less than 4096. Adding 10 extra bytes on top of it ****/
+
+    size += MAX_DATA_BUFFER_LEN;
+    size += 10;
+
     dwError = VmRESTAllocateMemory(
-                  (MAX_DATA_BUFFER_LEN * 4),
+                  size,
                   (void**)&buffer
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -952,18 +976,13 @@ VmRESTSendHeaderAndPayload(
     bytes = 0;
 
     /**** This is for debug purpose:: will be removed ****/
-    //VMREST_LOG_DEBUG("%s",("Entire response stream\n--------\n%s\n----------", buffer);
 
-	VMREST_LOG_DEBUG("%s", "Start");
     dwError = VmsockPosixWriteDataAtOnce(
                   pResPacket->pSocket,
                   buffer,
                   totalBytes
                   );
-	VMREST_LOG_DEBUG("end returned %u", dwError);
     BAIL_ON_VMREST_ERROR(dwError);
-
-    //VMREST_LOG_DEBUG("%s",("Writen %u bytes at socket", totalBytes);
 
     VmRESTFreeMemory(
         buffer

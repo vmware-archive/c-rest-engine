@@ -588,16 +588,34 @@ VmRestParseParams(
             {
                 res = pRequest->paramArray[i].key;
                 diff = value - key - 1;
-                strncpy(res, (key + 1), diff);
-                *(res + diff) = '\0';
+                if (diff < MAX_KEY_VAL_PARAM_LEN)
+                {
+                    strncpy(res, (key + 1), diff);
+                    *(res + diff) = '\0';
+                }
+                else
+                {
+                    VMREST_LOG_ERROR("Size of param %u key is greater than allowed limit of %u", i, MAX_KEY_VAL_PARAM_LEN);
+                    dwError = VMREST_HTTP_INVALID_PARAMS;
+                }
+                BAIL_ON_VMREST_ERROR(dwError);
 
                 key = strchr(value, '&');
                 res= pRequest->paramArray[i].value;
                 if (key)
                 {
                     diff = key - value - 1;
-                    strncpy(res, (value + 1), diff);
-                    *(res + diff) = '\0';
+                    if (diff < MAX_KEY_VAL_PARAM_LEN)
+                    {
+                        strncpy(res, (value + 1), diff);
+                        *(res + diff) = '\0';
+                    }
+                    else
+                    {
+                        VMREST_LOG_ERROR("Size of param %u value is greater than allowed limit of %u", i, MAX_KEY_VAL_PARAM_LEN);
+                        dwError = VMREST_HTTP_INVALID_PARAMS;
+                    }
+                    BAIL_ON_VMREST_ERROR(dwError);
                 }
                 else
                 {

@@ -509,19 +509,21 @@ VmRESTValidateConfig(
     lastPortChar = VmRESTUtilsGetLastChar(
                        pRESTConfig->server_port
                        );
-    if (lastPortChar == 's' || lastPortChar == 'S')
+    if (lastPortChar == 'p' || lastPortChar == 'P')
     {
-         certLen = strlen(pRESTConfig->ssl_certificate);
-         keyLen = strlen(pRESTConfig->ssl_key);
+        portNo[portLen - 1] = '\0';
+    }
+    else
+    {
+        certLen = strlen(pRESTConfig->ssl_certificate);
+        keyLen = strlen(pRESTConfig->ssl_key);
 
-         if (keyLen == 0 || keyLen > MAX_PATH_LEN || certLen == 0 || certLen > MAX_PATH_LEN)
-         {
-             VMREST_LOG_ERROR("Bad SSL certificate length");
-             dwError = REST_ENGINE_INVALID_CONFIG_SSL_CERT;
-         }
-         BAIL_ON_VMREST_ERROR(dwError);
-
-         portNo[portLen - 1] = '\0';
+        if (keyLen == 0 || keyLen > MAX_PATH_LEN || certLen == 0 || certLen > MAX_PATH_LEN)
+        {
+            VMREST_LOG_ERROR("Bad SSL certificate length");
+            dwError = REST_ENGINE_INVALID_CONFIG_SSL_CERT;
+        }
+        BAIL_ON_VMREST_ERROR(dwError);
     }
 
     if (atoi(portNo) == 0 || atoi(portNo) > MAX_PORT_NUMBER)
@@ -967,3 +969,56 @@ VmRESTDecodeEncodedURLString(
     }
     *dst++ = '\0';
 }
+
+uint32_t
+VmRESTGetResponseBufferSize(
+    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket,
+    uint32_t*                        pSize
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    uint32_t                         size = 0;
+    PVM_REST_HTTP_HEADER_NODE        miscHeaderNode = NULL;
+
+    if (!pSize || !pResPacket)
+    {
+        VMREST_LOG_ERROR("Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** 1. Maximum status line length ****/
+    size += MAX_METHOD_LEN;
+    size += MAX_URI_LEN;
+    size += MAX_VERSION_LEN;
+    /* CRLF 2, SPACE 2, EXTRA 1 */
+    size += 5;
+
+    miscHeaderNode = pResPacket->miscHeader->head;
+    while (miscHeaderNode != NULL)
+    {
+        /**** 2. Maximum per node length ****/
+        size += MAX_HTTP_HEADER_ATTR_LEN;
+        size += MAX_HTTP_HEADER_VAL_LEN;
+        /* CRLF 2, ':'1 */
+        size += 3;
+        miscHeaderNode = miscHeaderNode->next;
+    }
+
+    /* Last CR LF */
+    size += 2;
+
+    *pSize = size;
+
+cleanup:
+
+    return dwError;
+
+error:
+    if (pSize)
+    {
+        *pSize = 0;
+    }
+    goto cleanup;
+}
+

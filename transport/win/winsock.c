@@ -350,8 +350,6 @@ VmSockWinOpenServer(
     if(dwFlags & VM_SOCK_IS_SSL)
     {
         //SSL_library_init();
-		char *sslCert = "./MYCERT.crt";
-		char *sslKey = "./MYKEY.key";
         dwError = VmRESTSecureSocket(
                       sslCert,
                       sslKey
@@ -446,10 +444,6 @@ VmSockWinOpenServer(
 
     *ppSocket = pSocket;
 
-
-    OpenSSL_add_all_algorithms();
-	
-	 
 cleanup:
     
     return dwError;
