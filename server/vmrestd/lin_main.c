@@ -127,7 +127,8 @@ void printRestEngineHelp(void)
 PREST_PROVIDER
 GetRESTProvider( char* providerName )
 {
-    for( int i = 0; i < sizeof(gRestProviders)/sizeof(REST_PROVIDER); i++ )
+    int i = 0;
+    for( i = 0; i < sizeof(gRestProviders)/sizeof(REST_PROVIDER); i++ )
     {
         if( strcmp(providerName, gRestProviders[i].name) == 0 )
         {
