@@ -27,7 +27,8 @@ VmSockWinAcceptConnection(
     PVM_SOCKET              pListenSocket,
     SOCKET                  clientSocket,
     struct sockaddr*        pClientAddress,
-    int                     addrLen
+    int                     addrLen,
+	PVM_SOCKET              pSocket
     );
 
 static DWORD
@@ -55,7 +56,7 @@ VmRESTSecureSocket(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     int                              ret = 0;
-    long                             options = 0;
+	long                             options = 0;
     const SSL_METHOD*                method = NULL;
     SSL_CTX*                         context = NULL;
 
@@ -66,18 +67,19 @@ VmRESTSecureSocket(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+	SSL_library_init();
     SSL_load_error_strings();
     SSLeay_add_ssl_algorithms();
     method = SSLv23_server_method();
     context = SSL_CTX_new (method);
     if (!context) 
-    {
+	{
 		dwError = VMREST_TRANSPORT_SSL_CONFIG_ERROR;
         VMREST_LOG_ERROR("SSL Context NULL");
     }
-    BAIL_ON_VMREST_ERROR(dwError);
+	BAIL_ON_VMREST_ERROR(dwError);
 
-    options = SSL_CTX_get_options(context);
+	options = SSL_CTX_get_options(context);
 
     options = options | SSL_OP_NO_TLSv1|SSL_OP_NO_SSLv3|SSL_OP_NO_SSLv2;
 
@@ -121,6 +123,7 @@ error:
     dwError = VMREST_TRANSPORT_SSL_ERROR;
     goto cleanup;
 }
+
 
 /**
  * @brief Opens a client socket
@@ -290,7 +293,7 @@ VmSockWinOpenServer(
     int                  iListenQueueSize,
     VM_SOCK_CREATE_FLAGS dwFlags,
     PVM_SOCKET*          ppSocket,
-	char*                sslcert,
+	char*                sslCert,
 	char*                sslKey
     )
 {
@@ -349,7 +352,8 @@ VmSockWinOpenServer(
     /**** Check if connection is over SSL ****/
     if(dwFlags & VM_SOCK_IS_SSL)
     {
-        //SSL_library_init();
+		//sslCert = "./MYCERT.crt";
+		//sslKey = "./MYKEY.key";
         dwError = VmRESTSecureSocket(
                       sslCert,
                       sslKey
@@ -425,9 +429,9 @@ VmSockWinOpenServer(
     BAIL_ON_VMREST_ERROR(dwError);
 
     pSocket->pStreamBuffer = NULL;
-	pSocket->fd = socket;
 	pSocket->ssl = NULL;
     pSocket->refCount = 1;
+	pSocket->wThrCnt = iListenQueueSize;
     pSocket->type = VM_SOCK_TYPE_LISTENER;
 
     if (dwFlags & VM_SOCK_CREATE_FLAGS_UDP)
@@ -439,11 +443,24 @@ VmSockWinOpenServer(
         pSocket->protocol = VM_SOCK_PROTOCOL_TCP;
     }
 
+	if (dwFlags & VM_SOCK_CREATE_FLAGS_IPV6)
+    {
+		pSocket->v4v6 = VM_SOCK_TYPE_TCP_V6;
+    }
+    else if (dwFlags & VM_SOCK_CREATE_FLAGS_IPV4)
+    {
+        pSocket->v4v6 = VM_SOCK_TYPE_TCP_V4;
+    }
+    else
+    {
+		pSocket->v4v6 = VM_SOCK_TYPE_UNKNOWN; 
+    }
+
     pSocket->hSocket = socket;
     socket = INVALID_SOCKET;
 
     *ppSocket = pSocket;
-
+	 
 cleanup:
     
     return dwError;
@@ -501,6 +518,9 @@ VmSockWinCreateEventQueue(
     dwError = VmRESTAllocateMemory(sizeof(*pQueue), (PVOID*)&pQueue);
     BAIL_ON_VMREST_ERROR(dwError);
 
+    dwError = VmRESTAllocateMutex(&pQueue->pMutex);
+    BAIL_ON_VMREST_ERROR(dwError);
+
     pQueue->hIOCP = CreateIoCompletionPort(
                                 INVALID_HANDLE_VALUE,
                                 NULL,
@@ -520,6 +540,7 @@ VmSockWinCreateEventQueue(
     }
 
     *ppQueue = pQueue;
+	gSockSSLInfo.isQueueInUse = 1;
 
 cleanup:
 
@@ -533,6 +554,15 @@ error:
     }
 
     VmSockWinCloseEventQueue(pQueue);
+	if (pQueue && pQueue->pMutex)
+	{
+        VmRESTFreeMemory(pQueue->pMutex);
+	}
+	if (pQueue)
+	{
+        VmRESTFreeMemory(pQueue);
+	}
+
     goto cleanup;
 }
 
@@ -570,7 +600,18 @@ VmSockWinEventQueueAdd(
                         FD_ACCEPT);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    pSocket->pEventQueue = pQueue;
+	if ((pSocket->v4v6 == VM_SOCK_TYPE_TCP_V4) && (pSocket->type == VM_SOCK_TYPE_LISTENER))
+	{
+		pQueue->pListenerTCPv4 = pSocket;
+		pQueue->thrCnt = pSocket->wThrCnt;
+	}
+	else if ((pSocket->v4v6 == VM_SOCK_TYPE_TCP_V6) && (pSocket->type == VM_SOCK_TYPE_LISTENER))
+	{
+		pQueue->pListenerTCPv6 = pSocket;
+		pQueue->thrCnt = pSocket->wThrCnt;
+	}
+
+	pSocket->pEventQueue = pQueue;
 
 cleanup:
 
@@ -595,47 +636,7 @@ VmSockWinStartListening(
     int                  iListenQueueSize
     )
 {
-    DWORD dwError = 0;
-    DWORD dwThreadId = 0;
-    int sockError = 0;
-    HANDLE hThreadListen = NULL;
-
-    if (!pSocket ||
-        !pSocket->pEventQueue ||
-        pSocket->hThreadListen)
-    {
-        dwError = ERROR_INVALID_STATE;
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    hThreadListen = CreateThread(
-                            NULL,
-                            0,
-                            VmSockWinListenerThreadProc,
-                            pSocket,
-                            0,
-                            &dwThreadId);
-    if (!hThreadListen)
-    {
-        dwError = GetLastError();
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    pSocket->hThreadListen = hThreadListen;
-    hThreadListen = NULL;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    if (hThreadListen)
-    {
-        CloseHandle(hThreadListen);
-    }
-
-    goto cleanup;
+    return 0;
 }
 
 /**
@@ -650,6 +651,7 @@ error:
  *
  * @return 0 on success
  */
+
 DWORD
 VmSockWinWaitForEvent(
     PVM_SOCK_EVENT_QUEUE pQueue,
@@ -659,70 +661,143 @@ VmSockWinWaitForEvent(
     PVM_SOCK_IO_BUFFER*  ppIoBuffer
     )
 {
-    DWORD dwError = 0;
-    BOOL bRetVal = TRUE;
-    DWORD dwIoSize = 0;
-    PVM_SOCKET pSocket = NULL;
-    PVM_SOCK_IO_CONTEXT pIoContext = NULL;
+    DWORD                dwError = 0;
+    PVM_SOCKET           pListenSocket = NULL;
+    WSANETWORKEVENTS     events = { 0 };
+    int                  socketError = 0;
+    SOCKET               clientSocket = INVALID_SOCKET;
+    int                  nAddrLen = -1;
+	PVM_SOCKET           pSocket = NULL;
+	BOOLEAN              blocked = FALSE;
+	uint32_t             freeEventQueue = 0;
 
-    if (!pQueue ||
-        !pQueue->hIOCP ||
-        !ppIoBuffer ||
-        !pEventType)
+    if (!pQueue)
     {
-        dwError = ERROR_INTERNAL_ERROR;
+        dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    bRetVal = GetQueuedCompletionStatus(
-                        pQueue->hIOCP,
-                        &dwIoSize,
-                        (PULONG_PTR)&pSocket,
-                        (LPOVERLAPPED*)&pIoContext,
-                        iTimeoutMS);
-    if (!bRetVal)
-    {
-        dwError = GetLastError();
+	if (pQueue->pListenerTCPv4 != NULL)
+	{
+		pListenSocket = pQueue->pListenerTCPv4;
+	}
+	else if(pQueue->pListenerTCPv6 != NULL)
+	{
+		pListenSocket = pQueue->pListenerTCPv6;
+	}
+
+	if (!pListenSocket->pEventQueue)
+	{
+        dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
-    }
+	}
 
-   /* VMREST_LOG_DEBUG("IO Completed Socket:%d, Address:%p Event: %d, Size: %d",
-                pSocket ? pSocket->hSocket : 0,
-                &pIoContext->IoBuffer,
-                pIoContext->eventType,
-                dwIoSize); */
+    dwError = VmRESTLockMutex(pQueue->pMutex);
+    BAIL_ON_VMREST_ERROR(dwError);
 
-	 if (dwIoSize)
+	blocked = TRUE;
+
+    dwError = WSAWaitForMultipleEvents(
+                  1,
+                  &pQueue->hEventListen,
+                  FALSE,
+                  100,
+                  FALSE);
+    if (dwError == WSA_WAIT_TIMEOUT)
     {
-        pIoContext->IoBuffer.dwTotalBytesTransferred += dwIoSize;
+        dwError = 0;
     }
-    else
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (pQueue->bShutdown)
     {
-        pIoContext->IoBuffer.dwTotalBytesTransferred = 0;
+		pQueue->thrCnt--;
+		if (pQueue->thrCnt == 0)
+        {
+            freeEventQueue = 1;
+        }
+		dwError = ERROR_SHUTDOWN_IN_PROGRESS;
+		BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    pIoContext->IoBuffer.dwBytesTransferred = dwIoSize;
-    pIoContext->IoBuffer.dwCurrentSize += dwIoSize;
-    *ppIoBuffer = &pIoContext->IoBuffer;
+    socketError = WSAEnumNetworkEvents(
+                      pListenSocket->hSocket,
+                      pQueue->hEventListen,
+                      &events);
+    if (socketError == SOCKET_ERROR)
+    {
+        BAIL_ON_VMREST_ERROR(WSAGetLastError());
+    }
+
+    if (events.lNetworkEvents & FD_ACCEPT)
+    {
+        if (events.iErrorCode[FD_ACCEPT_BIT] == 0 && !pQueue->bShutdown)
+        {
+            struct sockaddr_storage clientAddress = { 0 };
+            int addLen = sizeof clientAddress;
+            clientSocket = accept( pListenSocket->hSocket,
+                                       (struct sockaddr*)&clientAddress,
+                                        &addLen);
+            if (clientSocket == SOCKET_ERROR)
+            {
+                BAIL_ON_VMREST_ERROR(WSAGetLastError());
+            }
+            else
+            {
+                dwError = VmSockWinAcceptConnection(
+                              pListenSocket,
+                              clientSocket,
+                              (struct sockaddr*)&clientAddress,
+                              addLen,
+						      &pSocket);
+                BAIL_ON_VMREST_ERROR(WSAGetLastError());
+            }
+        }
+        else
+        {
+            BAIL_ON_VMREST_ERROR(WSAGetLastError());
+        }
+    }
+    VmRESTUnlockMutex(pQueue->pMutex);
+	blocked = FALSE;
+	
     *ppSocket = pSocket;
-    *pEventType = pIoContext->eventType;
+    *pEventType = VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION;
+    *ppIoBuffer = NULL;
 
 cleanup:
+
+	if (dwError == ERROR_SHUTDOWN_IN_PROGRESS && freeEventQueue == 1)
+    {
+        if (pQueue->hEventListen != WSA_INVALID_EVENT)
+        {
+            WSACloseEvent(pQueue->hEventListen);
+        }
+
+        if (pQueue->hIOCP)
+        {
+            CloseHandle(pQueue->hIOCP);
+        
+		}
+        if (pQueue && pQueue->pMutex)
+	    {
+            VmRESTFreeMemory(pQueue->pMutex);
+	    }
+	    if (pQueue)
+	    {
+            VmRESTFreeMemory(pQueue);
+	    }
+        gSockSSLInfo.isQueueInUse = 0;
+    }
 
     return dwError;
 
 error:
 
-    if (ppIoBuffer)
-    {
-        *ppIoBuffer = NULL;
-    }
-
-    if (ppSocket)
-    {
-        *ppSocket = NULL;
-    }
-
+	if (blocked == TRUE && pQueue != NULL)
+	{
+        VmRESTUnlockMutex(pQueue->pMutex);
+	}
     goto cleanup;
 }
 
@@ -739,19 +814,21 @@ VmSockWinCloseEventQueue(
     PVM_SOCK_EVENT_QUEUE pQueue
     )
 {
+	uint32_t             retry = 0;
     if (pQueue)
     {
-        if (pQueue->hEventListen != WSA_INVALID_EVENT)
-        {
-            WSACloseEvent(pQueue->hEventListen);
-        }
+		pQueue->bShutdown = 1;
+    }
+	/**** Worker threads are detached threads, give them some time for cleanup. Block upto 10 seconds *****/
 
-        if (pQueue->hIOCP)
+    while(retry < 10)
+    {
+        if (gSockSSLInfo.isQueueInUse == 0)
         {
-            CloseHandle(pQueue->hIOCP);
+           break;
         }
-
-        VMREST_SAFE_FREE_MEMORY(pQueue);
+        Sleep(1000);
+        retry++;
     }
 }
 
@@ -884,13 +961,15 @@ VmSockWinRead(
     PVM_SOCK_IO_BUFFER  pIoBuffer
     )
 {
-    DWORD   dwError = 0;
-    int sockError = 0;
-    PVM_SOCK_IO_CONTEXT pIoContext = NULL;
-    DWORD dwBytesRead = 0, dwBytesToRead = 0;
-    DWORD dwFlags = 0;
-    WSABUF wsaBuff = { 0 };
-    LPOVERLAPPED pOverlapped = NULL;
+    DWORD               dwError = 0;
+    int                 sockError = 0;
+    DWORD               dwBytesRead = 0;
+    DWORD               dwFlags = 0;
+	DWORD               dwBufSize = 0;
+	char*               buffer = NULL;
+	int                 errorCode = 0;
+	unsigned int        tryCnt = 0;
+	unsigned int        maxTry = 500000;
 
     if (!pSocket || !pIoBuffer)
     {
@@ -898,57 +977,56 @@ VmSockWinRead(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
     if (pIoBuffer->dwExpectedSize <= pIoBuffer->dwCurrentSize)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    wsaBuff.buf = pIoBuffer->pData + pIoBuffer->dwCurrentSize;
-    wsaBuff.len = pIoBuffer->dwExpectedSize - pIoBuffer->dwCurrentSize;
-    pIoContext->IoBuffer.addrLen = sizeof pIoContext->IoBuffer.clientAddr;
-    pOverlapped = (pSocket->pEventQueue) ? &pIoContext->Overlapped : NULL;
+    dwBufSize = pIoBuffer->dwExpectedSize - pIoBuffer->dwCurrentSize;
+    buffer = pIoBuffer->pData + pIoBuffer->dwCurrentSize;
 
+tryAgain:
     if (pSocket->protocol == VM_SOCK_PROTOCOL_TCP)
     {
          if (gSockSSLInfo.isSecure && (pSocket->ssl != NULL))
          {
-             sockError = SSL_read(pSocket->ssl, wsaBuff.buf, wsaBuff.len);
-			 if (sockError < 0)
+             sockError = SSL_read(pSocket->ssl, buffer, dwBufSize);
+			 errorCode = SSL_get_error(pSocket->ssl, sockError);
+			 if ( sockError < 0 && errorCode == SSL_ERROR_WANT_READ && tryCnt < maxTry)
 			 {
-                  dwError = 101;
-				  VMREST_LOG_ERROR("SSL read failed, sockError = %u", sockError);
+                  tryCnt++;
+				  goto tryAgain;
+			 } 
+			 else if (sockError < 0)
+			 {
+                 dwError = errorCode;
+                 VMREST_LOG_ERROR("SSL read failed, sockError = %u", dwError);
+			     BAIL_ON_VMREST_ERROR(dwError);
 			 }
-			 BAIL_ON_VMREST_ERROR(dwError);
 			 dwBytesRead = sockError;
          }
 		 else if(pSocket->hSocket > 0)
 		 {
-             sockError = WSARecv(
-                        pSocket->hSocket,
-                        &wsaBuff,
-                        1,
-                        &dwBytesRead,
-                        &dwFlags,
-                        pOverlapped,
-                        NULL);
-
-            if (sockError == SOCKET_ERROR)
-            {
-                dwError = WSAGetLastError();
-				dwError = 110;
-                BAIL_ON_VMREST_ERROR(dwError);
-            }
-            else if (pSocket->pEventQueue)
-            {
-                dwError = 0 ; //ERROR_IO_PENDING;
-            }
+             sockError = recv(pSocket->hSocket, buffer, dwBufSize,dwFlags);
+			 errorCode = WSAGetLastError();
+			 if ( sockError < 0  && tryCnt < maxTry)
+			 {
+                  tryCnt++;
+				  goto tryAgain;
+			 } 
+			 else if (sockError < 0)
+			 {
+                 dwError = errorCode;
+				 VMREST_LOG_ERROR("Socket %u read failed with errorCode %d", pSocket->hSocket, errorCode);
+			     BAIL_ON_VMREST_ERROR(dwError);
+			 }
+			 dwBytesRead = sockError;
         }
 	}
 
-    pIoContext->IoBuffer.dwBytesTransferred = dwBytesRead;
-    pIoContext->IoBuffer.dwCurrentSize += dwBytesRead;
+	pIoBuffer->dwCurrentSize = dwBytesRead;
+	pIoBuffer->dwBytesTransferred += dwBytesRead;
 
 cleanup:
 
@@ -978,17 +1056,15 @@ VmSockWinWrite(
     PVM_SOCK_IO_BUFFER  pIoBuffer
     )
 {
-    DWORD   dwError = 0;
-    int sockError = 0;
-    PVM_SOCK_IO_CONTEXT pIoContext = NULL;
-    DWORD dwBytesWritten = 0;
-    DWORD dwFlags = 0;
-    WSABUF wsaBuff = { 0 };
-    LPOVERLAPPED pOverlapped = NULL;
-	DWORD        dwBytesToWrite = 0;
-	DWORD        bytes = 0;
-	DWORD        bytesLeft = 0;
-	DWORD        bytesWritten = 0;
+    DWORD               dwError = 0;
+    DWORD               dwBytesWritten = 0;
+    DWORD               dwFlags = 0;
+	DWORD               dwBytesToWrite = 0;
+	DWORD               bytes = 0;
+	DWORD               bytesLeft = 0;
+	int                 bytesWritten = 0;
+	char*               buffer = NULL;
+	int                 errorCode = 0;
 
     if (!pSocket || !pIoBuffer)
     {
@@ -996,7 +1072,6 @@ VmSockWinWrite(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
     if (pIoBuffer->dwExpectedSize <= pIoBuffer->dwCurrentSize)
     {
         dwError = ERROR_INVALID_PARAMETER;
@@ -1004,73 +1079,44 @@ VmSockWinWrite(
     }
 
 	dwBytesToWrite = pIoBuffer->dwExpectedSize;
-	bytes = dwBytesToWrite;
-	bytesLeft = bytes;
+	bytesLeft = dwBytesToWrite;
+	buffer = pIoBuffer->pData + pIoBuffer->dwCurrentSize;
 
-    wsaBuff.buf = pIoBuffer->pData + pIoBuffer->dwCurrentSize;
-    wsaBuff.len = pIoBuffer->dwExpectedSize - pIoBuffer->dwCurrentSize;
-    pOverlapped = (pSocket->pEventQueue) ? &pIoContext->Overlapped : NULL;
-
-    if (pSocket->protocol == VM_SOCK_PROTOCOL_TCP)
+    while(bytesWritten < dwBytesToWrite)
     {
-		while(bytesWritten < bytes)
+        if (gSockSSLInfo.isSecure && (pSocket->ssl != NULL))
+        {    
+            dwBytesWritten = SSL_write(pSocket->ssl,(pIoBuffer->pData + bytesWritten),bytesLeft);
+		    errorCode = SSL_get_error(pSocket->ssl, dwBytesWritten);
+        }
+	    else if (pSocket->hSocket > 0)
 		{
-            if (gSockSSLInfo.isSecure && (pSocket->ssl != NULL))
-            {    
-                 dwBytesWritten = SSL_write(pSocket->ssl,(pIoBuffer->pData + bytesWritten),bytesLeft);
-            }
-			else if (pSocket->hSocket > 0)
-			{
-                 wsaBuff.buf = pIoBuffer->pData + bytesWritten;
-                 wsaBuff.len = bytesLeft;
+	        dwBytesWritten = send(pSocket->hSocket, (buffer + bytesWritten), bytesLeft, dwFlags);
+		    errorCode = WSAGetLastError();    
+		}
 
-                 sockError = WSASend(
-                        pSocket->hSocket,
-                        &wsaBuff,
-                        1,
-                        &dwBytesWritten,
-                        dwFlags,
-                        pOverlapped,
-                        NULL);
-
-                 if (sockError == SOCKET_ERROR)
-                 {
-                     dwError = WSAGetLastError();
-                     BAIL_ON_VMREST_ERROR(dwError);
-                 }
-                 else if (pSocket->pEventQueue)
-                 {
-                     dwError = 0 ; //ERROR_IO_PENDING;
-                 }
-			}
-
-            if (dwBytesWritten >= 0)
+        if (dwBytesWritten >= 0)
+        {
+            bytesWritten += dwBytesWritten;
+            bytesLeft -= dwBytesWritten;
+            VMREST_LOG_DEBUG("Bytes written this write %d, Total bytes written %u", dwBytesWritten, bytesWritten);
+            dwBytesWritten = 0;
+        }
+        else
+        {
+            if (errorCode == 11)
             {
-                 bytesWritten += dwBytesWritten;
-                 bytesLeft -= dwBytesWritten;
-                 VMREST_LOG_DEBUG("Bytes written this write %d, Total bytes written %u", dwBytesWritten, bytesWritten);
-                 dwBytesWritten = 0;
+                dwBytesWritten = 0;
+                continue;
             }
-            else
-            {
-                if (errno == 11)
-                {
-                     dwBytesWritten = 0;
-                     continue;
-                 }
-                 VMREST_LOG_ERROR("Write failed with errorno %d", errno);
-                 dwError = 601;
-                 BAIL_ON_VMREST_ERROR(dwError);
-             }
-
-		} //while
-    }
-
+            VMREST_LOG_ERROR("Write failed with Error Code %d", errorCode);
+            dwError = errorCode;
+            BAIL_ON_VMREST_ERROR(dwError);
+        }
+	}
     
-    pIoContext->IoBuffer.dwBytesTransferred = dwBytesWritten;
-    pIoContext->IoBuffer.dwCurrentSize += dwBytesWritten;
-
-    pIoBuffer = NULL;
+    pIoBuffer->dwBytesTransferred = bytesWritten;
+    pIoBuffer->dwCurrentSize += bytesWritten;
 
 cleanup:
 
@@ -1130,6 +1176,16 @@ VmSockWinClose(
 
     if (pSocket->hSocket != INVALID_SOCKET)
     {
+        if (gSockSSLInfo.isSecure)
+        {
+            if (pSocket->ssl)
+            {
+                SSL_shutdown(pSocket->ssl);
+                SSL_free(pSocket->ssl);
+                pSocket->ssl = NULL;
+            }
+        }
+		shutdown(pSocket->hSocket, 2);
         closesocket(pSocket->hSocket);
         pSocket->hSocket = INVALID_SOCKET;
     }
@@ -1176,7 +1232,11 @@ VmSockWinFreeSocket(
     {
         VmRESTFreeMemory(pSocket->pStreamBuffer);
     }
-    VMREST_SAFE_FREE_MEMORY(pSocket);
+    if(pSocket != NULL)
+	{
+        VmRESTFreeMemory(pSocket);
+	}
+	
 }
 
 static VOID
@@ -1200,90 +1260,7 @@ VmSockWinListenerThreadProc(
     LPVOID pThreadParam
     )
 {
-    DWORD dwError = 0;
-    PVM_SOCKET pListenSocket = (PVM_SOCKET)pThreadParam;
-    PVM_SOCK_EVENT_QUEUE pQueue = NULL;
-    WSANETWORKEVENTS events = { 0 };
-    int socketError = 0;
-    SOCKET clientSocket = INVALID_SOCKET;
-    int nAddrLen = -1;
-
-    if (!pListenSocket || !pListenSocket->pEventQueue)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    pQueue = pListenSocket->pEventQueue;
-
-    while (!pQueue->bShutdown)
-    {
-        dwError = WSAWaitForMultipleEvents(
-                                    1,
-                                    &pQueue->hEventListen,
-                                    FALSE,
-                                    100,
-                                    FALSE);
-        if (dwError == WSA_WAIT_TIMEOUT)
-        {
-            dwError = 0;
-        }
-
-        BAIL_ON_VMREST_ERROR(dwError);
-
-        if (pQueue->bShutdown)
-        {
-            goto cleanup;
-        }
-
-        socketError = WSAEnumNetworkEvents(
-                                    pListenSocket->hSocket,
-                                    pQueue->hEventListen,
-                                    &events);
-        if (socketError == SOCKET_ERROR)
-        {
-            BAIL_ON_VMREST_ERROR(WSAGetLastError());
-        }
-
-        if (events.lNetworkEvents & FD_ACCEPT)
-        {
-            if (events.iErrorCode[FD_ACCEPT_BIT] == 0 &&
-                !pQueue->bShutdown)
-            {
-                struct sockaddr_storage clientAddress = { 0 };
-                int addLen = sizeof clientAddress;
-                clientSocket = accept(
-                                    pListenSocket->hSocket,
-                                    (struct sockaddr*)&clientAddress,
-                                    &addLen);
-
-                if (clientSocket == SOCKET_ERROR)
-                {
-                    BAIL_ON_VMREST_ERROR(WSAGetLastError());
-                }
-                else
-                {
-                    dwError = VmSockWinAcceptConnection(
-                                    pListenSocket,
-                                    clientSocket,
-                                    (struct sockaddr*)&clientAddress,
-                                    addLen);
-                    BAIL_ON_VMREST_ERROR(WSAGetLastError());
-                }
-            }
-            else
-            {
-                BAIL_ON_VMREST_ERROR(WSAGetLastError());
-            }
-        }
-    }
-cleanup:
-
-    return dwError;
-
-error:
-
-    goto cleanup;
+    return 0;
 }
 
 DWORD
@@ -1291,19 +1268,19 @@ VmSockWinAcceptConnection(
     PVM_SOCKET              pListenSocket,
     SOCKET                  clientSocket,
     struct sockaddr*        pClientAddr,
-    int                     addrlen
+    int                     addrlen,
+	PVM_SOCKET*             ppSocket
     )
 {
-    DWORD dwError = 0;
-    HANDLE hTemp = NULL;
-    const char chOpt = 1;
-    PVM_SOCKET pClientSocket = NULL;
-    PVM_SOCK_IO_BUFFER pIoBuffer = NULL;
-    PVM_SOCK_IO_CONTEXT pIoContext = NULL;
-    PVM_STREAM_BUFFER                pStrmBuf = NULL;
-	SSL*                             ssl = NULL;
-	DWORD                            cntRty = 0;
-	int err = 0;
+    DWORD                   dwError = 0;
+    HANDLE                  hTemp = NULL;
+    const char              chOpt = 1;
+    PVM_SOCKET              pClientSocket = NULL;
+    PVM_STREAM_BUFFER       pStrmBuf = NULL;
+	SSL*                    ssl = NULL;
+	DWORD                   cntRty = 0;
+	int                     err = 0;
+
 
     if (!pListenSocket ||
         !pListenSocket->hSocket ||
@@ -1367,13 +1344,13 @@ retry:
 
     pClientSocket->pStreamBuffer = pStrmBuf;
     pClientSocket->hSocket = clientSocket;
-	pClientSocket->fd = clientSocket;
     pClientSocket->pEventQueue = pListenSocket->pEventQueue;
     pClientSocket->protocol = pListenSocket->protocol;
     pClientSocket->type = VM_SOCK_TYPE_SERVER;
     memcpy_s(&pClientSocket->addr, sizeof pClientSocket->addr, pClientAddr, addrlen);
     pClientSocket->addrLen = addrlen;
     pClientSocket->refCount = 1;
+
 
     clientSocket = INVALID_SOCKET;
 
@@ -1388,41 +1365,7 @@ retry:
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    hTemp = CreateIoCompletionPort(
-                    (HANDLE)pClientSocket->hSocket,
-                    pListenSocket->pEventQueue->hIOCP,
-                    (ULONG_PTR)pClientSocket,
-                    0
-                    );
-    if (hTemp != pListenSocket->pEventQueue->hIOCP)
-    {
-        dwError = GetLastError();
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    dwError = VmSockWinAllocateIoBuffer(VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION, 0, &pIoBuffer);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
-
-    VMREST_LOG_DEBUG("New Connectiom - Socket: %d Address: %p, Event: %d, Size: %d",
-                    pClientSocket->hSocket,
-                    (DWORD)pIoBuffer,
-                    pIoContext->eventType,
-                    pIoBuffer->dwCurrentSize);
-
-    if (!PostQueuedCompletionStatus(
-                    pListenSocket->pEventQueue->hIOCP,
-                    0,
-                    (ULONG_PTR)pClientSocket,
-                    (LPOVERLAPPED)pIoContext))
-    {
-        dwError = GetLastError();
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    pClientSocket = NULL;
-    pIoBuffer = NULL;
+    *ppSocket = pClientSocket;
 
 cleanup:
 
@@ -1433,11 +1376,6 @@ error:
     if (pClientSocket)
     {
         VmSockWinFreeSocket(pClientSocket);
-    }
-
-    if (pIoBuffer)
-    {
-        VmSockWinFreeIoBuffer(pIoBuffer);
     }
 
     goto cleanup;

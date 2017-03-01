@@ -23,9 +23,10 @@ typedef struct _VM_SOCKET
     PVM_STREAM_BUFFER                pStreamBuffer;
     HANDLE                           hThreadListen;
     struct sockaddr_storage          addr;
-	int                              fd;
 	SSL*                             ssl;
     int                              addrLen;
+	VM_SOCK_TYPE                     v4v6;
+	uint32_t                         wThrCnt;
 } VM_SOCKET;
 
 typedef struct _VM_SOCK_EVENT_QUEUE
@@ -33,6 +34,10 @@ typedef struct _VM_SOCK_EVENT_QUEUE
     HANDLE                           hIOCP;
     HANDLE                           hEventListen;
     BOOL                             bShutdown;
+	PVMREST_MUTEX                    pMutex;
+	VM_SOCKET*                       pListenerTCPv4;
+	VM_SOCKET*                       pListenerTCPv6;
+	uint32_t                         thrCnt;
 }VM_SOCK_EVENT_QUEUE;
 
 typedef struct _VM_SOCK_IO_CONTEXT
@@ -47,4 +52,5 @@ typedef struct _SOCK_SSL_INFO
 {
     SSL_CTX*                         sslContext;
     uint32_t                         isSecure;
+	uint32_t                         isQueueInUse;
 } SOCK_SSL_INFO;

@@ -34,4 +34,22 @@ PREST_PROCESSOR gpVmRestHandlers = &gVmRestHandlers;
 
 VMRESTD_CONFIG restdConfig;
 
+REST_PROCESSOR gVmEndPointHandler[MAX_RESOURCE];
+
+
+void		
+ VmAppStoreEndpoint(		
+     uint32_t                         index,		
+     PFN_PROCESS_REST_CRUD            pfnCreate,		
+     PFN_PROCESS_REST_CRUD            pfnRead,		
+     PFN_PROCESS_REST_CRUD            pfnUpdate,		
+     PFN_PROCESS_REST_CRUD            pfnDelete		
+     )		
+ {		
+     gVmEndPointHandler[index].pfnHandleCreate = pfnCreate;		
+     gVmEndPointHandler[index].pfnHandleRead = pfnRead;		
+     gVmEndPointHandler[index].pfnHandleUpdate = pfnUpdate;		
+     gVmEndPointHandler[index].pfnHandleDelete = pfnDelete;		
+     gVmEndPointHandler[index].pfnHandleOthers = &VmHandlePackageOTHERS;		
+ }
 
