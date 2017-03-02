@@ -102,7 +102,7 @@ to install the trident using "tdnf install vmware-rest".
 Create the file "/etc/yum.repos.d/photonSupport.repo" with the following contents.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-[lightwave]
+[photonSupport]
 name=VMware Lightwave 1.0(x86_64)
 baseurl=https://dl.bintray.com/vmware/photonSupport
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY
