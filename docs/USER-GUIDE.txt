@@ -1,0 +1,520 @@
+This document will walk over all major Trident API's call with example.
+All assumption are also noted below the API itself.
+===========================================================================================================
+
+NOTE: Error code return value 0 denotes success, rest all return value denotes error.
+
+===========================================================================================================
+
+What are Endpoint ?
+
+Each application has to identify all unique URI endpoints and define what operations can be performed on it.
+This unique URI is called 'resource' in terms of ReST.
+Trident supports following 5 operation on each resouce. These are called CRUD operation. (plus all others 
+HTTP methods)
+
+1. CREATE (HTTP Method POST)
+2. READ (HTTP Method GET)
+3. UPDATE (HTTP Method PUT)
+4. DELETE (HTTP Method DELETE)
+5. OTHERS ( Any other valid HTTP Method like PATCH or something)
+
+It's upto application to decide whether they want to use all 5 or just subset of it.
+So each ENDPOINT will be represented by structure consisting of 1 unique URI and 5 handler function.
+All handler function can point to same function if applications wants to do so. Application can always call 
+GetMethod API to distinguish this in callback function itself.
+
+==========================================================================================================
+
+Request URI.
+All request URI will be of format 
+http(s)://<hostname-or-IP>:<-optional-port>/<URI>?<key1>=<value1>&<key2>=<value2>...
+So a HTTP GET method on this URI will give application the READ callback and HTTP PUT method will give 
+UPDATE callback.
+
+For example, lets say we want to expose DNS related api as REST api. For this, we will identify DNS as one 
+resource. 
+Now lets say we have 2 operation on DNS.
+
+get_dns(params..)
+set_dns(params...)
+
+So application will register REST enpoint with 
+URI: /v1/netmgmt/dns
+Handler function for READ and UPDATE, others are set to NULL.
+
+Trident will expect the request URI for this as
+http://172.16.127.128:80/v1/netmgmt/dns?ifname=eth0&scope=global
+
+Characters following '?' denotes query params in key value pair. Upto 10 numbers of these key value params 
+can be present and all of them are separated by '&' character. The registered callback will give count of 
+how many such params are present in the request.Based on this, application can call manipulation API like 
+GetParams(index) to get all these key value pair one by one.
+
+Encoded URI are also supported.
+
+Please make sure anything which follows '?' character should still follow rest engine convention of 
+key-value params separated by '&'. These character must be present in decoded format in the same manner.
+However string replacing key and value identifier here can contain any encoded characters like %20 or %3D.
+Call to helper API to get these key-value params will run decoder on string result before giving it back 
+to user.
+
+For example:
+This is completely valid URL
+http://<IP>:<Port>/v1/vmdir/ldap?scope=base&dn=cn%3Daggregate%2Ccn%3Dschemacontext
+So this URL has 2 key-value params.
+
+The Decoded version will look like.
+http://<IP>:<Port>/v1/vmdir/ldap?scope=base&dn=cn=aggregate,cn=schemacontext
+
+===========================================================================================================
+
+Below are step by step example of Trident API calls
+
+############################################################################################################
+1. Configuration.
+############################################################################################################
+
+Rest engine init must be called with proper configuration as first call to this library.
+
+Configuration can be provided to library in 2 ways.
+
+1. By populating the config structure with proper value and passing it with Init API call.
+
+2. The second method to provide config to library is via file. To do this call init API with NULL as first 
+   argument and path to file as second argument.
+
+NOTE: 
+   In case if init API is call with NULL as both argument,rest engine will try to read the config from file 
+   located at "/root/restconfig.txt". This is helpful for development purpose were you can change config on fly.
+
+
+There are 6 major configuration that rest engine looks for
+
+------------------------
+A. SSL Certificate
+------------------------
+SSL certificate path in string format for secure connection. [ Required only for SSL based connections]
+
+------------------------
+B. SSL key.
+------------------------
+SSL Keypath in string format for secure connection. [ Required only for SSL based connection]
+
+------------------------
+C. Server Port number.
+------------------------
+
+Server port number in string format. This accepts value ending with character 'p' or 'P' which inits the 
+engine in NON secure plain text mode.
+
+NOTE: Ends with character 'p' or 'P' denotes plain text else SSLised sockets will be created.
+
+Example. 
+
+Secure:
+    pConfig->pServerPort = "443"
+    
+Plain Text:
+    pConfig->pServerPort ="443p"
+
+------------------------
+D. Log file.
+------------------------
+
+Path of log file for debuging purpose.
+For production builds log level is set to ERROR by default.
+
+------------------------
+E. Worker thread count.
+------------------------
+
+Maximum number of worker threads that the engine inits to. Default value for this is 5.
+
+------------------------
+F. Client Count.
+------------------------
+
+Maximum number of transport client supported. Defaults to 5.
+
+
+
+PREPARE THE CONFIG STRUCTURE
+
+1.1 Method 1 (Using Config Structure)
+-------------------------------------
+
+Populating config structure as below.
+
+pConfig = (PREST_CONF)malloc(sizeof(REST_CONF));
+pConfig->pSSLCertificate = "";/root/mycert.pem
+pConfig->pSSLKey = "/root/mycert.pem;
+pConfig->pServerPort = "443s";
+pConfig->pDebugLogFile = "/tmp/restServer.log";
+pConfig->pClientCount = "10";
+pConfig->pMaxWorkerThread = "10";
+NOTE: Don't forget to free memory allocated earlier. This will lead to memory leaks.
+
+1.2 Method 2 (Using default config file)
+-----------------------------------------
+
+Create a file "/root/restconfig.txt" with following content.
+
+SSL-Certificate /root/mycert.pem
+SSL-Key /root/mycert.pem
+Port 80
+Log-File /tmp/restServer.log
+Client-Count 5
+Worker-Thread-Count 5
+
+1.3 Method 3 (Using custom config file)
+----------------------------------------
+
+If application wants to provide custom config with the same content above, provide the path of 
+that file in init api call.
+
+
+
+###########################################################################################################
+2. Rest Engine Init.
+###########################################################################################################
+
+These are the 3 ways in which Rest Engine Init API can be called.
+
+
+2.1 Method 1 (Using config structure)
+--------------------------------------
+
+dwError = VmRESTInit(pConfig, NULL);
+
+2.2 Method 2 (Using default config file)
+-----------------------------------------
+
+dwError = VmRESTInit( NULL , NULL);
+
+2.3 Method 3 (Using custom config file)
+----------------------------------------
+
+dwError = VmRESTInit(NULL, configfilepath);
+
+
+###########################################################################################################
+3. Register Handler.
+###########################################################################################################
+
+/**** A. Function call back prototype ****/
+uint32_t
+VmRESTCreateCallback(
+PREST_REQUEST           pRequest,
+PREST_RESPONSE*       ppResponse,
+uint32_t                             paramsCount
+);
+/**** Assume similar functions for read, update, delete and others ****/
+
+/**** B. Function pointer ****/
+
+REST_PROCESSOR gVmRestHandlers =
+{
+.pfnHandleRequest = NULL,
+.pfnHandleCreate =  &VmRESTCreateCallback,
+.pfnHandleRead = &VmRESTReadCallback,
+.pfnHandleUpdate = &VmRESTUpdateCallback,
+.pfnHandleDelete = &VmRESTDeleteCallback,
+ pfnHandleOthers =  &VmRESTOthersCallback
+};
+
+char* URI = "/v1/netmgmt/dns"
+PREST_PROCESSOR gpVmRestHandlers = &gVmRestHandlers;
+
+/**** C. API Call ****/
+
+dwError = VmRESTRegisterHandler( URI, gpVmRestHandlers, NULL);
+
+NOTE:
+1. Keep on calling this with all resource URI.
+2. Wild character  '*'  (star) can also be used to register URI.
+    For example, registering " /v1/pkg/* " will give corresponding callback for any request 
+    whose URL looks like "/v1/pkg/blah/foo/bar".
+    Helper API are also provided which helps in retreving characters strings corresponding 
+    to these wild cards.
+
+
+###########################################################################################################
+4. Start the Server.
+###########################################################################################################
+
+dwError = VmRESTStart( );
+
+
+###########################################################################################################
+5. Application callback
+###########################################################################################################
+
+Callback registered in step 3 will be triggered if matching URL request is received by the server.
+
+###########################################################################################################
+6 API's to retrieve HTTP method, version and URL.
+###########################################################################################################
+
+6.1 Get the HTTP URI from request object.
+-----------------------------------------
+Call to this API returns entire HTTP URI sent by client including any extra key value params present in it.
+
+char     *httpURI = NULL;
+
+dwError = VmRESTGetHttpURI( pRequest, &httpURI) ;
+
+NOTE: Free the response pointer(httpURI) for successful call.
+
+
+6.2 Get EndPoint URI from HTTP URI.
+-----------------------------------
+
+Call to this API returns endpoint URI sent by client. This does not include key-val params. And this 
+should similar to one registered in step 3.Use above API to get httpURI to be used as input params for 
+this API.
+
+char    *endPointURI = NULL;
+
+dwError = VmRestGetEndPointURIfromRequestURI( pRequestURI, &endPointURI);
+
+NOTE: Free the response pointer(endPointURI) for successful call.
+
+6.3 Get HTTP method.
+-------------------
+
+char*   httpMethod = NULL;
+dwError =  VmRESTGetHttpMethod( pRequest, &httpMethod);
+
+NOTE: Free the response pointer(httpMethod) for successful call.
+
+6.4 Get HTTP Version
+--------------------
+
+char    *httpVersion = NULL;
+
+dwError =  VmRESTGetHttpVersion( pRequest, &httpVersion);
+
+NOTE: Free the response pointer(httpVersion) for successful call.
+
+###########################################################################################################
+7. API's to retrieve any HTTP request header and Data.
+###########################################################################################################
+
+
+7.1 Get request header.
+-----------------------
+Call this function to get value of any header that application is interested in. Can call multiple times.
+
+char*   contentLen = NULL;
+
+dwError = VmRESTGetHttpHeader( pRequest, "Content-Length", &contentLen);
+
+NOTE: Free the response pointer(contentLen) for each successful call.
+
+7.2 Get Data from request.
+--------------------------
+Keep on calling this API unless *done is set to 1.
+
+uint32_t         done=0;
+char             buffer[4096] = {0};
+while (done != 1)
+{
+    dwError = VmRESTGetData( pRequest, buffer, &done );
+    if (strlen(buffer) > 0)
+    {
+        /**** Print on terminal ****/
+       write(1,buffer,strlen(buffer));
+    } 
+    memset(buffer, '\0', 4096);
+} 
+
+NOTE: Pre-allocated buffer of size MAX_DATA_BUFFER_LEN (4096) bytes must be used to hold the data.
+
+###########################################################################################################
+8 Get key value params present in request URI.
+###########################################################################################################
+
+If params count argument in the callback is 1 or more, call to this API can be made to retrieve '=' 
+separated key and value strings.  
+
+char*    key = NULL;
+char*    value = NULL;
+
+/**** paramsCount will come in callback as argument ****/
+/**** To get the 1st param, call with index 1 ****/
+
+dwError = VmRESTGetParamsByIndex( pRequest, paramsCount, 1, &key, &value);
+
+NOTE:
+1. Maximum 10 '&' seraparte key-value params can be present in URL.
+2. Free the response pointers(key,value) for each successful call.
+3. String results will be in decoded format. No special character like (%3D or something)
+    
+For example:
+
+Request with URL like
+http://<IP>:<Port>/v1/vmdir/ldap?scope=base&dn=cn%3Daggregate%2Ccn%3Dschemacontext
+   
+And API call with index 2 will return key and value string as
+key = "dn"
+value = "cn=aggregate,cn=schemacontext"
+
+###########################################################################################################
+9 Wildcard character manipulation API's
+###########################################################################################################
+
+Following API's can be used to retrieve total numbers strings substituting wild card character '*' 
+and their respective value. These wild cards were used during registration. However these API's 
+can only be used if each '*'  (star) character represents a single string without containing any 
+path separated '/' (slash) character.
+
+For example, if URI used during registration is "/v1/pkg/*/*", 
+
+Valid cases would be request having URI like
+/v1/pkg/blah/foo
+
+And invalid case will be
+/v1/pkg/bl/ah/foo
+
+Please do not use these API's if application intends to use slash character '/' for wild card 
+replacement strings. This does not mean application can not use wild cards for registation.
+
+Restriction is there for only following 2 API's use.
+
+9.1 Get total number of strings replaced by wildcard character.
+---------------------------------------------------------------
+uint32_t   wildCardCount = 0
+;
+dwError =  VmRESTGetWildCardCount( pRequest, &wildCardCount);
+
+9.2 Get String corresponding to index replaced by wildcard
+--------------------------------------------------------------
+
+uint32_t   index = 1; / **** From 1 -> wildCardCount ****/
+char*      pString = NULL;
+
+dwError = VmRESTGetWildCardByIndex( pRequest, index, &pString);
+
+NOTE:  Free the response pointer(pString) for each successful call.
+
+###########################################################################################################
+10 API's to set valid HTTP status code/reason phrase.
+###########################################################################################################
+
+Use the following API's to set valid HTTP status code for success and failure processing of request.
+
+10.1 Success
+-----------
+
+This will prepare HTTP response packet with status code as 200 and reason phrase as OK.
+
+dwError = VmRESTSetSuccessResponse(ppResponse);
+
+10.2 Failure
+-----------
+
+This will prepare HTTP response packet with provided status code and reason phrase
+
+dwError = VmRESTSetFailureResponse( ppResponse, "400", "Bad Request");
+
+NOTE: If this API is called with NULL params for 2nd and 3rd argument, 500 internal server error 
+will be set in response object.
+
+dwError = VmRESTSetFailureResponse( ppResponse, NULL, NULL);
+
+###########################################################################################################
+11 API's to set any valid HTTP header and data in response object.
+###########################################################################################################
+
+11.1 API to set any HTTP header.
+--------------------------------
+
+dwError = VmRESTSetHttpHeader( ppResponse, "User-Agent","Curl");
+
+NOTE: It is recommended to not use this API to set "Content-Length" or "Transfer-Encoding" headers.
+These headers are associated with payload, so use the next API to do so.
+
+11.2 Set Data length in response object.
+---------------------------------------
+
+11.2.1 Data less than 4096 bytes.
++++++++++++++++++++++++++++++++++
+
+For setting data length of 4096 or less bytes, call this API with data length in string format.
+
+dwError = VmRESTSetDataLength( ppResponse, "38");
+
+NOTE: This will set content-Length header in HTTP object.
+
+11.2.2 Data greater than 4096 bytes.
+++++++++++++++++++++++++++++++++++++
+
+For setting unknown data length or length greater than 4096 bytes, call this API with NULL
+
+dwError = VmRESTSetDataLength( ppResponse, NULL);
+
+NOTE: This will set Transfer-Encoding as chunked in HTTP response object.
+
+11.3 Set Data in response object.
+---------------------------------
+Call this API in loop unless done flag is set to 1.
+
+char        AllData[100000]; /**** Just for example, buffer holding entire data *****/
+uint32_t    done = 0;
+char        buffer[4096] = {0};
+uint32_t    nWrite = 0;
+uint32_t    index = 0;
+
+bytesLeft = strlen(AllData);
+
+while(done != 1)
+{
+    nWrite = (bytesLeft > 4096) ? 4096: bytesLeft;
+    memcpy(buffer, (AllData + index), nWrite);
+    dwError = VmRESTSetData( ppResponse, buffer, nWrite, &done);
+    BAIL_ON_VMREST_ERROR(dwError);
+    index = index + nWrite;
+    bytesLeft = bytesLeft - nWrite;
+    memset(buffer, '\0', 4097);
+}
+NOTE: Call to this API is must to send the response back to client. If client has nothing to send, 
+call this api with 0 data length.
+
+###########################################################################################################
+12 Return from callback.
+###########################################################################################################
+
+Once set data API's returns successful, it's safe to return from the callback. This will close the 
+connection to client. Remember, if application finds something incorrect during processing, it can 
+always return some valid  error code and library will take care of sending back the failure response.
+If callback return success error code upon return, it is assumed that application has already sent 
+either success or failure HTTP response back to client. So if application handles the error code 
+and sends back the failure response using the above API's, then it must return success from callback.
+
+###########################################################################################################
+13 Stop the server.
+###########################################################################################################
+
+dwError = VmRESTStop( );
+
+NOTE: Worker threads serving the clients are detached threads. Please allow some time to them to finish.
+Library waits upto maximum 10 seconds to do so.
+
+###########################################################################################################
+14 UnRegister Endpoint.
+###########################################################################################################
+
+Valid URI must be passed to remove the registered endpoint. This must be same as the one used during 
+registration. Call this for all registered endpoints.
+
+dwError = VmRESTUnRegisterHandler(URI);
+
+
+###########################################################################################################
+15 ShutDown the server.
+###########################################################################################################
+
+VmRESTShutdown( );
+
+===========================================================================================================
