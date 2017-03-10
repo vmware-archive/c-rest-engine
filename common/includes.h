@@ -26,6 +26,7 @@ typedef unsigned __int16 uint16_t;
 typedef unsigned __int8 uint8_t;
 #endif
 
+#include <vmrest.h>
 #include <vmrestsys.h>
 #include <vmrestdefines.h>
 #include <vmsock.h>

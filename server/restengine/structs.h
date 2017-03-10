@@ -16,13 +16,27 @@ typedef struct _REST_ENG_GLOBALS
 {
     PVMREST_THREAD                   pThreadpool;
     uint32_t                         nThreads;
-    PVM_REST_CONFIG                  config;
     pthread_mutex_t                  mutex;
     PREST_ENDPOINT                   pEndPointQueue;
     uint32_t                         useEndPoint;
     REST_PROCESSOR                   internalHandler;
 
 } REST_ENG_GLOBALS, *PREST_ENG_GLOBALS;
+
+
+/*typedef struct _VMREST_HANDLER
+{
+    int                              debugLogLevel;
+    PVM_SOCK_PACKAGE                 pPackage;
+    PVM_SOCK_SSL_INFO                pSSLInfo;
+    PREST_PROCESSOR                  pHttpHandler;
+    PREST_ENG_GLOBALS                pInstanceGlobal;
+    PVMREST_SOCK_CONTEXT             pSockContext;
+    PVM_REST_CONFIG                  pRESTConfig;                     
+
+} VMREST_HANDLER,*PVMREST_HANDLER;
+
+*/
 
 typedef struct _VM_REST_HTTP_MESSAGE_BODY
 {

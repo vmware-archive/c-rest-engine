@@ -58,6 +58,7 @@ VmRESTParseHTTPReqLine(
 
 uint32_t
 VmRESTParseAndPopulateHTTPHeaders(
+    PVMREST_HANDLER                  pRESTHandler,
     char*                            buffer,
     uint32_t                         packetLen,
     PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
@@ -103,22 +104,26 @@ VMRESTWriteChunkedMessageInResponseStream(
 
 uint32_t
 VmRESTSendHeader(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
 uint32_t
 VmRESTSendChunkedPayload(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket,
     uint32_t                         dataLen
     );
 
 uint32_t
 VmRESTSendHeaderAndPayload(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
 uint32_t
 VmRESTTriggerAppCb(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_REST_HTTP_REQUEST_PACKET     pRequest,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
     );
@@ -276,6 +281,7 @@ VmRESTGetResponseBufferSize(
 
 uint32_t
 VmRestEngineHandler(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     );
@@ -290,17 +296,20 @@ VmRestEngineShutdownEndPointRegistration(
 
 uint32_t
 VmRestEngineAddEndpoint(
+    PVMREST_HANDLER                  pRESTHandler,
     char*                            pEndPointURI,
     PREST_PROCESSOR                  pHandler
     );
 
 uint32_t
 VmRestEngineRemoveEndpoint(
+    PVMREST_HANDLER                  pRESTHandler,
     char*                            pEndPointURI
     );
 
 uint32_t
 VmRestEngineGetEndPoint(
+    PVMREST_HANDLER                  pRESTHandler,
     char*                            pEndPointURI,
     PREST_ENDPOINT*                  ppEndPoint
     );
@@ -344,17 +353,19 @@ VmRESTCopyWCStringByIndex(
 
 uint32_t
 VmHTTPInit(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_CONF                       pConfig,
     char const*                      file
     );
 
 uint32_t
 VmHTTPStart(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     );
 
 uint32_t
 VmHTTPRegisterHandler(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_PROCESSOR                  pHandler
     );
 
@@ -365,12 +376,12 @@ VmHTTPUnRegisterHandler(
 
 uint32_t
 VmHTTPStop(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     );
 
 void
 VmHTTPShutdown(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     );
 
 /********************* httpValidate.c *******************/

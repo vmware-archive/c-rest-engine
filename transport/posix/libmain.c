@@ -20,9 +20,14 @@ VmSockPosixInitialize(
     PVM_SOCK_PACKAGE*                ppPackage
     )
 {
-    *ppPackage = gpVmSockPosixPackage;
+    //*ppPackage = gpVmSockPosixPackage;
 
-    return 0;
+    //return 0;
+
+    return VmRESTGetSockPackagePosix(ppPackage);
+
+
+
 }
 
 VOID
@@ -30,4 +35,5 @@ VmSockPosixShutdown(
     PVM_SOCK_PACKAGE                 pPackage
     )
 {
+    VmRESTFreeSockPackagePosix(pPackage);
 }

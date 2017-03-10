@@ -44,6 +44,7 @@
 #define REST_ENGINE_INVALID_CONFIG_WKR_THR_CNT          109
 #define REST_ENGINE_BAD_CONFIG_FILE_PATH                110
 #define REST_ENGINE_PREV_INSTANCE_NOT_CLEAN             111
+#define REST_ENGINE_INVALID_HANDLER                     112
 
 
 

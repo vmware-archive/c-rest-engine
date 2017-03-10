@@ -229,6 +229,13 @@ typedef struct _VMREST_SOCK_CONTEXT
 
 } VMREST_SOCK_CONTEXT, *PVMREST_SOCK_CONTEXT;
 
+typedef struct _SOCK_SSL_INFO
+{
+    SSL_CTX*                         sslContext;
+    uint32_t                         isSecure;
+    uint32_t                         isQueueInUse;
+} VM_SOCK_SSL_INFO, *PVM_SOCK_SSL_INFO;
+
 /*********** REST engine Configuration struct *************/
 typedef struct _REST_CONFIG
 {
@@ -239,6 +246,32 @@ typedef struct _REST_CONFIG
     char                             client_count[MAX_CLIENT_ALLOWED_LEN];
     char                             worker_thread_count[MAX_WORKER_COUNT_LEN];
 } VM_REST_CONFIG, *PVM_REST_CONFIG;
+
+
+
+typedef struct _VM_SOCK_PACKAGE *PVM_SOCK_PACKAGE;
+typedef struct _REST_ENG_GLOBALS *PREST_ENG_GLOBALS;
+typedef struct _REST_PROCESSOR *PREST_PROCESSOR;
+
+typedef struct _VMREST_HANDLER
+{
+    int                              debugLogLevel;
+    PVM_SOCK_PACKAGE                 pPackage;
+    PVM_SOCK_SSL_INFO                pSSLInfo;
+    PREST_PROCESSOR                  pHttpHandler;
+    PREST_ENG_GLOBALS                pInstanceGlobal;
+    PVMREST_SOCK_CONTEXT             pSockContext;
+    PVM_REST_CONFIG                  pRESTConfig;                     
+
+} VMREST_HANDLER,*PVMREST_HANDLER;
+
+typedef struct _VM_WORKER_THREAD_DATA
+{
+    PVMREST_SOCK_CONTEXT             pSockContext;
+    PVMREST_HANDLER                  pRESTHandler;
+
+}VM_WORKER_THREAD_DATA, *PVM_WORKER_THREAD_DATA;
+
 
 
 #define VMW_REST_PORT                 (81)
@@ -270,16 +303,17 @@ typedef struct _VMREST_THREAD_START_INFO
 
 DWORD
 VmRESTInitProtocolServer(
-    VOID
+    PVMREST_HANDLER                  pRESTHandler
     );
 
 VOID
 VmRESTShutdownProtocolServer(
-    VOID
+    PVMREST_HANDLER                  pRESTHandler
     );
 
 uint32_t
 VmsockPosixGetXBytes(
+    PVMREST_HANDLER                  pRESTHandler,
     uint32_t                         bytesRequested,
     char*                            appBuffer,
     PVM_SOCKET                       pSocket,
@@ -289,12 +323,14 @@ VmsockPosixGetXBytes(
 
 uint32_t
 VmSockPosixAdjustProcessedBytes(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     uint32_t                         dataSeen
     );
 
 uint32_t
 VmsockPosixWriteDataAtOnce(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     char*                            buffer,
     uint32_t                         bytes
@@ -302,6 +338,7 @@ VmsockPosixWriteDataAtOnce(
 
 uint32_t
 VmRESTProcessIncomingData(
+    PVMREST_HANDLER                  pRESTHandler,
     char*                            buffer,
     uint32_t                         byteRead,
     PVM_SOCKET                       pSocket

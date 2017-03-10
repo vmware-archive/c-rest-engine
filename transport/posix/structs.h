@@ -51,10 +51,10 @@ typedef struct _VM_SOCK_IO_CONTEXT
     CHAR                             DataBuffer[1];
 } VM_SOCK_IO_CONTEXT, *PVM_SOCK_IO_CONTEXT;
 
-typedef struct _SOCK_SSL_INFO
+/*typedef struct _SOCK_SSL_INFO
 {
     SSL_CTX*                         sslContext;
     uint32_t                         isSecure;
     uint32_t                         isQueueInUse;
-} SOCK_SSL_INFO;
+} VM_SOCK_SSL_INFO; */
 

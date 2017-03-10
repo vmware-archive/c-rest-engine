@@ -218,6 +218,7 @@ error:
 
 uint32_t
 VmRESTGetHttpPayload(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     char*                            response,
     uint32_t*                        done
@@ -285,6 +286,7 @@ VmRESTGetHttpPayload(
         }
 tryagain:
         dwError = VmsockPosixGetXBytes(
+                      pRESTHandler,
                       readXBytes,
                       localAppBuffer,
                       pRequest->pSocket,
@@ -348,6 +350,7 @@ tryagain:
         /**** This is chunked encoded packet ****/
 tryagain1:
         dwError = VmsockPosixGetXBytes(
+                      pRESTHandler,
                       readXBytes,
                       localAppBuffer,
                       pRequest->pSocket,
@@ -410,6 +413,7 @@ tryagain1:
                     readXBytes = pRequest->dataRemaining;
                 }
                 dwError = VmsockPosixGetXBytes(
+                              pRESTHandler,
                               readXBytes,
                               localAppBuffer,
                               pRequest->pSocket,
@@ -431,6 +435,7 @@ tryagain1:
                 if (pRequest->dataRemaining == 0)
                 {
                      dwError = VmsockPosixGetXBytes(
+                                  pRESTHandler,
                                   2,
                                   localAppBuffer,
                                   pRequest->pSocket,
@@ -473,6 +478,7 @@ error:
 
 uint32_t
 VmRESTSetHttpPayload(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_RESPONSE*                  ppResponse,
     char const*                      buffer,
     uint32_t                         dataLen,
@@ -526,6 +532,7 @@ VmRESTSetHttpPayload(
         BAIL_ON_VMREST_ERROR(dwError);
 
         dwError = VmRESTSendHeaderAndPayload(
+                      pRESTHandler,
                       ppResponse
                       );
        VMREST_LOG_DEBUG("Sending Header and Payload done, returned code %u", dwError);
@@ -547,12 +554,14 @@ VmRESTSetHttpPayload(
          {
              /**** Send Header first ****/
              dwError = VmRESTSendHeader(
+                           pRESTHandler,
                            ppResponse
                            );
              BAIL_ON_VMREST_ERROR(dwError);
              pResponse->headerSent = 1;
          }
          dwError = VmRESTSendChunkedPayload(
+                       pRESTHandler,
                        ppResponse,
                        dataLen
                        );

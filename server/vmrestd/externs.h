@@ -21,3 +21,5 @@ extern REST_PROCESSOR gVmEndPointHandler[MAX_RESOURCE];
 extern VMRESTD_CONFIG restdConfig;
 
 extern char EchoDataVroot[MAX_DIRECTORY_LENGTH];
+
+//extern PVMREST_HANDLER gpRESTHandler;

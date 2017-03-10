@@ -49,6 +49,7 @@ VmSockPosixOpenClient(
  */
 DWORD
 VmSockPosixOpenServer(
+    PVMREST_HANDLER                  pRESTHandler,
     USHORT                           usPort,
     int                              iListenQueueSize,
     VM_SOCK_CREATE_FLAGS             dwFlags,
@@ -69,6 +70,7 @@ VmSockPosixOpenServer(
  */
 DWORD
 VmSockPosixCreateEventQueue(
+    PVMREST_HANDLER                  pRESTHandler,
     int                              iEventQueueSize,
     PVM_SOCK_EVENT_QUEUE*            ppQueue
     );
@@ -83,6 +85,7 @@ VmSockPosixCreateEventQueue(
  */
 DWORD
 VmSockPosixEventQueueAdd(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     PVM_SOCKET                       pSocket
     );
@@ -101,6 +104,7 @@ VmSockPosixEventQueueAdd(
  */
 DWORD
 VmSockPosixWaitForEvent(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     int                              iTimeoutMS,
     PVM_SOCKET*                      ppSocket,
@@ -118,6 +122,7 @@ VmSockPosixWaitForEvent(
 
 VOID
 VmSockPosixCloseEventQueue(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCK_EVENT_QUEUE             pQueue
     );
 
@@ -131,6 +136,7 @@ VmSockPosixCloseEventQueue(
 
 DWORD
 VmSockPosixSetNonBlocking(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     );
 
@@ -143,6 +149,7 @@ VmSockPosixSetNonBlocking(
  */
 DWORD
 VmSockPosixGetProtocol(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PDWORD                           pdwProtocol
     );
@@ -158,6 +165,7 @@ VmSockPosixGetProtocol(
  */
 DWORD
 VmSockPosixSetData(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVOID                            pData,
     PVOID*                           ppOldData
@@ -173,6 +181,7 @@ VmSockPosixSetData(
  */
 DWORD
 VmSockPosixGetData(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVOID*                           ppData
     );
@@ -191,6 +200,7 @@ VmSockPosixGetData(
  */
 DWORD
 VmSockPosixRead(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
@@ -212,6 +222,7 @@ VmSockPosixRead(
  */
 DWORD
 VmSockPosixWrite(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     const struct sockaddr*           pClientAddress,
     socklen_t                        addrLength,
@@ -226,6 +237,7 @@ VmSockPosixWrite(
 
 PVM_SOCKET
 VmSockPosixAcquireSocket(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     );
 
@@ -235,6 +247,7 @@ VmSockPosixAcquireSocket(
  */
 VOID
 VmSockPosixReleaseSocket(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     );
 
@@ -244,11 +257,13 @@ VmSockPosixReleaseSocket(
  */
 DWORD
 VmSockPosixCloseSocket(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     );
 
 DWORD
 VmSockPosixGetAddress(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     struct sockaddr_storage*         pAddress,
     socklen_t*                       pAddresLen
@@ -256,6 +271,7 @@ VmSockPosixGetAddress(
 
 DWORD
 VmSockPosixAllocateIoBuffer(
+    PVMREST_HANDLER                  pRESTHandler,
     VM_SOCK_EVENT_TYPE               eventType,
     DWORD                            dwSize,
     PVM_SOCK_IO_BUFFER*              ppIoBuffer
@@ -263,17 +279,32 @@ VmSockPosixAllocateIoBuffer(
 
 VOID
 VmSockPosixFreeIoBuffer(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
 
 VOID
 VmSockPosixGetStreamBuffer(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER*               ppStreamBuffer
     );
 
 VOID
 VmSockPosixSetStreamBuffer(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER                pStreamBuffer
     );
+
+uint32_t
+VmRESTGetSockPackagePosix(
+     PVM_SOCK_PACKAGE*               ppSockPackagePosix
+     );
+
+VOID
+VmRESTFreeSockPackagePosix(
+    PVM_SOCK_PACKAGE                 pSockPackagePosix
+    );
+
+

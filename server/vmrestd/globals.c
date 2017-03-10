@@ -19,37 +19,8 @@ VMREST_GLOBALS gVMRESTGlobals =
 	VMREST_SF_INIT(.mutex, PTHREAD_MUTEX_INITIALIZER)
 };
 
-REST_PROCESSOR gVmRestHandlers =
-{
-	
-    VMREST_SF_INIT(.pfnHandleRequest ,&VmRESTHandleHTTP_REQUEST),
-    VMREST_SF_INIT(.pfnHandleCreate , NULL),
-    VMREST_SF_INIT(.pfnHandleRead , NULL),
-    VMREST_SF_INIT(.pfnHandleUpdate , NULL),
-    VMREST_SF_INIT(.pfnHandleDelete ,NULL),
-    VMREST_SF_INIT(.pfnHandleOthers , NULL)
-};
-
-PREST_PROCESSOR gpVmRestHandlers = &gVmRestHandlers;
-
 VMRESTD_CONFIG restdConfig;
 
-REST_PROCESSOR gVmEndPointHandler[MAX_RESOURCE];
 
-
-void		
- VmAppStoreEndpoint(		
-     uint32_t                         index,		
-     PFN_PROCESS_REST_CRUD            pfnCreate,		
-     PFN_PROCESS_REST_CRUD            pfnRead,		
-     PFN_PROCESS_REST_CRUD            pfnUpdate,		
-     PFN_PROCESS_REST_CRUD            pfnDelete		
-     )		
- {		
-     gVmEndPointHandler[index].pfnHandleCreate = pfnCreate;		
-     gVmEndPointHandler[index].pfnHandleRead = pfnRead;		
-     gVmEndPointHandler[index].pfnHandleUpdate = pfnUpdate;		
-     gVmEndPointHandler[index].pfnHandleDelete = pfnDelete;		
-     gVmEndPointHandler[index].pfnHandleOthers = &VmHandlePackageOTHERS;		
- }
+//PVMREST_HANDLER  gpRESTHandler = NULL;
 

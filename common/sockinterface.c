@@ -15,18 +15,17 @@
 
 #include "includes.h"
 
-PVMREST_SOCK_CONTEXT gpSockContext = NULL;
-PVM_REST_CONFIG      gpRESTConfig = NULL;
-
 static
 VOID
 VmRESTSockContextFree(
+    PVMREST_HANDLER                  pRESTHandler,
     PVMREST_SOCK_CONTEXT             pSockInterface
     );
 
 static
 DWORD
 VmRESTHandleSocketEvent(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     VM_SOCK_EVENT_TYPE               sockEvent,
     PVM_SOCK_IO_BUFFER               pIoBuffer,
@@ -36,6 +35,7 @@ VmRESTHandleSocketEvent(
 static
 DWORD
 VmRESTOnNewConnection(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
@@ -43,6 +43,7 @@ VmRESTOnNewConnection(
 static
 VOID
 VmRESTOnDisconnect(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
@@ -50,6 +51,7 @@ VmRESTOnDisconnect(
 static
 DWORD
 VmRESTOnDataAvailable(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
@@ -63,12 +65,14 @@ VmRESTSockWorkerThreadProc(
 static
 DWORD
 VmRESTTcpReceiveNewData(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     );
 
 static
 DWORD
 VmRESTReceiveData(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
@@ -76,6 +80,7 @@ VmRESTReceiveData(
 static
 DWORD
 VmRESTTcpReceiveData(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
@@ -83,6 +88,7 @@ VmRESTTcpReceiveData(
 static
 DWORD
 VmRESTDisconnectClient(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     );
 
@@ -94,7 +100,7 @@ VmRESTSockWorkerThreadProc(
 
 DWORD
 VmRESTInitProtocolServer(
-    VOID
+    PVMREST_HANDLER                  pRESTHandler
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
@@ -106,11 +112,12 @@ VmRESTInitProtocolServer(
     char*                            sslCert = NULL;
     char*                            sslKey = NULL;
     char*                            temp = NULL;
+    PVM_WORKER_THREAD_DATA           pThreadData = NULL;
 
-    if (!gpRESTConfig)
+    if (!pRESTHandler || !(pRESTHandler->pRESTConfig))
     {
-        VMREST_LOG_ERROR("REST Engine configuration missing");
-        dwError = 110;  /** Fix this **/
+        VMREST_LOG_ERROR("Invalid REST config");
+        dwError = REST_ENGINE_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -124,7 +131,7 @@ VmRESTInitProtocolServer(
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Init SSL if configured ****/
-    if ((gpRESTConfig != NULL) && (strlen(gpRESTConfig->server_port) == 0))
+    if ((pRESTHandler->pRESTConfig->server_port != NULL) && (strlen(pRESTHandler->pRESTConfig->server_port) == 0))
     {
         VMREST_LOG_ERROR("REST Engine config server port missing");
         dwError = 111;  /** Fix this **/
@@ -132,13 +139,13 @@ VmRESTInitProtocolServer(
     BAIL_ON_VMREST_ERROR(dwError);
 
     lastPortChar = VmRESTUtilsGetLastChar(
-                       gpRESTConfig->server_port
+                       pRESTHandler->pRESTConfig->server_port
                        );
 
     if (lastPortChar == 'p' || lastPortChar == 'P')
     {
         VMREST_LOG_DEBUG("%s","Server initing in plain text wire connection mode");
-        temp = gpRESTConfig->server_port;
+        temp = pRESTHandler->pRESTConfig->server_port;
         while(temp != NULL)
         {
             if (*temp == 'p' || *temp == 'P')
@@ -152,22 +159,23 @@ VmRESTInitProtocolServer(
     else
     {
         VMREST_LOG_DEBUG("%s","Server initing in encrypted wire connection mode");
-        if (strlen(gpRESTConfig->ssl_certificate) == 0 || strlen(gpRESTConfig->ssl_key) == 0)
+        if (strlen(pRESTHandler->pRESTConfig->ssl_certificate) == 0 || strlen(pRESTHandler->pRESTConfig->ssl_key) == 0)
         {
             VMREST_LOG_ERROR("Invalid SSL params");
             dwError =  112; /** Fix this **/
         }
         BAIL_ON_VMREST_ERROR(dwError);
         dwFlags = dwFlags | VM_SOCK_IS_SSL;
-        sslCert = gpRESTConfig->ssl_certificate;
-        sslKey = gpRESTConfig->ssl_key;
+        sslCert = pRESTHandler->pRESTConfig->ssl_certificate;
+        sslKey =  pRESTHandler->pRESTConfig->ssl_key;
     }
 
     /**** Handle IPv4 case ****/
 
     dwError = VmwSockOpenServer(
-                        ((unsigned short)atoi(gpRESTConfig->server_port)),
-                        ((int)atoi(gpRESTConfig->worker_thread_count)),
+                        pRESTHandler,
+                        ((unsigned short)atoi(pRESTHandler->pRESTConfig->server_port)),
+                        ((int)atoi(pRESTHandler->pRESTConfig->worker_thread_count)),
                         dwFlags | VM_SOCK_CREATE_FLAGS_TCP |
                                   VM_SOCK_CREATE_FLAGS_IPV4,
                         &pSockContext->pListenerTCP,
@@ -180,8 +188,9 @@ VmRESTInitProtocolServer(
     /**** Handle IPv6 case ****/
 
     dwError = VmwSockOpenServer(
-                  ((unsigned short)atoi(gpRESTConfig->server_port)),
-                  ((int)atoi(gpRESTConfig->worker_thread_count)),
+                  pRESTHandler,
+                  ((unsigned short)atoi(pRESTHandler->pRESTConfig->server_port)),
+                  ((int)atoi(pRESTHandler->pRESTConfig->worker_thread_count)),
                   dwFlags | VM_SOCK_CREATE_FLAGS_TCP |
                           VM_SOCK_CREATE_FLAGS_IPV6,
                   &pSockContext->pListenerTCP6,
@@ -192,12 +201,14 @@ VmRESTInitProtocolServer(
 #endif
 
     dwError = VmwSockCreateEventQueue(
+                  pRESTHandler,
                   -1, 
                   &pSockContext->pEventQueue
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmwSockEventQueueAdd(
+                  pRESTHandler,
                   pSockContext->pEventQueue,
                   pSockContext->pListenerTCP
                   );
@@ -205,6 +216,7 @@ VmRESTInitProtocolServer(
 
 #ifdef AF_INET6
     dwError = VmwSockEventQueueAdd(
+                  pRESTHandler,
                   pSockContext->pEventQueue,
                   pSockContext->pListenerTCP6
                   );
@@ -213,19 +225,31 @@ VmRESTInitProtocolServer(
 
 #ifdef WIN32
     dwError = VmwSockStartListening(
+                  pRESTHandler,
                   pSockContext->pListenerTCP,
-                  ((int)atoi(gpRESTConfig->worker_thread_count))
+                  ((int)atoi(pRESTHandler->pRESTConfig->worker_thread_count))
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 #endif
 
     dwError = VmRESTAllocateMemory(
-                  sizeof(PVMREST_THREAD) * (((int)atoi(gpRESTConfig->worker_thread_count))) ,
+                  sizeof(PVMREST_THREAD) * (((int)atoi(pRESTHandler->pRESTConfig->worker_thread_count))) ,
                   (PVOID*)&pSockContext->pWorkerThreads
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    pSockContext->dwNumThreads = ((int)atoi(gpRESTConfig->worker_thread_count));
+    pSockContext->dwNumThreads = ((int)atoi(pRESTHandler->pRESTConfig->worker_thread_count));
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VM_WORKER_THREAD_DATA) ,
+                  (PVOID*)&pThreadData
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    
+
+    pThreadData->pSockContext = pSockContext;
+    pThreadData->pRESTHandler = pRESTHandler;
 
     for (; iThr < pSockContext->dwNumThreads; iThr++)
     {
@@ -239,12 +263,12 @@ VmRESTInitProtocolServer(
                       pSockContext->pWorkerThreads[iThr],
                       TRUE,
                       (PVMREST_START_ROUTINE)&VmRESTSockWorkerThreadProc,
-                      pSockContext
+                      pThreadData
                       );
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    gpSockContext = pSockContext;
+    pRESTHandler->pSockContext = pSockContext;
 
 cleanup:
 
@@ -254,7 +278,7 @@ error:
 
     if (pSockContext)
     {
-        VmRESTSockContextFree(pSockContext);
+        VmRESTSockContextFree(pRESTHandler, pSockContext);
     }
 
     goto cleanup;
@@ -262,13 +286,13 @@ error:
 
 VOID
 VmRESTShutdownProtocolServer(
-    VOID
+    PVMREST_HANDLER                  pRESTHandler
     )
 {
-    if (gpSockContext)
+    if (pRESTHandler)
     {
-        VmRESTSockContextFree(gpSockContext);
-        gpSockContext = NULL;
+        VmRESTSockContextFree(pRESTHandler, pRESTHandler->pSockContext);
+        pRESTHandler->pSockContext = NULL;
     }
 }
 
@@ -279,7 +303,9 @@ VmRESTSockWorkerThreadProc(
     )
 {
     DWORD dwError = 0;
-    PVMREST_SOCK_CONTEXT pSockContext = (PVMREST_SOCK_CONTEXT)pData;
+    PVM_WORKER_THREAD_DATA   pWorkerData = (PVM_WORKER_THREAD_DATA)pData;
+    PVMREST_HANDLER      pRESTHandler = pWorkerData->pRESTHandler;
+    PVMREST_SOCK_CONTEXT pSockContext = pWorkerData->pSockContext;
     PVM_SOCKET pSocket = NULL;
     PVM_SOCK_IO_BUFFER pIoBuffer = NULL;
 
@@ -289,6 +315,7 @@ VmRESTSockWorkerThreadProc(
         VM_SOCK_EVENT_TYPE eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
 
         dwError = VmwSockWaitForEvent(
+                        pRESTHandler,
                         pSockContext->pEventQueue,
                         -1,
                         &pSocket,
@@ -300,6 +327,7 @@ VmRESTSockWorkerThreadProc(
             break;
         }
         dwError = VmRESTHandleSocketEvent(
+                        pRESTHandler,
                         pSocket,
                         eventType,
                         pIoBuffer,
@@ -323,7 +351,7 @@ error:
 #ifndef WIN32
     if (pSocket)
     {
-        VmwSockRelease(pSocket);
+        VmwSockRelease(pRESTHandler, pSocket);
     }
 #endif
 
@@ -335,6 +363,7 @@ error:
 static
 DWORD
 VmRESTHandleSocketEvent(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     VM_SOCK_EVENT_TYPE               sockEvent,
     PVM_SOCK_IO_BUFFER               pIoBuffer,
@@ -347,17 +376,17 @@ VmRESTHandleSocketEvent(
         {
         case VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION:
 
-            dwError = VmRESTOnNewConnection(pSocket, pIoBuffer);
+            dwError = VmRESTOnNewConnection(pRESTHandler, pSocket, pIoBuffer);
             BAIL_ON_VMREST_ERROR(dwError);
             break;
 #ifndef WIN32
         case VM_SOCK_EVENT_TYPE_DATA_AVAILABLE:
-            dwError = VmRESTOnDataAvailable(pSocket, pIoBuffer);
+            dwError = VmRESTOnDataAvailable(pRESTHandler,pSocket, pIoBuffer);
             BAIL_ON_VMREST_ERROR(dwError);
             break;
 
         case VM_SOCK_EVENT_TYPE_CONNECTION_CLOSED:
-            VmRESTOnDisconnect(pSocket, pIoBuffer);
+            VmRESTOnDisconnect(pRESTHandler, pSocket, pIoBuffer);
             break;
 
         case VM_SOCK_EVENT_TYPE_UNKNOWN:
@@ -387,6 +416,7 @@ error :
 static
 DWORD
 VmRESTOnNewConnection(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     )
@@ -399,7 +429,7 @@ VmRESTOnNewConnection(
     }
 
 #ifdef WIN32
-    dwError = VmRESTTcpReceiveNewData(pSocket);
+    dwError = VmRESTTcpReceiveNewData(pRESTHandler, pSocket);
     BAIL_ON_VMREST_ERROR(dwError);
 #endif
 cleanup:
@@ -414,24 +444,26 @@ error:
 static
 VOID
 VmRESTOnDisconnect(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     )
 {
     if (pSocket)
     {
-        VmwSockClose(pSocket);
+        VmwSockClose(pRESTHandler, pSocket);
     }
 
     if (pIoBuffer)
     {
-        VmwSockReleaseIoBuffer(pIoBuffer);
+        VmwSockReleaseIoBuffer(pRESTHandler, pIoBuffer);
     }
 }
 
 static
 DWORD
 VmRESTOnDataAvailable(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     )
@@ -444,13 +476,13 @@ VmRESTOnDataAvailable(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    dwError = VmRESTReceiveData(pSocket, pIoBuffer);
+    dwError = VmRESTReceiveData(pRESTHandler,pSocket, pIoBuffer);
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     if (pIoBuffer)
     {
-        VmwSockReleaseIoBuffer(pIoBuffer);
+        VmwSockReleaseIoBuffer(pRESTHandler, pIoBuffer);
     }
 
     return dwError;
@@ -463,6 +495,7 @@ error:
 static
 DWORD
 VmRESTReceiveData(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     )
@@ -476,12 +509,12 @@ VmRESTReceiveData(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    dwError = VmwSockGetProtocol(pSocket, &dwProtocol);
+    dwError = VmwSockGetProtocol(pRESTHandler, pSocket, &dwProtocol);
     BAIL_ON_VMREST_ERROR(dwError);
 
     if (dwProtocol == SOCK_STREAM)
     {
-        dwError = VmRESTTcpReceiveData(pSocket, pIoBuffer);
+        dwError = VmRESTTcpReceiveData(pRESTHandler,pSocket, pIoBuffer);
         BAIL_ON_VMREST_ERROR(dwError);
     }
     else
@@ -492,7 +525,7 @@ VmRESTReceiveData(
 cleanup:
     if (pIoBuffer)
     {
-        VmwSockReleaseIoBuffer(pIoBuffer);
+        VmwSockReleaseIoBuffer(pRESTHandler, pIoBuffer);
     }
 
     return dwError;
@@ -506,6 +539,7 @@ error:
 static
 DWORD
 VmRESTTcpReceiveData(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     )
@@ -520,14 +554,14 @@ VmRESTTcpReceiveData(
 
     if (!pIoBuffer)
     {
-        dwError = VmRESTTcpReceiveNewData(pSocket);
+        dwError = VmRESTTcpReceiveNewData(pRESTHandler,pSocket);
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
 cleanup:
     if (pIoBuffer)
     {
-        VmwSockReleaseIoBuffer(pIoBuffer);
+        VmwSockReleaseIoBuffer(pRESTHandler, pIoBuffer);
     }
 
     return dwError;
@@ -540,6 +574,7 @@ error:
 static
 DWORD
 VmRESTTcpReceiveNewData(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     )
 {
@@ -548,6 +583,7 @@ VmRESTTcpReceiveNewData(
     uint32_t                         bytesRead = 0;
 
     dwError = VmsockPosixGetXBytes(
+                  pRESTHandler,
                   MAX_DATA_BUFFER_LEN,
                   appBuffer,
                   pSocket,
@@ -561,6 +597,7 @@ VmRESTTcpReceiveNewData(
      {
          VMREST_LOG_DEBUG("%s","Starting HTTP Parsing.");
          dwError = VmRESTProcessIncomingData(
+                       pRESTHandler,
                        appBuffer,
                        bytesRead,
                        pSocket
@@ -571,7 +608,7 @@ VmRESTTcpReceiveNewData(
 
 cleanup:
     VMREST_LOG_DEBUG("%s","Calling closed connection....");
-    VmRESTDisconnectClient(pSocket);
+    VmRESTDisconnectClient(pRESTHandler, pSocket);
 
     return dwError;
 
@@ -583,20 +620,21 @@ error:
 static
 VOID
 VmRESTSockContextFree(
+    PVMREST_HANDLER                  pRESTHandler,
     PVMREST_SOCK_CONTEXT             pSockContext
     )
 {
     if (pSockContext->pEventQueue)
     {
-        VmwSockCloseEventQueue(pSockContext->pEventQueue);
+        VmwSockCloseEventQueue(pRESTHandler, pSockContext->pEventQueue);
     }
     if (pSockContext->pListenerTCP)
     {
-        VmwSockRelease(pSockContext->pListenerTCP);
+        VmwSockRelease(pRESTHandler, pSockContext->pListenerTCP);
     }
     if (pSockContext->pListenerTCP6)
     {
-        VmwSockRelease(pSockContext->pListenerTCP6);
+        VmwSockRelease(pRESTHandler, pSockContext->pListenerTCP6);
     }
     if (pSockContext->pWorkerThreads)
     {
@@ -624,6 +662,7 @@ VmRESTSockContextFree(
 static
 DWORD
 VmRESTDisconnectClient(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     )
 {
@@ -635,8 +674,8 @@ VmRESTDisconnectClient(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    VmwSockClose(pSocket);
-    VmwSockRelease(pSocket);
+    VmwSockClose(pRESTHandler, pSocket);
+    VmwSockRelease(pRESTHandler, pSocket);
 
 cleanup:
 
@@ -649,6 +688,7 @@ error:
 
 uint32_t
 VmsockPosixGetXBytes(
+    PVMREST_HANDLER                  pRESTHandler,
     uint32_t                         bytesRequested,
     char*                            appBuffer,
     PVM_SOCKET                       pSocket,
@@ -678,7 +718,7 @@ VmsockPosixGetXBytes(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VmwSockGetStreamBuffer(pSocket, &pStreamBuffer);
+    VmwSockGetStreamBuffer(pRESTHandler, pSocket, &pStreamBuffer);
 
     if (!pStreamBuffer)
     {
@@ -716,12 +756,14 @@ VmsockPosixGetXBytes(
 //readAgain:
 
         dwError = VmwSockAllocateIoBuffer(
+                        pRESTHandler,
                         VM_SOCK_EVENT_TYPE_TCP_REQUEST_DATA_READ,
                         MAX_DATA_BUFFER_LEN,
                         &pIoBuffer
                         );
         BAIL_ON_VMREST_ERROR(dwError);
         dwError = VmwSockRead(
+                            pRESTHandler,
                             pSocket,
                             pIoBuffer);
 		VMREST_LOG_DEBUG("SockRead(), dwError = %u, dataRead %u", dwError, pIoBuffer->dwBytesTransferred);
@@ -774,12 +816,12 @@ VmsockPosixGetXBytes(
         VMREST_LOG_DEBUG("dataAvailableInCache %u, remainingBytes %u, appBuffersize %u", dataAvailableInCache, remainingBytes, strlen(appBuffer));
     }
 
-    VmwSockSetStreamBuffer(pSocket, pStreamBuffer);
+    VmwSockSetStreamBuffer(pRESTHandler, pSocket, pStreamBuffer);
 
 cleanup:
     if (pIoBuffer)
     {
-        VmwSockReleaseIoBuffer(pIoBuffer);
+        VmwSockReleaseIoBuffer(pRESTHandler, pIoBuffer);
     }
 
     return dwError;
@@ -792,6 +834,7 @@ error:
 
 uint32_t
 VmSockPosixAdjustProcessedBytes(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     uint32_t                         dataSeen
 )
@@ -806,7 +849,7 @@ VmSockPosixAdjustProcessedBytes(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VmwSockGetStreamBuffer(pSocket, &pStreamBuffer);
+    VmwSockGetStreamBuffer(pRESTHandler, pSocket, &pStreamBuffer);
 
     if (!pStreamBuffer)
     {
@@ -816,7 +859,7 @@ VmSockPosixAdjustProcessedBytes(
 
     pStreamBuffer->dataProcessed = dataSeen;
 
-    VmwSockSetStreamBuffer(pSocket, pStreamBuffer);
+    VmwSockSetStreamBuffer(pRESTHandler, pSocket, pStreamBuffer);
 
 cleanup:
     return dwError;
@@ -826,6 +869,7 @@ error:
 
 uint32_t
 VmsockPosixWriteDataAtOnce(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     char*                            buffer,
     uint32_t                         bytes
@@ -835,6 +879,7 @@ VmsockPosixWriteDataAtOnce(
     PVM_SOCK_IO_BUFFER               pIoNewBuffer = NULL;
     
     dwError = VmwSockAllocateIoBuffer(
+                  pRESTHandler,
                   VM_SOCK_EVENT_TYPE_TCP_RESPONSE_DATA_WRITE,
                   bytes,
                   &pIoNewBuffer);
@@ -843,6 +888,7 @@ VmsockPosixWriteDataAtOnce(
     memcpy(pIoNewBuffer->pData, buffer, bytes);
 
     dwError = VmwSockWrite(
+                  pRESTHandler,
                   pSocket,
                   NULL,
                   0,
@@ -862,7 +908,7 @@ VmsockPosixWriteDataAtOnce(
 cleanup:
     if (pIoNewBuffer)
     {
-        VmwSockReleaseIoBuffer(pIoNewBuffer);
+        VmwSockReleaseIoBuffer(pRESTHandler, pIoNewBuffer);
     }
     return dwError;
 error:
@@ -874,7 +920,7 @@ VmRESTSetConfig(
    PVM_REST_CONFIG                   pRESTConfig
    )
 {
-    gpRESTConfig = pRESTConfig;
+    //pRESTHandler->pRESTConfig = pRESTConfig;
 }
 
 void
@@ -882,5 +928,5 @@ VmRESTUnSetConfig(
     void
     )
 {
-    gpRESTConfig = NULL;
+    //pRESTHandler->pRESTConfig = NULL;
 }

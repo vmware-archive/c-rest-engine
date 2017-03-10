@@ -16,6 +16,7 @@
 
 uint32_t
 VmRestEngineHandler(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     )
@@ -88,6 +89,7 @@ VmRestEngineHandler(
     VMREST_LOG_DEBUG("EndPoint URI %s", endPointURI);
 
     dwError = VmRestEngineGetEndPoint(
+                  pRESTHandler,
                   endPointURI,
                   &pEndPoint
                   );
@@ -196,27 +198,39 @@ error:
 
 uint32_t
 VmRestEngineInitEndPointRegistration(
+    PVMREST_HANDLER                  pRESTHandler
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    
-    dwError = pthread_mutex_init(
-                  &(gRESTEngGlobals.mutex),
-                  NULL
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
 
-    pthread_mutex_lock(&(gRESTEngGlobals.mutex));
-    gRESTEngGlobals.pEndPointQueue = NULL;
-    gRESTEngGlobals.useEndPoint = 1;
-    pthread_mutex_unlock(&(gRESTEngGlobals.mutex));
+    if (!pRESTHandler)
+    {
+        VMREST_LOG_DEBUG("Invalid REST handler");
+        dwError = REST_ENGINE_INVALID_HANDLER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);    
 
-    gRESTEngGlobals.internalHandler.pfnHandleRequest = &VmRestEngineHandler;
-    gRESTEngGlobals.internalHandler.pfnHandleCreate = NULL;
-    gRESTEngGlobals.internalHandler.pfnHandleDelete = NULL;
-    gRESTEngGlobals.internalHandler.pfnHandleUpdate = NULL;
-    gRESTEngGlobals.internalHandler.pfnHandleRead = NULL;
-    gRESTEngGlobals.internalHandler.pfnHandleOthers = NULL;
+    if(pRESTHandler->pInstanceGlobal)
+    {
+
+        dwError = pthread_mutex_init(
+                      &(pRESTHandler->pInstanceGlobal->mutex),
+                      NULL
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        pthread_mutex_lock(&(pRESTHandler->pInstanceGlobal->mutex));
+        pRESTHandler->pInstanceGlobal->pEndPointQueue = NULL;
+        pRESTHandler->pInstanceGlobal->useEndPoint = 1;
+        pthread_mutex_unlock(&(pRESTHandler->pInstanceGlobal->mutex));
+
+        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleRequest = &VmRestEngineHandler;
+        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleCreate = NULL;
+        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleDelete = NULL;
+        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleUpdate = NULL;
+        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleRead = NULL;
+        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleOthers = NULL;
+    }
 
 cleanup:
     return dwError;
@@ -226,16 +240,23 @@ error:
 
 void
 VmRestEngineShutdownEndPointRegistration(
+    PVMREST_HANDLER                  pRESTHandler
     )
 {
     PREST_ENDPOINT                   temp = NULL;
     PREST_ENDPOINT                   prev = NULL;
 
+    if (!pRESTHandler)
+    {
+        VMREST_LOG_ERROR("Invalid REST handler");
+        return;
+    }
+
     /**** TODO: Add check to perform this only when engine is not running ****/
 
-    pthread_mutex_lock(&(gRESTEngGlobals.mutex));
+    pthread_mutex_lock(&(pRESTHandler->pInstanceGlobal->mutex));
 
-    temp = gRESTEngGlobals.pEndPointQueue;
+    temp = pRESTHandler->pInstanceGlobal->pEndPointQueue;
 
     while(temp != NULL)
     {
@@ -244,17 +265,18 @@ VmRestEngineShutdownEndPointRegistration(
 
         VmRESTFreeEndPoint(prev);
     }
-    gRESTEngGlobals.pEndPointQueue = NULL;
-    gRESTEngGlobals.useEndPoint = 0; 
-    pthread_mutex_unlock(&(gRESTEngGlobals.mutex));
+    pRESTHandler->pInstanceGlobal->pEndPointQueue = NULL;
+    pRESTHandler->pInstanceGlobal->useEndPoint = 0; 
+    pthread_mutex_unlock(&(pRESTHandler->pInstanceGlobal->mutex));
 
     pthread_mutex_destroy(
-        &(gRESTEngGlobals.mutex)
+        &(pRESTHandler->pInstanceGlobal->mutex)
         );
 }
 
 uint32_t
 VmRestEngineAddEndpoint(
+    PVMREST_HANDLER                  pRESTHandler,
     char*                            pEndPointURI,
     PREST_PROCESSOR                  pHandler
     )
@@ -267,7 +289,7 @@ VmRestEngineAddEndpoint(
 
     /**** TODO: Add check to perform this only when engine is not running ****/
 
-    if (!pEndPointURI || !pHandler)
+    if (!pEndPointURI || !pHandler || !pRESTHandler)
     {
         VMREST_LOG_ERROR("Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
@@ -287,6 +309,7 @@ VmRestEngineAddEndpoint(
 
     /**** If Endpoint already exists - return****/
     dwError = VmRestEngineGetEndPoint(
+                  pRESTHandler,
                   pEndPointURI,
                   &temp
                   );
@@ -328,22 +351,22 @@ VmRestEngineAddEndpoint(
     }
 
     /**** Add to list of endpoints ****/
-    pthread_mutex_lock(&(gRESTEngGlobals.mutex));
+    pthread_mutex_lock(&(pRESTHandler->pInstanceGlobal->mutex));
 
-    if (gRESTEngGlobals.pEndPointQueue == NULL)
+    if (pRESTHandler->pInstanceGlobal->pEndPointQueue == NULL)
     {
-        gRESTEngGlobals.pEndPointQueue = pEndPoint;
+        pRESTHandler->pInstanceGlobal->pEndPointQueue = pEndPoint;
     }
     else
     {
-        temp = gRESTEngGlobals.pEndPointQueue;
+        temp = pRESTHandler->pInstanceGlobal->pEndPointQueue;
         while(temp->next != NULL)
         { 
             temp = temp->next;
         }
         temp->next = pEndPoint;
     }
-    pthread_mutex_unlock(&(gRESTEngGlobals.mutex));
+    pthread_mutex_unlock(&(pRESTHandler->pInstanceGlobal->mutex));
 cleanup:
     return dwError;
 error:
@@ -357,6 +380,7 @@ error:
 
 uint32_t
 VmRestEngineRemoveEndpoint(
+    PVMREST_HANDLER                  pRESTHandler,
     char*                            pEndPointURI
     )
 {
@@ -366,7 +390,7 @@ VmRestEngineRemoveEndpoint(
 
     /**** TODO: Add check to perform this only when engine is not running ****/
 
-    if (!pEndPointURI)
+    if (!pEndPointURI || !pRESTHandler)
     {
         VMREST_LOG_ERROR("Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
@@ -374,14 +398,14 @@ VmRestEngineRemoveEndpoint(
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Remove from list of endpoints ****/
-    pthread_mutex_lock(&(gRESTEngGlobals.mutex));
+    pthread_mutex_lock(&(pRESTHandler->pInstanceGlobal->mutex));
 
-    temp = gRESTEngGlobals.pEndPointQueue;
+    temp = pRESTHandler->pInstanceGlobal->pEndPointQueue;
     prev = temp;
 
     if ((temp != NULL) && (temp->pszEndPointURI != NULL) && (strcmp(temp->pszEndPointURI,pEndPointURI) == 0))
     {
-        gRESTEngGlobals.pEndPointQueue = temp->next;
+        pRESTHandler->pInstanceGlobal->pEndPointQueue = temp->next;
     }
     else
     {
@@ -399,7 +423,7 @@ VmRestEngineRemoveEndpoint(
            prev->next = temp->next;
        }
     }
-    pthread_mutex_unlock(&(gRESTEngGlobals.mutex));
+    pthread_mutex_unlock(&(pRESTHandler->pInstanceGlobal->mutex));
 
     if (temp)
     {
@@ -413,6 +437,7 @@ error:
 
 uint32_t
 VmRestEngineGetEndPoint(
+    PVMREST_HANDLER                  pRESTHandler,
     char*                            pEndPointURI,
     PREST_ENDPOINT*                  ppEndPoint
     )
@@ -422,7 +447,7 @@ VmRestEngineGetEndPoint(
 
     PREST_ENDPOINT                   temp = NULL;
 
-    if (!pEndPointURI)
+    if (!pEndPointURI || !pRESTHandler)
     {
         VMREST_LOG_ERROR("Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
@@ -430,7 +455,7 @@ VmRestEngineGetEndPoint(
     BAIL_ON_VMREST_ERROR(dwError);
 
     *ppEndPoint = NULL;
-    temp = gRESTEngGlobals.pEndPointQueue;
+    temp = pRESTHandler->pInstanceGlobal->pEndPointQueue;
 
     while (temp != NULL)
     {
@@ -478,6 +503,7 @@ VmRestGetParamsCountInReqURI(
     uint32_t                         eqCnt = 0;
     char*                            temp = NULL;
     char*                            hasSpace = NULL;
+
 
     if (!pRequestURI || !paramCount)
     {
@@ -903,6 +929,7 @@ error:
 
 uint32_t
 VmRESTGetWildCardCount(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     uint32_t*                        wildCardCount
     )
@@ -950,6 +977,7 @@ VmRESTGetWildCardCount(
     }
 
     dwError = VmRestEngineGetEndPoint(
+                  pRESTHandler,
                   endPointURI,
                   &pEndPoint
                   );
@@ -981,6 +1009,7 @@ error:
 
 uint32_t
 VmRESTGetWildCardByIndex(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     uint32_t                         index,
     char**                           ppszWildCard
@@ -1003,6 +1032,7 @@ VmRESTGetWildCardByIndex(
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTGetWildCardCount(
+                  pRESTHandler,
                   pRequest,
                   &count
                   );
@@ -1049,6 +1079,7 @@ VmRESTGetWildCardByIndex(
     }
 
     dwError = VmRestEngineGetEndPoint(
+                  pRESTHandler,
                   endPointURI,
                   &pEndPoint
                   );
@@ -1083,6 +1114,7 @@ error:
     }
     goto cleanup;
 }
+
 
 uint32_t
 VmRestGetEndPointURIfromRequestURI(

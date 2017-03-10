@@ -36,12 +36,12 @@ VmwSockOpenClient(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnOpenClientSocket(
+/*    dwError = pRESTHandler->pPackage->pfnOpenClientSocket(
                                     pszHost,
                                     usPort,
                                     dwFlags,
                                     ppSocket);
-
+*/
 error:
 
     return dwError;
@@ -49,6 +49,7 @@ error:
 
 DWORD
 VmwSockOpenServer(
+    PVMREST_HANDLER                    pRESTHandler,
     USHORT                           usPort,
     int                              iListenQueueSize,
     VM_SOCK_CREATE_FLAGS             dwFlags,
@@ -59,19 +60,20 @@ VmwSockOpenServer(
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!usPort || !ppSocket)
+    if (!usPort || !ppSocket || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnOpenServerSocket(
-                                    usPort,
-                                    iListenQueueSize,
-                                    dwFlags,
-                                    ppSocket,
-                                    sslCert,
-                                    sslKey);
+    dwError = pRESTHandler->pPackage->pfnOpenServerSocket(
+                                      pRESTHandler,
+                                      usPort,
+                                      iListenQueueSize,
+                                      dwFlags,
+                                      ppSocket,
+                                      sslCert,
+                                      sslKey);
 error:
 
     return dwError;
@@ -79,19 +81,20 @@ error:
 
 DWORD
 VmwSockCreateEventQueue(
+    PVMREST_HANDLER                    pRESTHandler,
     int                              iEventQueueSize,
     PVM_SOCK_EVENT_QUEUE*            ppQueue
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!iEventQueueSize || !ppQueue)
+    if (!iEventQueueSize || !ppQueue || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnCreateEventQueue(iEventQueueSize, ppQueue);
+    dwError = pRESTHandler->pPackage->pfnCreateEventQueue(pRESTHandler,iEventQueueSize, ppQueue);
 
 error:
 
@@ -100,19 +103,20 @@ error:
 
 DWORD
 VmwSockEventQueueAdd(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     PVM_SOCKET                       pSocket
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pQueue || !pSocket)
+    if (!pQueue || !pSocket || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnAddEventQueue(pQueue, pSocket);
+    dwError = pRESTHandler->pPackage->pfnAddEventQueue(pRESTHandler,pQueue, pSocket);
 
 error:
 
@@ -121,6 +125,7 @@ error:
 
 DWORD
 VmwSockWaitForEvent(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     int                              iTimeoutMS,
     PVM_SOCKET*                      ppSocket,
@@ -130,13 +135,14 @@ VmwSockWaitForEvent(
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pQueue || !ppSocket || !pEventType)
+    if (!pQueue || !ppSocket || !pEventType || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnWaitForEvent(
+    dwError = pRESTHandler->pPackage->pfnWaitForEvent(
+                                    pRESTHandler,
                                     pQueue,
                                     iTimeoutMS,
                                     ppSocket,
@@ -151,29 +157,36 @@ error:
 
 VOID
 VmwSockCloseEventQueue(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCK_EVENT_QUEUE             pQueue
     )
 {
+    if (!pRESTHandler)
+    {
+        return;
+    }
+
     if (pQueue)
     {
-        gpVmSockPackage->pfnCloseEventQueue(pQueue);
+        pRESTHandler->pPackage->pfnCloseEventQueue(pRESTHandler,pQueue);
     }
 }
 
 DWORD
 VmwSockSetNonBlocking(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pSocket)
+    if (!pSocket || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnSetNonBlocking(pSocket);
+    dwError = pRESTHandler->pPackage->pfnSetNonBlocking(pRESTHandler,pSocket);
 
 error:
 
@@ -182,19 +195,20 @@ error:
 
 DWORD
 VmwSockGetProtocol(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket,
     PDWORD                           pdwProtocol
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pSocket)
+    if (!pSocket || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnGetProtocol(pSocket, pdwProtocol);
+    dwError = pRESTHandler->pPackage->pfnGetProtocol(pRESTHandler, pSocket, pdwProtocol);
 
 error:
 
@@ -203,6 +217,7 @@ error:
 
 DWORD
 VmwSockSetData(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVOID                            pData,
     PVOID*                           ppOldData
@@ -210,13 +225,13 @@ VmwSockSetData(
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pSocket)
+    if (!pSocket || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnSetData(pSocket, pData, ppOldData);
+    dwError = pRESTHandler->pPackage->pfnSetData(pRESTHandler, pSocket, pData, ppOldData);
 
 error:
 
@@ -225,19 +240,20 @@ error:
 
 DWORD
 VmwSockGetData(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVOID*                           ppData
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pSocket || !ppData)
+    if (!pSocket || !ppData || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnGetData(pSocket, ppData);
+    dwError = pRESTHandler->pPackage->pfnGetData(pRESTHandler,pSocket, ppData);
 
 error:
 
@@ -246,19 +262,21 @@ error:
 
 DWORD
 VmwSockRead(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pSocket || !pIoBuffer)
+    if (!pSocket || !pIoBuffer || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnRead(
+    dwError = pRESTHandler->pPackage->pfnRead(
+                            pRESTHandler,
                             pSocket,
                             pIoBuffer);
 
@@ -269,6 +287,7 @@ error:
 
 DWORD
 VmwSockWrite(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket,
     const struct sockaddr*           pClientAddress,
     socklen_t                        addrLength,
@@ -277,13 +296,14 @@ VmwSockWrite(
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pSocket || !pIoBuffer)
+    if (!pSocket || !pIoBuffer || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnWrite(
+    dwError = pRESTHandler->pPackage->pfnWrite(
+                            pRESTHandler,
                             pSocket,
                             pClientAddress,
                             addrLength,
@@ -297,37 +317,34 @@ error:
 
 PVM_SOCKET
 VmwSockAcquire(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket
     )
 {
-    return pSocket ? gpVmSockPackage->pfnAcquireSocket(pSocket) : NULL;
+    return pSocket ? pRESTHandler->pPackage->pfnAcquireSocket(pRESTHandler,pSocket) : NULL;
 }
 
 VOID
 VmwSockRelease(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket
     )
 {
     if (pSocket)
     {
-        gpVmSockPackage->pfnReleaseSocket(pSocket);
+        pRESTHandler->pPackage->pfnReleaseSocket(pRESTHandler, pSocket);
     }
 }
 
 DWORD
 VmwSockClose(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket
     )
 {
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-
-    if (!pSocket)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    dwError = gpVmSockPackage->pfnCloseSocket(pSocket);
+    DWORD dwError = 0;
+    
+    dwError = pRESTHandler->pPackage->pfnCloseSocket(pRESTHandler, pSocket);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:
@@ -337,10 +354,12 @@ error:
 
 BOOLEAN
 VmwSockIsValidIPAddress(
+    PVMREST_HANDLER                    pRESTHandler,
     PCSTR                            pszAddress
     )
 {
     BOOLEAN                          bIsValid = TRUE;
+
 
     if (!IsNullOrEmptyString(pszAddress))
     {
@@ -364,6 +383,7 @@ VmwSockIsValidIPAddress(
 
 DWORD
 VmwSockGetAddress(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket,
     struct sockaddr_storage*         pAddress,
     socklen_t*                       addresLen
@@ -371,13 +391,13 @@ VmwSockGetAddress(
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pSocket)
+    if (!pSocket || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnGetAddress(pSocket, pAddress, addresLen);
+    dwError = pRESTHandler->pPackage->pfnGetAddress(pRESTHandler, pSocket, pAddress, addresLen);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:
@@ -387,19 +407,20 @@ error:
 
 DWORD
 VmwSockStartListening(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket,
     int                              iListenQueueSize
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pSocket)
+    if (!pSocket || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnStartListening(pSocket, iListenQueueSize);
+    dwError = pRESTHandler->pPackage->pfnStartListening(pRESTHandler, pSocket, iListenQueueSize);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:
@@ -409,6 +430,7 @@ error:
 
 DWORD
 VmwSockAllocateIoBuffer(
+    PVMREST_HANDLER                    pRESTHandler,
     VM_SOCK_EVENT_TYPE               eventType,
     DWORD                            dwSize,
     PVM_SOCK_IO_BUFFER*              ppIoBuffer
@@ -416,13 +438,13 @@ VmwSockAllocateIoBuffer(
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!ppIoBuffer)
+    if (!ppIoBuffer || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = gpVmSockPackage->pfnAllocateIoBuffer(eventType, dwSize, ppIoBuffer);
+    dwError = pRESTHandler->pPackage->pfnAllocateIoBuffer(pRESTHandler, eventType, dwSize, ppIoBuffer);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:
@@ -432,18 +454,19 @@ error:
 
 DWORD
 VmwSockReleaseIoBuffer(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pIoBuffer)
+    if (!pIoBuffer || !pRESTHandler)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    gpVmSockPackage->pfnReleaseIoBuffer(pIoBuffer);
+    pRESTHandler->pPackage->pfnReleaseIoBuffer(pRESTHandler, pIoBuffer);
 
 error:
 
@@ -453,18 +476,20 @@ error:
 
 VOID
 VmwSockGetStreamBuffer(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER*               ppStreamBuffer
     )
 {
-    gpVmSockPackage->pfnGetStreamBuffer(pSocket,ppStreamBuffer);
+    pRESTHandler->pPackage->pfnGetStreamBuffer(pRESTHandler,pSocket,ppStreamBuffer);
 }
 
 VOID
 VmwSockSetStreamBuffer(
+    PVMREST_HANDLER                    pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER                pStreamBuffer
     )
 {
-     gpVmSockPackage->pfnSetStreamBuffer(pSocket,pStreamBuffer);
+     pRESTHandler->pPackage->pfnSetStreamBuffer(pRESTHandler,pSocket,pStreamBuffer);
 }

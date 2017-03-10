@@ -25,6 +25,7 @@
 #define VMREST_API
 #endif
 
+typedef struct _VMREST_HANDLER* PVMREST_HANDLER;
 
 typedef struct _VM_REST_HTTP_REQUEST_PACKET*  PREST_REQUEST;
 
@@ -33,6 +34,7 @@ typedef struct _VM_REST_HTTP_RESPONSE_PACKET* PREST_RESPONSE;
 
 typedef uint32_t(
 *PFN_PROCESS_HTTP_REQUEST)(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     );
@@ -88,7 +90,8 @@ VMREST_API
 uint32_t
 VmRESTInit(
     PREST_CONF                       pConfig,
-    char const*                      file
+    char const*                      file,
+    PVMREST_HANDLER*                 ppRESTHandler
     );
 
 /**
@@ -100,7 +103,7 @@ VmRESTInit(
 VMREST_API
 uint32_t
 VmRESTStart(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     );
 
 /**
@@ -114,6 +117,7 @@ VmRESTStart(
 VMREST_API
 uint32_t
 VmRESTRegisterHandler(
+    PVMREST_HANDLER                  pRESTHandler,
     char const*                      pszEndpoint,
     PREST_PROCESSOR                  pHandler,
     PREST_ENDPOINT*                  ppEndpoint
@@ -128,6 +132,7 @@ VmRESTRegisterHandler(
 VMREST_API
 uint32_t
 VmRESTFindEndpoint(
+    PVMREST_HANDLER                  pRESTHandler,
     char const*                      pszEndpoint,
     PREST_ENDPOINT*                  ppEndpoint
     );
@@ -249,6 +254,7 @@ VmRESTSetHttpHeader(
 VMREST_API 
 uint32_t
 VmRESTGetData(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     char*                            pBuffer,
     uint32_t*                        done
@@ -284,6 +290,7 @@ VmRESTGetParamsByIndex(
 VMREST_API
 uint32_t
 VmRESTGetWildCardCount(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     uint32_t*                        wildCardCount
     );
@@ -299,6 +306,7 @@ VmRESTGetWildCardCount(
 VMREST_API
 uint32_t
 VmRESTGetWildCardByIndex(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     uint32_t                         index,
     char**                           ppszWildCard
@@ -363,6 +371,7 @@ VmRESTSetFailureResponse(
 VMREST_API 
 uint32_t
 VmRESTSetData(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_RESPONSE*                  ppResponse,
     char const*                      buffer,
     uint32_t                         dataLen,
@@ -376,7 +385,7 @@ VmRESTSetData(
 VMREST_API 
 uint32_t
 VmRESTStop(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     );
 
 /*
@@ -385,7 +394,7 @@ VmRESTStop(
 VMREST_API 
 void
 VmRESTShutdown(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     );
 
 
@@ -449,6 +458,7 @@ VmRESTSetHttpReasonPhrase(
 VMREST_API 
 uint32_t
 VmRESTGetHttpPayload(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     char*                            response,
     uint32_t*                        done
@@ -467,6 +477,7 @@ VmRESTGetHttpPayload(
 VMREST_API 
 uint32_t
 VmRESTSetHttpPayload(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_RESPONSE*                  ppResponse,
     char const*                      buffer,
     uint32_t                         dataLen,

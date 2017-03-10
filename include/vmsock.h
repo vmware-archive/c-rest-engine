@@ -54,6 +54,7 @@ typedef UINT32                           VM_SOCK_CREATE_FLAGS;
 
 typedef struct _VM_SOCKET*               PVM_SOCKET;
 typedef struct _VM_SOCK_EVENT_QUEUE*     PVM_SOCK_EVENT_QUEUE;
+typedef struct _VMREST_HANDLER*          PVMREST_HANDLER;
 
 
 
@@ -108,6 +109,7 @@ typedef enum
  */
 DWORD
 VmwSockInitialize(
+    PVMREST_HANDLER                  pRESTHandler    
     );
 
 /**
@@ -146,6 +148,7 @@ VmwSockOpenClient(
  */
 DWORD
 VmwSockOpenServer(
+    PVMREST_HANDLER                  pRESTHandler,
     USHORT                           usPort,
     int                              iListenQueueSize,
     VM_SOCK_CREATE_FLAGS             dwFlags,
@@ -164,6 +167,7 @@ VmwSockOpenServer(
  */
 DWORD
 VmwSockStartListening(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     int                              iListenQueueSize
     );
@@ -180,6 +184,7 @@ VmwSockStartListening(
  */
 DWORD
 VmwSockCreateEventQueue(
+    PVMREST_HANDLER                  pRESTHandler,
     int                              iEventQueueSize,
     PVM_SOCK_EVENT_QUEUE*            ppQueue
     );
@@ -194,6 +199,7 @@ VmwSockCreateEventQueue(
  */
 DWORD
 VmwSockEventQueueAdd(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     PVM_SOCKET                       pSocket
     );
@@ -212,6 +218,7 @@ VmwSockEventQueueAdd(
  */
 DWORD
 VmwSockWaitForEvent(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     int                              iTimeoutMS,
     PVM_SOCKET*                      ppSocket,
@@ -229,6 +236,7 @@ VmwSockWaitForEvent(
 
 VOID
 VmwSockCloseEventQueue(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCK_EVENT_QUEUE             pQueue
     );
 
@@ -242,6 +250,7 @@ VmwSockCloseEventQueue(
 
 DWORD
 VmwSockSetNonBlocking(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     );
 
@@ -254,6 +263,7 @@ VmwSockSetNonBlocking(
  */
 DWORD
 VmwSockGetProtocol(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PDWORD                           pdwProtocol
     );
@@ -269,6 +279,7 @@ VmwSockGetProtocol(
  */
 DWORD
 VmwSockSetData(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVOID                            pData,
     PVOID*                           ppOldData
@@ -284,6 +295,7 @@ VmwSockSetData(
  */
 DWORD
 VmwSockGetData(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVOID*                           ppData
     );
@@ -302,6 +314,7 @@ VmwSockGetData(
  */
 DWORD
 VmwSockRead(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
@@ -323,6 +336,7 @@ VmwSockRead(
  */
 DWORD
 VmwSockWrite(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     const struct sockaddr*           pClientAddress,
     socklen_t                        addrLength,
@@ -337,6 +351,7 @@ VmwSockWrite(
 
 PVM_SOCKET
 VmwSockAcquire(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     );
 
@@ -346,6 +361,7 @@ VmwSockAcquire(
  */
 VOID
 VmwSockRelease(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     );
 
@@ -355,6 +371,7 @@ VmwSockRelease(
  */
 DWORD
 VmwSockClose(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket
     );
 
@@ -365,6 +382,7 @@ VmwSockClose(
  */
 BOOLEAN
 VmwSockIsValidIPAddress(
+    PVMREST_HANDLER                  pRESTHandler,
     PCSTR                            pszAddress
     );
 
@@ -379,6 +397,7 @@ VmwSockIsValidIPAddress(
  */
 DWORD
 VmwSockGetAddress(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     struct sockaddr_storage*         pAddress,
     socklen_t*                       pAddresLen
@@ -386,6 +405,7 @@ VmwSockGetAddress(
 
 DWORD
 VmwSockAllocateIoBuffer(
+    PVMREST_HANDLER                  pRESTHandler,
     VM_SOCK_EVENT_TYPE               eventType,
     DWORD                            dwSize,
     PVM_SOCK_IO_BUFFER*              ppIoContext
@@ -400,6 +420,7 @@ VmwSockAllocateIoBuffer(
  */
 DWORD
 VmwSockReleaseIoBuffer(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
 
@@ -413,12 +434,14 @@ VmwSockShutdown(
 
 VOID
 VmwSockGetStreamBuffer(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER*               ppStreamBuffer
     );
 
 VOID
 VmwSockSetStreamBuffer(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER                pStreamBuffer
     );

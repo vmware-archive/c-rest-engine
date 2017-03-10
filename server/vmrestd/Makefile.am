@@ -3,9 +3,7 @@ sbin_PROGRAMS = vmrestd
 vmrestd_SOURCES = \
     globals.c \
     httpHandlers.c \
-    lin_main.c \
-    signal.c \
-    tdnf.c
+    lin_main2.c
 
 vmrestd_CPPFLAGS = \
     -I$(top_srcdir)/include \

@@ -43,20 +43,49 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 uint32_t
 VmRESTInit(
     PREST_CONF                       pConfig,
-    char const*                      file
+    char const*                      file,
+    PVMREST_HANDLER*                 ppRESTHandler
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PVMREST_HANDLER                  pRESTHandler = NULL;
+
+    if (!ppRESTHandler)
+    {
+        VMREST_LOG_ERROR("Invalid Params");
+        dwError = REST_ENGINE_INVALID_HANDLER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VMREST_HANDLER),
+                  (void**)&pRESTHandler
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmHTTPInit(
+                  pRESTHandler,
                   pConfig,
                   file
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
+    *ppRESTHandler = pRESTHandler;
+
 cleanup:
     return dwError;
 error:
+    if (pRESTHandler)
+    {
+        VmRESTFreeMemory(pRESTHandler);
+    }
+
+    if (ppRESTHandler)
+    {
+        *ppRESTHandler = NULL;
+    }
+
     goto cleanup;
 }
 
@@ -65,12 +94,13 @@ __declspec(dllexport)
 #endif
 uint32_t
 VmRESTStart(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     dwError = VmHTTPStart(
+                  pRESTHandler
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -83,6 +113,7 @@ error:
 
 uint32_t
 VmRESTRegisterHandler(
+    PVMREST_HANDLER                  pRESTHandler,
     char const*                      pszEndpoint,
     PREST_PROCESSOR                  pHandler,
     PREST_ENDPOINT*                  ppEndpoint
@@ -91,7 +122,7 @@ VmRESTRegisterHandler(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PREST_PROCESSOR                  pzHandler = NULL;
 
-    if (!pHandler)
+    if (!pHandler || !pRESTHandler)
     {
         dwError = REST_ENGINE_INVALID_REST_PROCESSER;
     }
@@ -105,23 +136,25 @@ VmRESTRegisterHandler(
     else if (pszEndpoint != NULL)
     {
         /**** Endpoint based registration ****/
-        if (gRESTEngGlobals.useEndPoint == 0)
+        if (pRESTHandler->pInstanceGlobal->useEndPoint == 0)
         {
             dwError = VmRestEngineInitEndPointRegistration(
                       );
             BAIL_ON_VMREST_ERROR(dwError);
         }
         dwError = VmRestEngineAddEndpoint(
+                      pRESTHandler,
                       (char  *)pszEndpoint,
                       pHandler
                       );
         BAIL_ON_VMREST_ERROR(dwError);
-        pzHandler = &(gRESTEngGlobals.internalHandler);
+        pzHandler = &(pRESTHandler->pInstanceGlobal->internalHandler);
 
     }
-    if (!gpHttpHandler)
+    if (!(pRESTHandler->pHttpHandler))
     {
         dwError = VmHTTPRegisterHandler(
+                      pRESTHandler,
                       pzHandler
                       );
     }
@@ -135,6 +168,7 @@ error:
 
 uint32_t
 VmRESTFindEndpoint(
+    PVMREST_HANDLER                  pRESTHandler,
     char const*                      pszEndpoint,
     PREST_ENDPOINT*                  ppEndpoint
     )
@@ -144,6 +178,7 @@ VmRESTFindEndpoint(
     PREST_ENDPOINT                   pEndPoint = NULL;
 
     dwError = VmRestEngineGetEndPoint(
+                  pRESTHandler,
                   (char*)pszEndpoint,
                   &temp
                   );
@@ -204,18 +239,26 @@ error:
 
 uint32_t
 VmRESTStop(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (gRESTEngGlobals.useEndPoint == 1)
+    if (!pRESTHandler)
+    {  
+        VMREST_LOG_ERROR("Invalid REST handler"); 
+        dwError = REST_ENGINE_INVALID_HANDLER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (pRESTHandler->pInstanceGlobal->useEndPoint == 1)
     {
         VmRestEngineShutdownEndPointRegistration(
             );
     }
    
     dwError = VmHTTPStop(
+                  pRESTHandler
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -227,14 +270,15 @@ error:
 
 void
 VmRESTShutdown(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     )
 {
-    VmHTTPShutdown();
+    VmHTTPShutdown(pRESTHandler);
 }
 
 uint32_t
 VmRESTGetData(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     char*                            pBuffer,
     uint32_t*                        done
@@ -243,6 +287,7 @@ VmRESTGetData(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     dwError = VmRESTGetHttpPayload(
+                  pRESTHandler,
                   pRequest,
                   pBuffer,
                   done
@@ -257,6 +302,7 @@ error:
 
 uint32_t
 VmRESTSetData(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_RESPONSE*                  ppResponse,
     char const*                      buffer,
     uint32_t                         dataLen,
@@ -266,6 +312,7 @@ VmRESTSetData(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     dwError = VmRESTSetHttpPayload(
+                  pRESTHandler,
                   ppResponse,
                   buffer,
                   dataLen,

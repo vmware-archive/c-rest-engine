@@ -50,6 +50,7 @@ VmAppStoreEndpoint(
 
 uint32_t
 VmRESTHandleHTTP_REQUEST(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     );
@@ -145,4 +146,10 @@ VmHandleEchoData(
     uint32_t                         paramsCount
     );
 
+uint32_t
+VmHandleEchoData1(
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    );
 

@@ -53,11 +53,11 @@ REST_PROVIDER gRestProviders[] = {
         NULL,
         {
             &VmRESTHandleHTTP_REQUEST,
-            &VmHandlePackageWrite,
-            &VmHandlePackageRead,
-            &VmHandlePackageUpdate,
-            &VmHandlePackageDelete,
-            &VmHandlePackageOTHERS
+            NULL,
+            NULL, //&VmHandlePackageRead,
+            NULL, //&VmHandlePackageUpdate,
+            NULL, //&VmHandlePackageDelete,
+            NULL, //&VmHandlePackageOTHERS
         }
     }
 };
@@ -339,11 +339,11 @@ void readOptionEndPoint(int argc, char *argv[])
 
             case 'r':
                 printf ("Registering REST Endpoint for URI %s and Provider %s\n", optarg, pProvider->name);
-                dwError = VmRESTRegisterHandler(
+        /*        dwError = VmRESTRegisterHandler(
                                optarg,
                                &pProvider->restProcessor,
                                NULL
-                               );
+                               ); */
                 if (!dwError)
                 {
                     printf("REST endpoint %s registered successfully\n", optarg);
@@ -465,10 +465,10 @@ void readOptionRestEngine(int argc, char *argv[])
                      pConfig->pClientCount = restdConfig.clientCnt;
                      pConfig->pMaxWorkerThread = restdConfig.workerThCnt;
                 }
-                dwError = VmRESTInit(
+                /*dwError = VmRESTInit(
                               pConfig,
                               restdConfig.configFile
-                              );
+                              );*/
                 if (!dwError)
                 {
                     printf ("Initialized Rest Engine Successfully ....\n");
@@ -486,7 +486,7 @@ void readOptionRestEngine(int argc, char *argv[])
 
             case 's':
                 printf ("Shutdown Rest Engine ....\n");
-                VmRESTShutdown();
+                //VmRESTShutdown();
                 printf ("Shutdown Rest Engine Successful ....\n");
                 break;
 
@@ -568,8 +568,8 @@ void readOptionServer(int argc, char *argv[])
 
             case 's':
                 printf ("Starting Server ....\n");
-                dwError = VmRESTStart(
-                              );
+                //dwError = VmRESTStart(
+                  //            );
                 if (!dwError)
                 {
                     printf ("Started server successfully ....\n");
@@ -583,8 +583,8 @@ void readOptionServer(int argc, char *argv[])
 
             case 'S':
                 printf ("Stoping Server ....\n");
-                dwError = VmRESTStop(
-                              );
+              //  dwError = VmRESTStop(
+                //              );
                 if (!dwError)
                 {
                     printf ("Stopped server successfully ....\n");
@@ -741,14 +741,17 @@ int launch_server_sample()
 {
     uint32_t                         dwError = 0;
    // uint32_t                         cnt = 0;
+  
+
+
 
     printf("Starting: %s\n", gRestProviders[0].name);
 
-    dwError = VmRESTInit(NULL,"/tmp/restconfig.txt");
+    dwError = VmRESTInit(NULL,"/tmp/restconfig.txt", &gpRESTHandler);
 
-    VmRESTRegisterHandler("/v1/pkg", &gRestProviders[0].restProcessor, NULL);
+    VmRESTRegisterHandler(gpRESTHandler, "/v1/pkg", &gRestProviders[0].restProcessor, NULL);
 
-    VmRESTStart();
+    VmRESTStart(gpRESTHandler);
 
     while(1) //cnt < 20)
     {
@@ -756,11 +759,11 @@ int launch_server_sample()
        // cnt++;
     }
     
-    dwError = VmRESTStop();
+    dwError = VmRESTStop(gpRESTHandler);
 
-    dwError = VmRESTUnRegisterHandler("/v1/pkg/*");
+    //dwError = VmRESTUnRegisterHandler(gpRESTHandler,"/v1/pkg/*");
 
-    VmRESTShutdown();
+    VmRESTShutdown(gpRESTHandler);
 
     
 return dwError;

@@ -18,10 +18,16 @@
 
 uint32_t
 VmRESTHandleHTTP_REQUEST(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     )
 {
+
+    return 0;
+
+}
+#if 0
     uint32_t                         dwError = 0;
     char                             buffer[56];
     char*                            ptr = NULL;
@@ -94,7 +100,7 @@ VmRESTHandleHTTP_REQUEST(
 
 
    // write(1,"\nPayload: ", 9);
-    /**** Get the payload ****/
+   
     while(done != 1)
     {
         dwError = VmRESTGetHttpPayload(
@@ -111,7 +117,6 @@ VmRESTHandleHTTP_REQUEST(
     BAIL_ON_VMREST_ERROR(dwError);
     
 
-    /*** SET all HTTP response Headers before setting payload ****/
 
     dwError = VmRESTSetHttpHeader(ppResponse, "Kumar", "Kaushik");
     dwError = VmRESTSetHttpHeader(ppResponse, "Location", "United States");
@@ -121,7 +126,6 @@ VmRESTHandleHTTP_REQUEST(
     dwError = VmRESTSetHttpHeader(ppResponse, "Unix", "Linux");
     dwError = VmRESTSetHttpHeader(ppResponse, "Connection", "close");
 
-    /**** Set the payload ****/
     if (TEST_SEND_CHUNK == 1)
     {
         dwError = VmRESTSetHttpHeader(
@@ -163,7 +167,6 @@ error:
     goto cleanup;
 }
 
-#if 0
 uint32_t
 VmRESTHandleCreate(
     PREST_REQUEST                    pRequest,

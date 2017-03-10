@@ -17,14 +17,33 @@ int  vmrest_syslog_level;
 
 uint32_t
 VmHTTPInit(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_CONF                       pConfig,
     char const*                      file
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_CONFIG                  restConfig = NULL;
+    PREST_ENG_GLOBALS                pInstanceGlobal = NULL;
 
-    vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;
+    if (!pRESTHandler)
+    {
+        VMREST_LOG_DEBUG("Invalid REST Handler");
+        dwError = REST_ENGINE_INVALID_HANDLER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(REST_ENG_GLOBALS),
+                  (void **)&pInstanceGlobal
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+    
+    pRESTHandler->pInstanceGlobal = pInstanceGlobal;
+    pRESTHandler->debugLogLevel = VMREST_LOG_LEVEL_DEBUG;
+
+
+    //vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;
 
     if (pConfig != NULL)
     {
@@ -74,15 +93,16 @@ VmHTTPInit(
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Init Transport ****/
-    dwError = VmwSockInitialize();
+    dwError = VmwSockInitialize(pRESTHandler);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    /**** Update the global context for this lib instance ****/
-    gRESTEngGlobals.config = restConfig;
-    gRESTEngGlobals.useEndPoint = 0;
+    /**** Update context Info for this lib instance ****/
+//    pRESTHandler->pInstanceGlobal->config = restConfig;
+    pRESTHandler->pRESTConfig = restConfig;
+    pRESTHandler->pInstanceGlobal->useEndPoint = 0;
 
     /**** Set the config at Global level ****/
-    VmRESTSetConfig(restConfig);
+  //  VmRESTSetConfig(restConfig);
 
 cleanup:
     return dwError;
@@ -92,20 +112,24 @@ error:
         VmRESTFreeConfigFileStruct(
                 restConfig
                 );
-        gRESTEngGlobals.config = NULL;
-        VmRESTUnSetConfig();
+        if (pRESTHandler && pRESTHandler->pRESTConfig)
+        {
+            pRESTHandler->pRESTConfig = NULL; 
+        }
+    //    VmRESTUnSetConfig();
     }
+    
     goto cleanup;
 }
 
 uint32_t
 VmHTTPStart(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    dwError = VmRESTInitProtocolServer();
+    dwError = VmRESTInitProtocolServer(pRESTHandler);
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -117,17 +141,18 @@ error:
 
 uint32_t
 VmHTTPRegisterHandler(
+    PVMREST_HANDLER                  pRESTHandler,
     PREST_PROCESSOR                  pHandler
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (pHandler == NULL)
+    if (!pHandler || !pRESTHandler)
     {
         dwError = REST_ENGINE_INVALID_REST_PROCESSER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    gpHttpHandler = pHandler;
+    pRESTHandler->pHttpHandler = pHandler;
 
 cleanup:
     return dwError;
@@ -157,13 +182,13 @@ error:
 
 uint32_t
 VmHTTPStop(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     VMREST_LOG_DEBUG("%s","Shutting down rest engine ....");
-    VmRESTShutdownProtocolServer();
+    VmRESTShutdownProtocolServer(pRESTHandler);
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -174,18 +199,18 @@ error:
 
 void
 VmHTTPShutdown(
-    void
+    PVMREST_HANDLER                  pRESTHandler
     )
 {
-    VmwSockShutdown();
+    VmwSockShutdown(pRESTHandler);
 
-    if (gRESTEngGlobals.config)
+    if (pRESTHandler->pRESTConfig)
     {
         VmRESTFreeConfigFileStruct(
-            gRESTEngGlobals.config
+            pRESTHandler->pRESTConfig
             );
         VmRESTLogTerminate(
             );
-        gRESTEngGlobals.config = NULL;
+        pRESTHandler->pRESTConfig = NULL;
     }
 }

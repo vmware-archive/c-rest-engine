@@ -385,6 +385,7 @@ error:
 
 uint32_t
 VmRESTParseAndPopulateHTTPHeaders(
+    PVMREST_HANDLER                  pRESTHandler,
     char*                            buffer,
     uint32_t                         packetLen,
     PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
@@ -426,6 +427,7 @@ VmRESTParseAndPopulateHTTPHeaders(
             {
                 extraBytes = packetLen - bytesRead;
                 dwError = VmSockPosixAdjustProcessedBytes(
+                              pRESTHandler,
                               pReqPacket->pSocket,
                               bytesRead
                               );
@@ -433,6 +435,7 @@ VmRESTParseAndPopulateHTTPHeaders(
                 memset(appBuffer, '\0', MAX_DATA_BUFFER_LEN);
 
                 dwError = VmsockPosixGetXBytes(
+                              pRESTHandler,
                               MAX_DATA_BUFFER_LEN,
                               appBuffer,
                               pReqPacket->pSocket,
@@ -475,6 +478,7 @@ VmRESTParseAndPopulateHTTPHeaders(
                 VMREST_LOG_DEBUG("Finished headers parsing with bytesRead %u", bytesRead);
                 /**** All headers processed : data starts from here ***/
                 dwError = VmSockPosixAdjustProcessedBytes(
+                              pRESTHandler,
                               pReqPacket->pSocket,
                               (bytesRead - extraBytes)
                               );
@@ -741,6 +745,7 @@ error:
 
 uint32_t
 VmRESTSendHeader(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     )
 {
@@ -802,6 +807,7 @@ VmRESTSendHeader(
     bytes = 0;
 
     dwError = VmsockPosixWriteDataAtOnce(
+                  pRESTHandler,
                   pResPacket->pSocket,
                   buffer,
                   totalBytes
@@ -828,6 +834,7 @@ error:
 
 uint32_t
 VmRESTSendChunkedPayload(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket,
     uint32_t                         dataLen
     )
@@ -871,6 +878,7 @@ VmRESTSendChunkedPayload(
 
     
     dwError = VmsockPosixWriteDataAtOnce(
+                  pRESTHandler,
                   pResPacket->pSocket,
                   buffer,
                   totalBytes
@@ -898,6 +906,7 @@ error:
 
 uint32_t
 VmRESTSendHeaderAndPayload(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     )
 {
@@ -978,6 +987,7 @@ VmRESTSendHeaderAndPayload(
     /**** This is for debug purpose:: will be removed ****/
 
     dwError = VmsockPosixWriteDataAtOnce(
+                  pRESTHandler,
                   pResPacket->pSocket,
                   buffer,
                   totalBytes
@@ -1076,6 +1086,7 @@ error:
 
 uint32_t
 VmRESTProcessIncomingData(
+    PVMREST_HANDLER                  pRESTHandler,
     char*                            buffer,
     uint32_t                         byteRead,
     PVM_SOCKET                       pSocket
@@ -1097,6 +1108,13 @@ VmRESTProcessIncomingData(
     char                             endPointURI[MAX_URI_LEN] = {0};
     char*                            ptr = NULL;
     PREST_ENDPOINT                   pEndPoint = NULL;
+
+    if (!pRESTHandler)
+    {
+        VMREST_LOG_ERROR("Invalid REST Handler");
+        dwError = REST_ENGINE_INVALID_HANDLER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     /**** 1. Allocate and init request and response objects ****/
 
@@ -1122,6 +1140,7 @@ VmRESTProcessIncomingData(
     /**** 2. Start parsing the request line ****/
 
     dwError = VmRESTParseAndPopulateHTTPHeaders(
+                  pRESTHandler,
                   buffer,
                   byteRead,
                   pReqPacket,
@@ -1143,7 +1162,7 @@ VmRESTProcessIncomingData(
     if (expect != NULL && ((strcmp(" 100-continue", expect) == 0) || (strcmp("100-continue", expect) == 0)))
     {
          /**** Do not send 100-continue for invalid URI ****/
-         if (gRESTEngGlobals.useEndPoint == 1)
+         if (pRESTHandler->pInstanceGlobal->useEndPoint == 1)
          {
              memset(httpURI, '\0', MAX_URI_LEN);
              memset(endPointURI, '\0', MAX_URI_LEN);
@@ -1173,6 +1192,7 @@ VmRESTProcessIncomingData(
              }
 
              dwError = VmRestEngineGetEndPoint(
+                            pRESTHandler,
                             endPointURI,
                             &pEndPoint
                             );
@@ -1197,6 +1217,7 @@ VmRESTProcessIncomingData(
          BAIL_ON_VMREST_ERROR(dwError);
 
          dwError = VmRESTSetData(
+                  pRESTHandler,
                   &pIntResPacket,
                   "",
                   0,
@@ -1265,6 +1286,7 @@ VmRESTProcessIncomingData(
     {
         /***** Give the application callback ****/
         dwError = VmRESTTriggerAppCb(
+                      pRESTHandler,
                       pReqPacket,
                       &pResPacket
                       );
@@ -1418,6 +1440,7 @@ error:
                 }
 
                 tempStatus =  VmRESTSetData(
+                                  pRESTHandler,
                                   &pResPacket,
                                   "",
                                   0,
@@ -1443,29 +1466,30 @@ error:
 
 uint32_t
 VmRESTTriggerAppCb(
+    PVMREST_HANDLER                  pRESTHandler,
     PVM_REST_HTTP_REQUEST_PACKET     pRequest,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
 )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (!pRequest || !ppResponse)
+    if (!pRequest || !ppResponse || !pRESTHandler)
     {
        VMREST_LOG_ERROR("Invalid params");
        dwError =  VMREST_APPLICATION_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (gpHttpHandler == NULL)
+    if (pRESTHandler->pHttpHandler == NULL)
     {
         VMREST_LOG_ERROR("No application callback registered");
         dwError = VMREST_APPLICATION_NO_CB_REGISTERED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (gpHttpHandler->pfnHandleRequest)
+    if (pRESTHandler->pHttpHandler->pfnHandleRequest)
     {
-        dwError = gpHttpHandler->pfnHandleRequest(pRequest, ppResponse);
+        dwError = pRESTHandler->pHttpHandler->pfnHandleRequest(pRESTHandler,pRequest, ppResponse);
     }
     else
     {

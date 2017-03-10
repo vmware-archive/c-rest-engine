@@ -39,6 +39,7 @@ typedef DWORD (*PFN_OPEN_CLIENT_SOCKET)(
                     );
 
 typedef DWORD (*PFN_OPEN_SERVER_SOCKET)(
+                    PVMREST_HANDLER      pRESTHandler,
                     USHORT               usPort,
                     int                  iListenQueueSize,
                     VM_SOCK_CREATE_FLAGS dwFlags,
@@ -48,21 +49,25 @@ typedef DWORD (*PFN_OPEN_SERVER_SOCKET)(
                     );
 
 typedef DWORD (*PFN_START_LISTENING)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCKET           pSocket,
                     int                  iListenQueueSize
                     );
 
 typedef DWORD (*PFN_CREATE_EVENT_QUEUE)(
+                    PVMREST_HANDLER      pRESTHandler,
                     int                   iEventQueueSize,
                     PVM_SOCK_EVENT_QUEUE* ppQueue
                     );
 
 typedef DWORD (*PFN_ADD_EVENT_QUEUE)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCK_EVENT_QUEUE pQueue,
                     PVM_SOCKET           pSocket
                     );
 
 typedef DWORD (*PFN_WAIT_FOR_EVENT)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCK_EVENT_QUEUE pQueue,
                     int                  iTimeoutMS,
                     PVM_SOCKET*          ppSocket,
@@ -71,35 +76,42 @@ typedef DWORD (*PFN_WAIT_FOR_EVENT)(
                     );
 
 typedef VOID (*PFN_CLOSE_EVENT_QUEUE)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCK_EVENT_QUEUE pQueue
                     );
 
 typedef DWORD (*PFN_SET_NON_BLOCKING)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCKET pSocket
                     );
 
 typedef DWORD (*PFN_GET_PROTOCOL)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCKET           pSocket,
                     PDWORD               pdwProtocol
                     );
 
 typedef DWORD (*PFN_SET_DATA)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCKET           pSocket,
                     PVOID                pData,
                     PVOID*               ppOldData
                     );
 
 typedef DWORD (*PFN_GET_DATA)(
+                    PVMREST_HANDLER     pRESTHandler,
                     PVM_SOCKET          pSocket,
                     PVOID*              ppData
                     );
 
 typedef DWORD (*PFN_READ)(
+                    PVMREST_HANDLER     pRESTHandler,
                     PVM_SOCKET          pSocket,
                     PVM_SOCK_IO_BUFFER  pIoBuffer
                     );
 
 typedef DWORD (*PFN_WRITE)(
+                    PVMREST_HANDLER     pRESTHandler,
                     PVM_SOCKET          pSocket,
                     const struct sockaddr*    pClientAddress,
                     socklen_t           addrLength,
@@ -107,39 +119,47 @@ typedef DWORD (*PFN_WRITE)(
                     );
 
 typedef PVM_SOCKET (*PFN_ACQUIRE_SOCKET)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCKET           pSocket
                     );
 
 typedef VOID (*PFN_RELEASE_SOCKET)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCKET           pSocket
                     );
 
 typedef DWORD (*PFN_CLOSE_SOCKET)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCKET pSocket
                     );
 
 typedef DWORD (*PFN_GET_ADDRESS)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCKET                  pSocket,
                     struct sockaddr_storage*    pAddress,
                     socklen_t*                  pAddresLen
                     );
 
 typedef DWORD (*PFN_ALLOCATE_IO_BUFFER)(
+                    PVMREST_HANDLER      pRESTHandler,
                     VM_SOCK_EVENT_TYPE      eventType,
                     DWORD                   dwSize,
                     PVM_SOCK_IO_BUFFER*     ppIoBuffer
                     );
 
 typedef VOID(*PFN_RELEASE_IO_BUFFER)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCK_IO_BUFFER      pIoBuffer
                     );
 
 typedef VOID(*PFN_GET_STREAM_BUFFER)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCKET              pSocket,
                     PVM_STREAM_BUFFER*      ppStreamBuffer
                     );
 
 typedef VOID(*PFN_SET_STREAM_BUFFER)(
+                    PVMREST_HANDLER      pRESTHandler,
                     PVM_SOCKET              pSocket,
                     PVM_STREAM_BUFFER       pStreamBuffer
                     );
