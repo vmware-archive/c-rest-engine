@@ -15,28 +15,16 @@
 
 #include <config.h>
 #include <vmrestsys.h>
-
-//#ifdef HAVE_SYS_EPOLL_H
 #include <sys/epoll.h>
-//#endif
-
 #include <vmrestdefines.h>
 #include <vmsock.h>
 #include <vmrestcommon.h>
-//#include <vmsockapi.h>
 #include <vmsockposix.h>
-
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"
-#include "externs.h"
-
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-
-//#include <vmrestsys.h>
-//#include <vmrestsock.h>
-
 #include <vmrestcommon.h>
 #include <vmrest.h>
 #include <fcntl.h>

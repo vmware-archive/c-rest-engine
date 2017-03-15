@@ -12,12 +12,6 @@
  * under the License.
  */
 
-
-/***************************************
-* TODO: Local typedefs, this must be fix 
-* properply.
-***************************************/
-
 #ifdef WIN32
 #include <winsock2.h>
 #include <windows.h>
@@ -109,31 +103,13 @@ typedef enum
  */
 DWORD
 VmwSockInitialize(
-    PVMREST_HANDLE                  pRESTHandle    
-    );
-
-/**
- * @brief Opens a client socket
- *
- * @param[in]  pszHost  Target hostname or IP Address.
- *                      An empty string will imply the localhost.
- * @param[in]  usPort   16 bit port number
- * @param[in]  dwFlags  32 bit flags specifying socket creation preferences
- * @param[out] ppSocket Pointer to created socket context
- *
- * @return 0 on success
- */
-DWORD
-VmwSockOpenClient(
-    PCSTR                            pszHost,
-    USHORT                           usPort,
-    VM_SOCK_CREATE_FLAGS             dwFlags,
-    PVM_SOCKET*                      ppSocket
+    PVMREST_HANDLE                   pRESTHandle    
     );
 
 /**
  * @brief Opens a server socket
  *
+ * @param[in] Handle to library instance.
  * @param[in] usPort 16 bit local port number that the server listens on
  * @param[in,optional] iListenQueueSize
  *       size of connection acceptance queue.
@@ -148,7 +124,7 @@ VmwSockOpenClient(
  */
 DWORD
 VmwSockOpenServer(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     USHORT                           usPort,
     int                              iListenQueueSize,
     VM_SOCK_CREATE_FLAGS             dwFlags,
@@ -158,23 +134,9 @@ VmwSockOpenServer(
     );
 
 /**
- * @brief Starts socket listener
- *
- * @param[in] pSocket Pointer to Socket
- * @param[in,optional] iListenQueueSize
- *
- * @return 0 on success
- */
-DWORD
-VmwSockStartListening(
-    PVMREST_HANDLE                  pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    int                              iListenQueueSize
-    );
-
-/**
  * @brief Creates a Event queue to be used for detecting events on sockets
  *
+ * @param[in] Handle to library instance.
  * @param[in,optional] iEventQueueSize
  *       specifies the event queue size.
  *       This value can be (-1) to use the default value
@@ -184,7 +146,7 @@ VmwSockStartListening(
  */
 DWORD
 VmwSockCreateEventQueue(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     int                              iEventQueueSize,
     PVM_SOCK_EVENT_QUEUE*            ppQueue
     );
@@ -192,6 +154,7 @@ VmwSockCreateEventQueue(
 /**
  * @brief Adds a socket to the event queue
  *
+ * @param[in] Handle to library instance.
  * @param[in] pQueue  Pointer to Event queue
  * @param[in] pSocket Pointer to Socket
  *
@@ -199,7 +162,7 @@ VmwSockCreateEventQueue(
  */
 DWORD
 VmwSockEventQueueAdd(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     PVM_SOCKET                       pSocket
     );
@@ -207,6 +170,7 @@ VmwSockEventQueueAdd(
 /**
  * @brief Waits for an event on the event queue
  *
+ * @param[in] Handle to library instance.
  * @param[in] pQueue   Pointer to event queue
  * @param[in,optional] iTimeoutMS
  *       Timeout in milliseconds.
@@ -218,7 +182,7 @@ VmwSockEventQueueAdd(
  */
 DWORD
 VmwSockWaitForEvent(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     int                              iTimeoutMS,
     PVM_SOCKET*                      ppSocket,
@@ -229,6 +193,7 @@ VmwSockWaitForEvent(
 /**
  * @brief Closes and frees event queue
  *
+ * @param[in] Handle to library instance.
  * @param[in] pQueue Pointer to event queue
  *
  * @return 0 on success
@@ -236,73 +201,14 @@ VmwSockWaitForEvent(
 
 VOID
 VmwSockCloseEventQueue(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_EVENT_QUEUE             pQueue
-    );
-
-/**
- * @brief sets socket to be non-blocking
- *
- * @param[in] pSocket Pointer to socket
- *
- * @return 0 on success
- */
-
-DWORD
-VmwSockSetNonBlocking(
-    PVMREST_HANDLE                  pRESTHandle,
-    PVM_SOCKET                       pSocket
-    );
-
-/**
- * @brief Retrieves the protocol the socket has been configured with
- *
- * @param[in]     pSocket     Pointer to socket
- * @param[in,out] pdwProtocol Protocol the socket has been configured with
- *                            This will be one of { SOCK_STREAM, SOCK_DGRAM... }
- */
-DWORD
-VmwSockGetProtocol(
-    PVMREST_HANDLE                  pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    PDWORD                           pdwProtocol
-    );
-
-/**
- * @brief Sets data associated with the socket
- *
- * @param[in] pSocket Pointer to socket
- * @param[in] pData   Pointer to data associated with the socket
- * @param[in,out,optional] ppOldData Pointer to receive old data
- *
- * @return 0 on success
- */
-DWORD
-VmwSockSetData(
-    PVMREST_HANDLE                  pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    PVOID                            pData,
-    PVOID*                           ppOldData
-    );
-
-/**
- * @brief Gets data currently associated with the socket.
- *
- * @param[in]     pSocket Pointer to socket
- * @param[in,out] ppData  Pointer to receive data
- *
- * @return 0 on success
- */
-DWORD
-VmwSockGetData(
-    PVMREST_HANDLE                  pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    PVOID*                           ppData
     );
 
 /**
  * @brief Reads data from the socket
  *
+ * @param[in]     pRESTHandle  Handle to library instance.
  * @param[in]     pSocket      Pointer to socket
  * @param[in]     pBuffer      Buffer to read the data into
  * @param[in]     dwBufSize    Maximum size of the passed in buffer
@@ -314,7 +220,7 @@ VmwSockGetData(
  */
 DWORD
 VmwSockRead(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
@@ -322,6 +228,7 @@ VmwSockRead(
 /**
  * @brief Writes data to the socket
  *
+ * @param[in]     pRESTHandle  Handle to library instance.
  * @param[in]     pSocket      Pointer to socket
  * @param[in]     pBuffer      Buffer from which bytes have to be written
  * @param[in]     dwBufLen     Number of bytes to write from the buffer
@@ -336,7 +243,7 @@ VmwSockRead(
  */
 DWORD
 VmwSockWrite(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     const struct sockaddr*           pClientAddress,
     socklen_t                        addrLength,
@@ -345,67 +252,42 @@ VmwSockWrite(
 
 /**
  * @brief  Acquires a reference on the socket
+ * @param[in] Handle to library instance.
  *
  * @return Pointer to acquired socket
  */
 
 PVM_SOCKET
 VmwSockAcquire(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket
     );
 
 /**
  * @brief Releases current reference to socket
+ * @param[in] Handle to library instance.
  *
  */
 VOID
 VmwSockRelease(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket
     );
 
 /**
  * @brief Closes the socket
  *        This call does not release the reference to the socket or free it.
+ * @param[in] Handle to library instance.
  */
 DWORD
 VmwSockClose(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket
-    );
-
-/**
- * @brief Checks if the string forms a valid IPV4 or IPV6 Address
- *
- * @return TRUE(1) if the string is a valid IP Address, 0 otherwise.
- */
-BOOLEAN
-VmwSockIsValidIPAddress(
-    PVMREST_HANDLE                  pRESTHandle,
-    PCSTR                            pszAddress
-    );
-
-/**
- * @brief  VmwGetClientAddreess
- *
- * @param[in] pSocket       socket bound to a service
- * @param[inout] pAddress   socket address
- * @param[in] addresLen     lenth of th address
- *
- * @return DWORD - 0 on success
- */
-DWORD
-VmwSockGetAddress(
-    PVMREST_HANDLE                  pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    struct sockaddr_storage*         pAddress,
-    socklen_t*                       pAddresLen
     );
 
 DWORD
 VmwSockAllocateIoBuffer(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     VM_SOCK_EVENT_TYPE               eventType,
     DWORD                            dwSize,
     PVM_SOCK_IO_BUFFER*              ppIoContext
@@ -420,7 +302,7 @@ VmwSockAllocateIoBuffer(
  */
 DWORD
 VmwSockReleaseIoBuffer(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
 
@@ -434,14 +316,14 @@ VmwSockShutdown(
 
 VOID
 VmwSockGetStreamBuffer(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER*               ppStreamBuffer
     );
 
 VOID
 VmwSockSetStreamBuffer(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER                pStreamBuffer
     );
@@ -460,19 +342,12 @@ typedef enum
     VM_SOCK_TYPE_SERVER,
     VM_SOCK_TYPE_LISTENER,
     VM_SOCK_TYPE_SIGNAL,
-        VM_SOCK_TYPE_TCP_V4,
-        VM_SOCK_TYPE_TCP_V6
+    VM_SOCK_TYPE_TCP_V4,
+    VM_SOCK_TYPE_TCP_V6
 } VM_SOCK_TYPE;
 
-typedef DWORD (*PFN_OPEN_CLIENT_SOCKET)(
-                    PCSTR                pszHost,
-                    USHORT               usPort,
-                    VM_SOCK_CREATE_FLAGS dwFlags,
-                    PVM_SOCKET*          ppSocket
-                    );
-
 typedef DWORD (*PFN_OPEN_SERVER_SOCKET)(
-                    PVMREST_HANDLE      pRESTHandle,
+                    PVMREST_HANDLE       pRESTHandle,
                     USHORT               usPort,
                     int                  iListenQueueSize,
                     VM_SOCK_CREATE_FLAGS dwFlags,
@@ -481,26 +356,20 @@ typedef DWORD (*PFN_OPEN_SERVER_SOCKET)(
                     char*                sslKey
                     );
 
-typedef DWORD (*PFN_START_LISTENING)(
-                    PVMREST_HANDLE      pRESTHandle,
-                    PVM_SOCKET           pSocket,
-                    int                  iListenQueueSize
-                    );
-
 typedef DWORD (*PFN_CREATE_EVENT_QUEUE)(
-                    PVMREST_HANDLE      pRESTHandle,
+                    PVMREST_HANDLE        pRESTHandle,
                     int                   iEventQueueSize,
                     PVM_SOCK_EVENT_QUEUE* ppQueue
                     );
 
 typedef DWORD (*PFN_ADD_EVENT_QUEUE)(
-                    PVMREST_HANDLE      pRESTHandle,
+                    PVMREST_HANDLE       pRESTHandle,
                     PVM_SOCK_EVENT_QUEUE pQueue,
                     PVM_SOCKET           pSocket
                     );
 
 typedef DWORD (*PFN_WAIT_FOR_EVENT)(
-                    PVMREST_HANDLE      pRESTHandle,
+                    PVMREST_HANDLE       pRESTHandle,
                     PVM_SOCK_EVENT_QUEUE pQueue,
                     int                  iTimeoutMS,
                     PVM_SOCKET*          ppSocket,
@@ -509,42 +378,18 @@ typedef DWORD (*PFN_WAIT_FOR_EVENT)(
                     );
 
 typedef VOID (*PFN_CLOSE_EVENT_QUEUE)(
-                    PVMREST_HANDLE      pRESTHandle,
+                    PVMREST_HANDLE       pRESTHandle,
                     PVM_SOCK_EVENT_QUEUE pQueue
                     );
 
-typedef DWORD (*PFN_SET_NON_BLOCKING)(
-                    PVMREST_HANDLE      pRESTHandle,
-                    PVM_SOCKET pSocket
-                    );
-
-typedef DWORD (*PFN_GET_PROTOCOL)(
-                    PVMREST_HANDLE      pRESTHandle,
-                    PVM_SOCKET           pSocket,
-                    PDWORD               pdwProtocol
-                    );
-
-typedef DWORD (*PFN_SET_DATA)(
-                    PVMREST_HANDLE      pRESTHandle,
-                    PVM_SOCKET           pSocket,
-                    PVOID                pData,
-                    PVOID*               ppOldData
-                    );
-
-typedef DWORD (*PFN_GET_DATA)(
-                    PVMREST_HANDLE     pRESTHandle,
-                    PVM_SOCKET          pSocket,
-                    PVOID*              ppData
-                    );
-
 typedef DWORD (*PFN_READ)(
-                    PVMREST_HANDLE     pRESTHandle,
+                    PVMREST_HANDLE      pRESTHandle,
                     PVM_SOCKET          pSocket,
                     PVM_SOCK_IO_BUFFER  pIoBuffer
                     );
 
 typedef DWORD (*PFN_WRITE)(
-                    PVMREST_HANDLE     pRESTHandle,
+                    PVMREST_HANDLE      pRESTHandle,
                     PVM_SOCKET          pSocket,
                     const struct sockaddr*    pClientAddress,
                     socklen_t           addrLength,
@@ -552,72 +397,58 @@ typedef DWORD (*PFN_WRITE)(
                     );
 
 typedef PVM_SOCKET (*PFN_ACQUIRE_SOCKET)(
-                    PVMREST_HANDLE      pRESTHandle,
+                    PVMREST_HANDLE       pRESTHandle,
                     PVM_SOCKET           pSocket
                     );
 
 typedef VOID (*PFN_RELEASE_SOCKET)(
-                    PVMREST_HANDLE      pRESTHandle,
+                    PVMREST_HANDLE       pRESTHandle,
                     PVM_SOCKET           pSocket
                     );
 
 typedef DWORD (*PFN_CLOSE_SOCKET)(
-                    PVMREST_HANDLE      pRESTHandle,
+                    PVMREST_HANDLE       pRESTHandle,
                     PVM_SOCKET pSocket
                     );
 
-typedef DWORD (*PFN_GET_ADDRESS)(
-                    PVMREST_HANDLE      pRESTHandle,
-                    PVM_SOCKET                  pSocket,
-                    struct sockaddr_storage*    pAddress,
-                    socklen_t*                  pAddresLen
-                    );
-
 typedef DWORD (*PFN_ALLOCATE_IO_BUFFER)(
-                    PVMREST_HANDLE      pRESTHandle,
-                    VM_SOCK_EVENT_TYPE      eventType,
-                    DWORD                   dwSize,
-                    PVM_SOCK_IO_BUFFER*     ppIoBuffer
+                    PVMREST_HANDLE       pRESTHandle,
+                    VM_SOCK_EVENT_TYPE   eventType,
+                    DWORD                dwSize,
+                    PVM_SOCK_IO_BUFFER*  ppIoBuffer
                     );
 
 typedef VOID(*PFN_RELEASE_IO_BUFFER)(
-                    PVMREST_HANDLE      pRESTHandle,
-                    PVM_SOCK_IO_BUFFER      pIoBuffer
+                    PVMREST_HANDLE       pRESTHandle,
+                    PVM_SOCK_IO_BUFFER   pIoBuffer
                     );
 
 typedef VOID(*PFN_GET_STREAM_BUFFER)(
                     PVMREST_HANDLE      pRESTHandle,
-                    PVM_SOCKET              pSocket,
-                    PVM_STREAM_BUFFER*      ppStreamBuffer
+                    PVM_SOCKET          pSocket,
+                    PVM_STREAM_BUFFER*  ppStreamBuffer
                     );
 
 typedef VOID(*PFN_SET_STREAM_BUFFER)(
                     PVMREST_HANDLE      pRESTHandle,
-                    PVM_SOCKET              pSocket,
-                    PVM_STREAM_BUFFER       pStreamBuffer
+                    PVM_SOCKET          pSocket,
+                    PVM_STREAM_BUFFER   pStreamBuffer
                     );
 
 typedef struct _VM_SOCK_PACKAGE
 {
-    PFN_OPEN_CLIENT_SOCKET pfnOpenClientSocket;
-    PFN_OPEN_SERVER_SOCKET pfnOpenServerSocket;
-    PFN_START_LISTENING    pfnStartListening;
-    PFN_CREATE_EVENT_QUEUE pfnCreateEventQueue;
-    PFN_ADD_EVENT_QUEUE    pfnAddEventQueue;
-    PFN_WAIT_FOR_EVENT     pfnWaitForEvent;
-    PFN_CLOSE_EVENT_QUEUE  pfnCloseEventQueue;
-    PFN_SET_NON_BLOCKING   pfnSetNonBlocking;
-    PFN_GET_PROTOCOL       pfnGetProtocol;
-    PFN_SET_DATA           pfnSetData;
-    PFN_GET_DATA           pfnGetData;
-    PFN_READ               pfnRead;
-    PFN_WRITE              pfnWrite;
-    PFN_ACQUIRE_SOCKET     pfnAcquireSocket;
-    PFN_RELEASE_SOCKET     pfnReleaseSocket;
-    PFN_CLOSE_SOCKET       pfnCloseSocket;
-    PFN_GET_ADDRESS        pfnGetAddress;
-    PFN_ALLOCATE_IO_BUFFER pfnAllocateIoBuffer;
-    PFN_RELEASE_IO_BUFFER  pfnReleaseIoBuffer;
-    PFN_GET_STREAM_BUFFER  pfnGetStreamBuffer;
-    PFN_SET_STREAM_BUFFER  pfnSetStreamBuffer;
+    PFN_OPEN_SERVER_SOCKET              pfnOpenServerSocket;
+    PFN_CREATE_EVENT_QUEUE              pfnCreateEventQueue;
+    PFN_ADD_EVENT_QUEUE                 pfnAddEventQueue;
+    PFN_WAIT_FOR_EVENT                  pfnWaitForEvent;
+    PFN_CLOSE_EVENT_QUEUE               pfnCloseEventQueue;
+    PFN_READ                            pfnRead;
+    PFN_WRITE                           pfnWrite;
+    PFN_ACQUIRE_SOCKET                  pfnAcquireSocket;
+    PFN_RELEASE_SOCKET                  pfnReleaseSocket;
+    PFN_CLOSE_SOCKET                    pfnCloseSocket;
+    PFN_ALLOCATE_IO_BUFFER              pfnAllocateIoBuffer;
+    PFN_RELEASE_IO_BUFFER               pfnReleaseIoBuffer;
+    PFN_GET_STREAM_BUFFER               pfnGetStreamBuffer;
+    PFN_SET_STREAM_BUFFER               pfnSetStreamBuffer;
 } VM_SOCK_PACKAGE, *PVM_SOCK_PACKAGE;

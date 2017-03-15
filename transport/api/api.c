@@ -21,27 +21,6 @@
 #endif
 
 DWORD
-VmwSockOpenClient(
-    PCSTR                            pszHost,
-    USHORT                           usPort,
-    VM_SOCK_CREATE_FLAGS             dwFlags,
-    PVM_SOCKET*                      ppSocket
-    )
-{
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-
-    if (!pszHost || !usPort || !ppSocket )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-error:
-
-    return dwError;
-}
-
-DWORD
 VmwSockOpenServer(
     PVMREST_HANDLE                   pRESTHandle,
     USHORT                           usPort,
@@ -167,94 +146,6 @@ VmwSockCloseEventQueue(
 }
 
 DWORD
-VmwSockSetNonBlocking(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket
-    )
-{
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-
-    if (!pSocket || !pRESTHandle)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    dwError = pRESTHandle->pPackage->pfnSetNonBlocking(pRESTHandle,pSocket);
-
-error:
-
-    return dwError;
-}
-
-DWORD
-VmwSockGetProtocol(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    PDWORD                           pdwProtocol
-    )
-{
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-
-    if (!pSocket || !pRESTHandle)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    dwError = pRESTHandle->pPackage->pfnGetProtocol(pRESTHandle, pSocket, pdwProtocol);
-
-error:
-
-    return dwError;
-}
-
-DWORD
-VmwSockSetData(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    PVOID                            pData,
-    PVOID*                           ppOldData
-    )
-{
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-
-    if (!pSocket || !pRESTHandle)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    dwError = pRESTHandle->pPackage->pfnSetData(pRESTHandle, pSocket, pData, ppOldData);
-
-error:
-
-    return dwError;
-}
-
-DWORD
-VmwSockGetData(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    PVOID*                           ppData
-    )
-{
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-
-    if (!pSocket || !ppData || !pRESTHandle)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    dwError = pRESTHandle->pPackage->pfnGetData(pRESTHandle,pSocket, ppData);
-
-error:
-
-    return dwError;
-}
-
-DWORD
 VmwSockRead(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
@@ -339,82 +230,6 @@ VmwSockClose(
     DWORD dwError = 0;
     
     dwError = pRESTHandle->pPackage->pfnCloseSocket(pRESTHandle, pSocket);
-    BAIL_ON_VMSOCK_ERROR(dwError);
-
-error:
-
-    return dwError;
-}
-
-BOOLEAN
-VmwSockIsValidIPAddress(
-    PVMREST_HANDLE                   pRESTHandle,
-    PCSTR                            pszAddress
-    )
-{
-    BOOLEAN                          bIsValid = TRUE;
-
-
-    if (!IsNullOrEmptyString(pszAddress))
-    {
-        struct sockaddr_storage ipv4Addr;
-
-        bIsValid = (inet_pton(AF_INET, pszAddress, &ipv4Addr) == 1);
-
-#ifdef AF_INET6
-        if (!bIsValid)
-        {
-            struct sockaddr_storage ipv6Addr;
-
-            bIsValid = (inet_pton(AF_INET6, pszAddress, &ipv6Addr) == 1);
-        }
-#endif
-    }
-
-    return bIsValid;
-}
-
-
-DWORD
-VmwSockGetAddress(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    struct sockaddr_storage*         pAddress,
-    socklen_t*                       addresLen
-    )
-{
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-
-    if (!pSocket || !pRESTHandle)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    dwError = pRESTHandle->pPackage->pfnGetAddress(pRESTHandle, pSocket, pAddress, addresLen);
-    BAIL_ON_VMSOCK_ERROR(dwError);
-
-error:
-
-    return dwError;
-}
-
-DWORD
-VmwSockStartListening(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    int                              iListenQueueSize
-    )
-{
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-
-    if (!pSocket || !pRESTHandle)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    dwError = pRESTHandle->pPackage->pfnStartListening(pRESTHandle, pSocket, iListenQueueSize);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:

@@ -13,18 +13,15 @@
  */
 
 #include "includes.h"
-int  vmrest_syslog_level;
 
 uint32_t
 VmHTTPInit(
-    PVMREST_HANDLE                  pRESTHandle,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_CONF                       pConfig,
     char const*                      file
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    //PVM_REST_CONFIG                  restConfig = NULL;
-//    PREST_ENG_GLOBALS                pInstanceGlobal = NULL;
 
     if (!pRESTHandle)
     {
@@ -33,18 +30,7 @@ VmHTTPInit(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-/*    dwError = VmRESTAllocateMemory(
-                  sizeof(REST_ENG_GLOBALS),
-                  (void **)&pInstanceGlobal
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-*/
-    
-//    pRESTHandle->pInstanceGlobal = pInstanceGlobal;
     pRESTHandle->debugLogLevel = VMREST_LOG_LEVEL_DEBUG;
-
-
-    //vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;
 
     if (pConfig != NULL)
     {
@@ -98,29 +84,14 @@ VmHTTPInit(
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Update context Info for this lib instance ****/
-//    pRESTHandle->pInstanceGlobal->config = restConfig;
-  //  pRESTHandle->pRESTConfig = restConfig;
     pRESTHandle->pInstanceGlobal->useEndPoint = 0;
 
-    /**** Set the config at Global level ****/
-  //  VmRESTSetConfig(restConfig);
-
 cleanup:
+
     return dwError;
+
 error:
-    /*
-    if (restConfig)
-    {
-        VmRESTFreeConfigFileStruct(
-                restConfig
-                );
-        if (pRESTHandle && pRESTHandle->pRESTConfig)
-        {
-            pRESTHandle->pRESTConfig = NULL; 
-        }
-    //    VmRESTUnSetConfig();
-    }
-    */
+
     goto cleanup;
 }
 

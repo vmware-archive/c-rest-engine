@@ -13,14 +13,6 @@
  */
 
 DWORD
-VmSockPosixOpenClient(
-    PCSTR                            pszHost,
-    USHORT                           usPort,
-    VM_SOCK_CREATE_FLAGS             dwFlags,
-    PVM_SOCKET*                      ppSocket
-    );
-
-DWORD
 VmSockPosixOpenServer(
     PVMREST_HANDLE                   pRESTHandle,
     USHORT                           usPort,
@@ -68,28 +60,6 @@ VmSockPosixSetNonBlocking(
     );
 
 DWORD
-VmSockPosixGetProtocol(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    PDWORD                           pdwProtocol
-    );
-
-DWORD
-VmSockPosixSetData(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    PVOID                            pData,
-    PVOID*                           ppOldData
-    );
-
-DWORD
-VmSockPosixGetData(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    PVOID*                           ppData
-    );
-
-DWORD
 VmSockPosixRead(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
@@ -104,6 +74,7 @@ VmSockPosixWrite(
     socklen_t                        addrLength,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     );
+
 
 PVM_SOCKET
 VmSockPosixAcquireSocket(
@@ -121,14 +92,6 @@ DWORD
 VmSockPosixCloseSocket(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket
-    );
-
-DWORD
-VmSockPosixGetAddress(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    struct sockaddr_storage*         pAddress,
-    socklen_t*                       pAddresLen
     );
 
 DWORD
@@ -168,5 +131,4 @@ VOID
 VmRESTFreeSockPackagePosix(
     PVM_SOCK_PACKAGE                 pSockPackagePosix
     );
-
 

@@ -5,7 +5,6 @@
 noinst_LTLIBRARIES = libvmsockposix.la
 
 libvmsockposix_la_SOURCES = \
-    globals.c \
     libmain.c \
     socket.c
 

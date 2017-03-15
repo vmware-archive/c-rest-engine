@@ -47,29 +47,29 @@ typedef enum
 
 uint32_t
 VmRESTLogInitialize(
-	PVMREST_HANDLE    pRESTHandle
-	);
+    PVMREST_HANDLE                   pRESTHandle
+    );
 
 void
 VmRESTLogTerminate(
-   PVMREST_HANDLE    pRESTHandle
+   PVMREST_HANDLE                    pRESTHandle
    );
 
 void
 VmRESTLog(
-   PVMREST_HANDLE   pRESTHandle,
-   VMREST_LOG_LEVEL level,
-   const char*      fmt,
+   PVMREST_HANDLE                    pRESTHandle,
+   VMREST_LOG_LEVEL                  level,
+   const char*                       fmt,
    ...);
 
 
 #ifndef WIN32
 
 
-#define VMREST_LOG_( Level, Format, ... ) \
+#define VMREST_LOG_( Level, Format, ... )          \
     do                                             \
     {                                              \
-        VmRESTLog(                                   \
+        VmRESTLog(                                 \
                Level,                              \
                Format,                             \
                ##__VA_ARGS__);                     \
@@ -78,45 +78,61 @@ VmRESTLog(
 #define VMREST_LOG_GENERAL_( pRESTHandle,Level, Format, ... ) \
     VMREST_LOG_( pRESTHandle, Level, Format, ##__VA_ARGS__ )
 
-#define VMREST_LOG_WARNING( pRESTHandle,Format, ... ) \
+#define VMREST_LOG_WARNING( pRESTHandle,Format, ... )         \
     VMREST_LOG_GENERAL_( pRESTHandle, VMREST_LOG_LEVEL_WARNING, Format, ##__VA_ARGS__ )
-#define VMREST_LOG_INFO( pRESTHandle,Format, ... )    \
+#define VMREST_LOG_INFO( pRESTHandle,Format, ... )            \
     VMREST_LOG_GENERAL_( pRESTHandle,VMREST_LOG_LEVEL_INFO, Format, ##__VA_ARGS__ )
-#define VMREST_LOG_VERBOSE( pRESTHandle,Format, ... ) \
+#define VMREST_LOG_VERBOSE( pRESTHandle,Format, ... )         \
     VMREST_LOG_GENERAL_( pRESTHandle,VMREST_LOG_LEVEL_DEBUG, Format, ##__VA_ARGS__ )
 
 
-#define VMREST_LOG_DEBUG(pRESTHandle,Format, ... )       \
-    VMREST_LOG_GENERAL_(                      \
-        pRESTHandle,                          \
-        VMREST_LOG_LEVEL_DEBUG,               \
-    Format " [file: %s][line: %d]",     \
+#define VMREST_LOG_DEBUG(pRESTHandle,Format, ... )\
+    VMREST_LOG_GENERAL_(                          \
+        pRESTHandle,                              \
+        VMREST_LOG_LEVEL_DEBUG,                   \
+    Format " [file: %s][line: %d]",               \
     ##__VA_ARGS__, __FILE__, __LINE__ )
 
 
-#define VMREST_LOG_ERROR(pRESTHandle,Format, ... )       \
-    VMREST_LOG_GENERAL_(                      \
-        pRESTHandle,                          \
-        VMREST_LOG_LEVEL_ERROR,               \
-    Format " [file: %s][line: %d]",     \
+#define VMREST_LOG_ERROR(pRESTHandle,Format, ... )\
+    VMREST_LOG_GENERAL_(                          \
+        pRESTHandle,                              \
+        VMREST_LOG_LEVEL_ERROR,                   \
+    Format " [file: %s][line: %d]",               \
     ##__VA_ARGS__, __FILE__, __LINE__ )
 
 #else
 
-#define VMREST_LOG_( pRESTHandle,Level, Format, ... ) \
-    do                                             \
-    {                                              \
-        VmRESTLog(                                 \
-               pRESTHandle,                        \
-               Level,                              \
-               Format,                             \
-               ##__VA_ARGS__);                     \
+#define VMREST_LOG_( pRESTHandle,Level, Format, ... )\
+    do                                               \
+    {                                                \
+        VmRESTLog(                                   \
+               pRESTHandle,                          \
+               Level,                                \
+               Format,                               \
+               ##__VA_ARGS__);                       \
     } while (0)
 
 #define VMREST_LOG_GENERAL_( pRESTHandle, Level, Format, ... ) \
     VMREST_LOG_( pRESTHandle,Level, Format, ##__VA_ARGS__ )
 
 #endif
+
+#define VMW_REST_PORT                 (81)
+#define VMW_REST_DEFAULT_THREAD_COUNT (5)
+
+#ifndef WIN32
+
+#define ERROR_BUSY                    200
+#define ERROR_POSSIBLE_DEADLOCK       201
+#define VMREST_UDP_PACKET_SIZE        512 
+#define ERROR_IO_PENDING              300
+#define ERROR_INVALID_MESSAGE         301
+#define ERROR_SHUTDOWN_IN_PROGRESS    600
+#define WSAECONNRESET                 10054
+
+#endif
+
 
 
 /*
@@ -162,9 +178,7 @@ VmRESTUtilsGetLastChar(
     char*                            src
     );
 
-//#ifndef WIN32
 typedef pthread_t VMREST_THREAD;
-//#endif
 
 typedef VMREST_THREAD* PVMREST_THREAD;
 
@@ -183,7 +197,6 @@ typedef struct _VMREST_COND
 
 } VMREST_COND, *PVMREST_COND;
 
-/**** TODO: This is not proper place for this struct ****/
 typedef struct _VMREST_RWLOCK
 {
     pthread_key_t                    readKey;
@@ -215,6 +228,7 @@ typedef struct _SOCK_SSL_INFO
 } VM_SOCK_SSL_INFO, *PVM_SOCK_SSL_INFO;
 
 /*********** REST engine Configuration struct *************/
+
 typedef struct _REST_CONFIG
 {
     char                             ssl_certificate[MAX_PATH_LEN];
@@ -251,23 +265,6 @@ typedef struct _VM_WORKER_THREAD_DATA
 
 }VM_WORKER_THREAD_DATA, *PVM_WORKER_THREAD_DATA;
 
-
-
-#define VMW_REST_PORT                 (81)
-
-#define VMW_REST_DEFAULT_THREAD_COUNT (5)
-
-#ifndef WIN32
-#define ERROR_BUSY                    200
-#define ERROR_POSSIBLE_DEADLOCK       201
-#define VMREST_UDP_PACKET_SIZE        512 
-#define ERROR_IO_PENDING              300
-#define ERROR_INVALID_MESSAGE         301
-#define WSAECONNRESET                 10054
-#define ERROR_SHUTDOWN_IN_PROGRESS    600
-
-#endif
-
 typedef DWORD (VmRESTStartRoutine)(PVOID);
 typedef VmRESTStartRoutine* PVMREST_START_ROUTINE;
 
@@ -277,6 +274,7 @@ typedef struct _VMREST_THREAD_START_INFO
     PVOID                            pArgs;
 
 } VMREST_THREAD_START_INFO, *PVMREST_THREAD_START_INFO;
+
 
 /**** sockInterface.c Exposed API's ****/
 

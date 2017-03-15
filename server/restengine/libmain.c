@@ -13,7 +13,6 @@
  */
 
 #include "includes.h"
-int  vmrest_syslog_level;
 
 #ifdef WIN32
 

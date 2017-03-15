@@ -32,3 +32,56 @@ VmSockPosixShutdown(
 {
     VmRESTFreeSockPackagePosix(pPackage);
 }
+
+uint32_t
+VmRESTGetSockPackagePosix(
+     PVM_SOCK_PACKAGE*               ppSockPackagePosix
+     )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PVM_SOCK_PACKAGE                 pSockPackagePosix = NULL;
+
+    if (!ppSockPackagePosix)
+    {
+        dwError = REST_ENGINE_NO_MEMORY;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    pSockPackagePosix = *ppSockPackagePosix;
+
+    pSockPackagePosix->pfnOpenServerSocket = &VmSockPosixOpenServer;
+    pSockPackagePosix->pfnCreateEventQueue = &VmSockPosixCreateEventQueue;
+    pSockPackagePosix->pfnAddEventQueue = &VmSockPosixEventQueueAdd;
+    pSockPackagePosix->pfnWaitForEvent = &VmSockPosixWaitForEvent;
+    pSockPackagePosix->pfnCloseEventQueue = &VmSockPosixCloseEventQueue;
+    pSockPackagePosix->pfnRead = &VmSockPosixRead;
+    pSockPackagePosix->pfnWrite = &VmSockPosixWrite;
+    pSockPackagePosix->pfnAcquireSocket = &VmSockPosixAcquireSocket;
+    pSockPackagePosix->pfnReleaseSocket = &VmSockPosixReleaseSocket;
+    pSockPackagePosix->pfnCloseSocket = &VmSockPosixCloseSocket;
+    pSockPackagePosix->pfnAllocateIoBuffer = &VmSockPosixAllocateIoBuffer;
+    pSockPackagePosix->pfnReleaseIoBuffer = &VmSockPosixFreeIoBuffer;
+    pSockPackagePosix->pfnGetStreamBuffer = &VmSockPosixGetStreamBuffer;
+    pSockPackagePosix->pfnSetStreamBuffer = &VmSockPosixSetStreamBuffer;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+
+}
+
+VOID
+VmRESTFreeSockPackagePosix(
+    PVM_SOCK_PACKAGE                 pSockPackagePosix
+    )
+{
+    if (pSockPackagePosix)
+    {
+        /* Do nothing */
+    }
+}
+

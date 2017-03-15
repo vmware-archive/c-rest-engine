@@ -219,15 +219,6 @@ VmRESTInitProtocolServer(
     BAIL_ON_VMREST_ERROR(dwError);
 #endif
 
-#ifdef WIN32
-    dwError = VmwSockStartListening(
-                   pRESTHandle,
-                  pSockContext->pListenerTCP,
-                  ((int)atoi( pRESTHandle->pRESTConfig->worker_thread_count))
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-#endif
-
     dwError = VmRESTAllocateMemory(
                   sizeof(PVMREST_THREAD) * (((int)atoi( pRESTHandle->pRESTConfig->worker_thread_count))) ,
                   (PVOID*)&pSockContext->pWorkerThreads
@@ -490,7 +481,6 @@ VmRESTReceiveData(
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
-    DWORD                            dwProtocol = 0;
 
     if (!pSocket)
     {
@@ -498,18 +488,8 @@ VmRESTReceiveData(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    dwError = VmwSockGetProtocol( pRESTHandle, pSocket, &dwProtocol);
+    dwError = VmRESTTcpReceiveData( pRESTHandle,pSocket, pIoBuffer);
     BAIL_ON_VMREST_ERROR(dwError);
-
-    if (dwProtocol == SOCK_STREAM)
-    {
-        dwError = VmRESTTcpReceiveData( pRESTHandle,pSocket, pIoBuffer);
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-    else
-    {
-       VMREST_LOG_DEBUG(pRESTHandle,"%s","%s", "Not a TCP socket");
-    }
 
 cleanup:
     if (pIoBuffer)
