@@ -25,7 +25,7 @@
 #define VMREST_API
 #endif
 
-typedef struct _VMREST_HANDLER* PVMREST_HANDLER;
+typedef struct _VMREST_HANDLE* PVMREST_HANDLE;
 
 typedef struct _VM_REST_HTTP_REQUEST_PACKET*  PREST_REQUEST;
 
@@ -34,7 +34,7 @@ typedef struct _VM_REST_HTTP_RESPONSE_PACKET* PREST_RESPONSE;
 
 typedef uint32_t(
 *PFN_PROCESS_HTTP_REQUEST)(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     );
@@ -83,6 +83,7 @@ typedef struct _REST_ENDPOINT
  * @param[in]                        Config file Path.
  *                                   If this is NULL, restengine will try
  *                                   reading config from /root/restconfig.txt.
+ * @param[out]                       Handle to Library instance.
  * @return                           Returns 0 for success.
  */
 
@@ -91,23 +92,24 @@ uint32_t
 VmRESTInit(
     PREST_CONF                       pConfig,
     char const*                      file,
-    PVMREST_HANDLER*                 ppRESTHandler
+    PVMREST_HANDLE*                  ppRESTHandle
     );
 
 /**
  * @brief Starts the HTTP(S) listeners
  *
- * @param[in]                        Void.
+ * @param[in]                        Handle to Library instance.
  * @return                           Returns 0 for success.
  */
 VMREST_API
 uint32_t
 VmRESTStart(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 /**
  * @brief Register a REST Endpoint and Handler
+ * @param[in]                        Handle to Library instance.
  * @param[in]                        pszEndpoint Endpoint URL to register
  * @param[in]                        pHandler Callback functions registered for endpoint
  * @param[out]                       ppEndpoint Optionally return the endpoint registration object
@@ -117,7 +119,7 @@ VmRESTStart(
 VMREST_API
 uint32_t
 VmRESTRegisterHandler(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char const*                      pszEndpoint,
     PREST_PROCESSOR                  pHandler,
     PREST_ENDPOINT*                  ppEndpoint
@@ -125,6 +127,7 @@ VmRESTRegisterHandler(
 
 /**
  * @brief Find a registration object matching the endpoint URL
+ * @param[in]                        Handle to Library instance.
  * @param[in]                        pszEndpoint Endpoint URL to lookup
  * @param[out]                       ppEndpoint Endpoint registration to return for given URL
  * @return                           Returns 0 for Success
@@ -132,7 +135,7 @@ VmRESTRegisterHandler(
 VMREST_API
 uint32_t
 VmRESTFindEndpoint(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char const*                      pszEndpoint,
     PREST_ENDPOINT*                  ppEndpoint
     );
@@ -154,6 +157,7 @@ VmRESTFreeEndPoint(
 VMREST_API
 uint32_t
 VmRESTUnRegisterHandler(
+    PVMREST_HANDLE                   pRESTHandle,
     char const*                      pEndpointURI
     );
 
@@ -246,6 +250,7 @@ VmRESTSetHttpHeader(
 /*
  * @brief Get Data received from client.
  *
+ * @param[in]                        Handle to Library instance.
  * @param[in]                        Reference to HTTP Request object.
  * @param[out]                       Pre allocated Data buffer.
  * @param[out]                       Identier to denote no more data to read.
@@ -254,7 +259,7 @@ VmRESTSetHttpHeader(
 VMREST_API 
 uint32_t
 VmRESTGetData(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     char*                            pBuffer,
     uint32_t*                        done
@@ -283,6 +288,7 @@ VmRESTGetParamsByIndex(
 /*
  * @brief Get the number of wild card strings present in Endpoint.
  *
+ * @param[in]                        Handle to Library instance.
  * @param[in]                        Reference to HTTP Request object..
  * @param[out]                       Pointer to result Value.
  * @return Returns 0 for success
@@ -290,7 +296,7 @@ VmRESTGetParamsByIndex(
 VMREST_API
 uint32_t
 VmRESTGetWildCardCount(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     uint32_t*                        wildCardCount
     );
@@ -298,6 +304,7 @@ VmRESTGetWildCardCount(
 /*
  * @brief Get the wild card string in request by index.
  *
+ * @param[in]                        Handle to Library instance.
  * @param[in]                        Reference to HTTP Request object.
  * @param[in]                        Index for wild card string.
  * @param[out]                       Pointer to resultant string.Must be freed by caller.
@@ -306,7 +313,7 @@ VmRESTGetWildCardCount(
 VMREST_API
 uint32_t
 VmRESTGetWildCardByIndex(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     uint32_t                         index,
     char**                           ppszWildCard
@@ -362,6 +369,7 @@ VmRESTSetFailureResponse(
 /*
  * @brief Set data in response object to be send back to client.
  *
+ * @param[in]                        Handle to Library instance.
  * @param[in]                        Reference to HTTP Response object.
  * @param[in]                        Payload data.
  * @param[in]                        Payload data length.
@@ -371,7 +379,7 @@ VmRESTSetFailureResponse(
 VMREST_API 
 uint32_t
 VmRESTSetData(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_RESPONSE*                  ppResponse,
     char const*                      buffer,
     uint32_t                         dataLen,
@@ -380,21 +388,23 @@ VmRESTSetData(
 
 /**
  * @brief Stop the REST Engine
+ * @param[in]                        Handle to Library instance.
  * @return                           Returns 0 for success
  */
 VMREST_API 
 uint32_t
 VmRESTStop(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 /*
  * @brief Shutdown the REST Library
+ * @param[in]                        Handle to Library instance.
  */
 VMREST_API 
 void
 VmRESTShutdown(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                  pRESTHandle
     );
 
 
@@ -451,6 +461,7 @@ VmRESTSetHttpReasonPhrase(
 /*
  * @brief Get payload from HTTP request object.
  *
+ * @param[in]                        Handle to Library instance.
  * @param[in]                        Reference to HTTP Request object.
  * @param[out]                       Payload buffer(must be allocated by caller).
  * @return Returns 0 for success
@@ -458,7 +469,7 @@ VmRESTSetHttpReasonPhrase(
 VMREST_API 
 uint32_t
 VmRESTGetHttpPayload(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     char*                            response,
     uint32_t*                        done
@@ -468,6 +479,7 @@ VmRESTGetHttpPayload(
 /*
  * @brief Set payload in HTTP response object.
  *
+ * @param[in]                        Handle to Library instance.
  * @param[in]                        Reference to HTTP Response object.
  * @param[in]                        Payload data.
  * @param[in]                        Payload data length.
@@ -477,7 +489,7 @@ VmRESTGetHttpPayload(
 VMREST_API 
 uint32_t
 VmRESTSetHttpPayload(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_RESPONSE*                  ppResponse,
     char const*                      buffer,
     uint32_t                         dataLen,

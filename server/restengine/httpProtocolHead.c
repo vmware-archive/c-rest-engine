@@ -29,7 +29,6 @@ VmRESTHTTPGetReqMethod(
 
     if (lineLen > MAX_REQ_LIN_LEN || !line  || !result || (*resStatus != OK))
     {
-       VMREST_LOG_ERROR("Invalid params");
        dwError =  VMREST_HTTP_INVALID_PARAMS;
        *resStatus = BAD_REQUEST;
     }
@@ -43,7 +42,6 @@ VmRESTHTTPGetReqMethod(
     }
     else
     {
-        VMREST_LOG_ERROR("Bad method name in request");
         dwError = METHOD_NOT_ALLOWED;
         *resStatus = BAD_REQUEST;
     }
@@ -90,7 +88,6 @@ VmRESTHTTPGetReqMethod(
     {
         dwError = METHOD_NOT_ALLOWED;
         *resStatus = METHOD_NOT_ALLOWED;
-        VMREST_LOG_ERROR("HTTP Method not allowed");
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
@@ -115,7 +112,6 @@ VmRESTHTTPGetReqURI(
 
     if (lineLen > MAX_REQ_LIN_LEN || !line || !result  || (*resStatus != OK))
     {
-       VMREST_LOG_ERROR("Invalid params");
        dwError =  VMREST_HTTP_INVALID_PARAMS;
        *resStatus = BAD_REQUEST;
     }
@@ -132,7 +128,6 @@ VmRESTHTTPGetReqURI(
         }
         else
         {
-            VMREST_LOG_ERROR("Invalid params");
             dwError =  REQUEST_URI_TOO_LARGE;
             *resStatus = BAD_REQUEST;
         }
@@ -142,7 +137,6 @@ VmRESTHTTPGetReqURI(
     uriLen = strlen(result);
     if (uriLen == 0 || uriLen > MAX_URI_LEN)
     {
-        VMREST_LOG_ERROR("URI length too large");
         dwError = MAX_URI_LEN;
         *resStatus = REQUEST_URI_TOO_LARGE;
     }
@@ -174,7 +168,6 @@ VmRESTHTTPGetReqVersion(
     /* Version will be third letter in line */
     if (lineLen > MAX_REQ_LIN_LEN || !line || !result || (*resStatus != OK))
     {
-       VMREST_LOG_ERROR("Invalid params");
        dwError =  VMREST_HTTP_INVALID_PARAMS;
        *resStatus = BAD_REQUEST;
     }
@@ -200,7 +193,6 @@ VmRESTHTTPGetReqVersion(
             }
             else
             {
-                VMREST_LOG_ERROR("HTTP version not found");
                 dwError = HTTP_VERSION_NOT_SUPPORTED;
                 *resStatus = BAD_REQUEST;
             }
@@ -211,7 +203,6 @@ VmRESTHTTPGetReqVersion(
     verLen = strlen(local);
     if (verLen == 0 || verLen > MAX_VERSION_LEN)
     {
-        VMREST_LOG_ERROR("HTTP version not found");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
         *resStatus = BAD_REQUEST;
     }
@@ -223,7 +214,6 @@ VmRESTHTTPGetReqVersion(
     }
     else
     {
-        VMREST_LOG_ERROR("HTTP version not supported");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
         *resStatus = HTTP_VERSION_NOT_SUPPORTED;
     }
@@ -259,7 +249,6 @@ VmRESTHTTPPopulateHeader(
 
     if (lineLen > MAX_REQ_LIN_LEN || !line  || !pReqPacket  || (*resStatus != OK))
     {
-       VMREST_LOG_ERROR("Invalid params");
        dwError =  VMREST_HTTP_INVALID_PARAMS;
        *resStatus = BAD_REQUEST;
     }
@@ -292,7 +281,6 @@ VmRESTHTTPPopulateHeader(
 
     if (attrLen == 0 || valLen == 0)
     {
-        VMREST_LOG_ERROR("Either header or value missing");
         dwError =  VMREST_HTTP_VALIDATION_FAILED;
         *resStatus = BAD_REQUEST;
     }
@@ -329,7 +317,6 @@ VmRESTParseHTTPReqLine(
 
     if (lineLen > MAX_REQ_LIN_LEN || !line  || !pReqPacket || (*resStatus != OK) || lineNo == 0)
     {
-       VMREST_LOG_ERROR("Invalid params");
        dwError =  VMREST_HTTP_INVALID_PARAMS;
        *resStatus = BAD_REQUEST;
     }
@@ -385,7 +372,7 @@ error:
 
 uint32_t
 VmRESTParseAndPopulateHTTPHeaders(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            buffer,
     uint32_t                         packetLen,
     PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
@@ -406,7 +393,7 @@ VmRESTParseAndPopulateHTTPHeaders(
 
     if (!buffer || !pReqPacket || (*resStatus != OK) || (packetLen <= 4))
     {
-       VMREST_LOG_ERROR("Invalid params");
+       VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
        dwError =  BAD_REQUEST;
        *resStatus = BAD_REQUEST;
     }
@@ -427,7 +414,7 @@ VmRESTParseAndPopulateHTTPHeaders(
             {
                 extraBytes = packetLen - bytesRead;
                 dwError = VmSockPosixAdjustProcessedBytes(
-                              pRESTHandler,
+                              pRESTHandle,
                               pReqPacket->pSocket,
                               bytesRead
                               );
@@ -435,7 +422,7 @@ VmRESTParseAndPopulateHTTPHeaders(
                 memset(appBuffer, '\0', MAX_DATA_BUFFER_LEN);
 
                 dwError = VmsockPosixGetXBytes(
-                              pRESTHandler,
+                              pRESTHandle,
                               MAX_DATA_BUFFER_LEN,
                               appBuffer,
                               pReqPacket->pSocket,
@@ -450,7 +437,7 @@ VmRESTParseAndPopulateHTTPHeaders(
                 if ((packetLen <= 4) && (strcmp(appBuffer, "\r\n\r\n") != 0))
                 {
                     skipRead = 1;
-                    VMREST_LOG_ERROR("Bad HTTP request detected");
+                    VMREST_LOG_ERROR(pRESTHandle,"Bad HTTP request detected");
                     dwError =  VMREST_HTTP_VALIDATION_FAILED;
                     *resStatus = BAD_REQUEST;
                 }
@@ -475,15 +462,14 @@ VmRESTParseAndPopulateHTTPHeaders(
             if((*(temp+2) == '\r') && (*(temp+3) == '\n'))
             {
                 bytesRead = bytesRead + 2;
-                VMREST_LOG_DEBUG("Finished headers parsing with bytesRead %u", bytesRead);
+                VMREST_LOG_DEBUG(pRESTHandle,"Finished headers parsing with bytesRead %u", bytesRead);
                 /**** All headers processed : data starts from here ***/
                 dwError = VmSockPosixAdjustProcessedBytes(
-                              pRESTHandler,
+                              pRESTHandle,
                               pReqPacket->pSocket,
                               (bytesRead - extraBytes)
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
-                //VMREST_LOG_DEBUG("%s",("Finished all header parsing, total header bytes %u", bytesRead);
                 break;
             }
             temp = temp + 2;
@@ -525,7 +511,6 @@ VMRESTWriteChunkedMessageInResponseStream(
 
     if (!buffer || srcSize > MAX_DATA_BUFFER_LEN)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -579,7 +564,7 @@ VMRESTWriteMessageBodyInResponseStream(
 
     if (!pResPacket || !buffer)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        //VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -603,7 +588,6 @@ VMRESTWriteMessageBodyInResponseStream(
     }
     else
     {
-        VMREST_LOG_ERROR("No data to send");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -630,7 +614,6 @@ VMRESTWriteStatusLineInResponseStream(
 
     if (!pResPacket || !buffer)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -648,7 +631,6 @@ VMRESTWriteStatusLineInResponseStream(
     }
     else
     {
-        VMREST_LOG_ERROR("HTTP version information missing in response");
         dwError = INTERNAL_SERVER_ERROR;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -665,7 +647,6 @@ VMRESTWriteStatusLineInResponseStream(
     }
     else
     {
-        VMREST_LOG_ERROR("HTTP status code information missing in response");
         dwError = INTERNAL_SERVER_ERROR;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -707,7 +688,6 @@ VmRESTAddAllHeaderInResponseStream(
 
     if (!buffer || !pResPacket)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -745,7 +725,7 @@ error:
 
 uint32_t
 VmRESTSendHeader(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     )
 {
@@ -759,7 +739,7 @@ VmRESTSendHeader(
 
     if (!ppResPacket  || (*ppResPacket == NULL))
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -807,7 +787,7 @@ VmRESTSendHeader(
     bytes = 0;
 
     dwError = VmsockPosixWriteDataAtOnce(
-                  pRESTHandler,
+                  pRESTHandle,
                   pResPacket->pSocket,
                   buffer,
                   totalBytes
@@ -834,7 +814,7 @@ error:
 
 uint32_t
 VmRESTSendChunkedPayload(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket,
     uint32_t                         dataLen
     )
@@ -848,7 +828,7 @@ VmRESTSendChunkedPayload(
 
     if (!ppResPacket  || (*ppResPacket == NULL))
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -878,13 +858,12 @@ VmRESTSendChunkedPayload(
 
     
     dwError = VmsockPosixWriteDataAtOnce(
-                  pRESTHandler,
+                  pRESTHandle,
                   pResPacket->pSocket,
                   buffer,
                   totalBytes
                   );
     BAIL_ON_VMREST_ERROR(dwError);
-    //VMREST_LOG_DEBUG("%s",("Sending chunked payload completed.....");
 
     VmRESTFreeMemory(
         buffer
@@ -906,7 +885,7 @@ error:
 
 uint32_t
 VmRESTSendHeaderAndPayload(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     )
 {
@@ -920,7 +899,7 @@ VmRESTSendHeaderAndPayload(
 
     if (!ppResPacket || (*ppResPacket == NULL))
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -987,7 +966,7 @@ VmRESTSendHeaderAndPayload(
     /**** This is for debug purpose:: will be removed ****/
 
     dwError = VmsockPosixWriteDataAtOnce(
-                  pRESTHandler,
+                  pRESTHandle,
                   pResPacket->pSocket,
                   buffer,
                   totalBytes
@@ -1024,7 +1003,6 @@ VmRESTCloseClient(
 
     if (!pResPacket)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1086,7 +1064,7 @@ error:
 
 uint32_t
 VmRESTProcessIncomingData(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            buffer,
     uint32_t                         byteRead,
     PVM_SOCKET                       pSocket
@@ -1109,9 +1087,9 @@ VmRESTProcessIncomingData(
     char*                            ptr = NULL;
     PREST_ENDPOINT                   pEndPoint = NULL;
 
-    if (!pRESTHandler)
+    if (!pRESTHandle)
     {
-        VMREST_LOG_ERROR("Invalid REST Handler");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid REST Handler");
         dwError = REST_ENGINE_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1140,7 +1118,7 @@ VmRESTProcessIncomingData(
     /**** 2. Start parsing the request line ****/
 
     dwError = VmRESTParseAndPopulateHTTPHeaders(
-                  pRESTHandler,
+                  pRESTHandle,
                   buffer,
                   byteRead,
                   pReqPacket,
@@ -1148,7 +1126,7 @@ VmRESTProcessIncomingData(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VMREST_LOG_DEBUG("Header parsing done : return code %u", dwError);
+    VMREST_LOG_DEBUG(pRESTHandle,"Header parsing done : return code %u", dwError);
 
     /**** 3: If Expect:100-continue is received, send the continue message back to client ****/
     dwError = VmRESTGetHttpHeader(
@@ -1162,7 +1140,7 @@ VmRESTProcessIncomingData(
     if (expect != NULL && ((strcmp(" 100-continue", expect) == 0) || (strcmp("100-continue", expect) == 0)))
     {
          /**** Do not send 100-continue for invalid URI ****/
-         if (pRESTHandler->pInstanceGlobal->useEndPoint == 1)
+         if (pRESTHandle->pInstanceGlobal->useEndPoint == 1)
          {
              memset(httpURI, '\0', MAX_URI_LEN);
              memset(endPointURI, '\0', MAX_URI_LEN);
@@ -1192,7 +1170,7 @@ VmRESTProcessIncomingData(
              }
 
              dwError = VmRestEngineGetEndPoint(
-                            pRESTHandler,
+                            pRESTHandle,
                             endPointURI,
                             &pEndPoint
                             );
@@ -1217,7 +1195,7 @@ VmRESTProcessIncomingData(
          BAIL_ON_VMREST_ERROR(dwError);
 
          dwError = VmRESTSetData(
-                  pRESTHandler,
+                  pRESTHandle,
                   &pIntResPacket,
                   "",
                   0,
@@ -1286,7 +1264,7 @@ VmRESTProcessIncomingData(
     {
         /***** Give the application callback ****/
         dwError = VmRESTTriggerAppCb(
-                      pRESTHandler,
+                      pRESTHandle,
                       pReqPacket,
                       &pResPacket
                       );
@@ -1327,7 +1305,7 @@ cleanup:
     }
     return dwError;
 error:
-    VMREST_LOG_ERROR("Something failed, dwError = %u", dwError);
+    VMREST_LOG_ERROR(pRESTHandle,"Something failed, dwError = %u", dwError);
     if (expect != NULL)
     {
         VmRESTFreeMemory(expect);
@@ -1423,7 +1401,7 @@ error:
                 }
                 if (tempStatus)
                 {
-                    VMREST_LOG_ERROR("ERROR setting the failure response object");
+                    VMREST_LOG_ERROR(pRESTHandle,"ERROR setting the failure response object");
                     goto cleanup;
                 }
 
@@ -1435,12 +1413,12 @@ error:
 
                 if (tempStatus)
                 {
-                    VMREST_LOG_ERROR("ERROR setting the data length in failure response");
+                    VMREST_LOG_ERROR(pRESTHandle,"ERROR setting the data length in failure response");
                     goto cleanup;
                 }
 
                 tempStatus =  VmRESTSetData(
-                                  pRESTHandler,
+                                  pRESTHandle,
                                   &pResPacket,
                                   "",
                                   0,
@@ -1449,14 +1427,14 @@ error:
 
                 if (tempStatus)
                 {
-                    VMREST_LOG_ERROR("ERROR: DOUBLE FAILURE :: setting data in failure response");
+                    VMREST_LOG_ERROR(pRESTHandle,"ERROR: DOUBLE FAILURE :: setting data in failure response");
                 }
 
                 pResPacket->headerSent = 1;
             }
             if (tempStatus)
             {
-                VMREST_LOG_ERROR("Error in VmRESTSendHeaderAndPayload");
+                VMREST_LOG_ERROR(pRESTHandle,"Error in VmRESTSendHeaderAndPayload");
                 goto cleanup;
             }
         }
@@ -1466,34 +1444,34 @@ error:
 
 uint32_t
 VmRESTTriggerAppCb(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_REST_HTTP_REQUEST_PACKET     pRequest,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
 )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (!pRequest || !ppResponse || !pRESTHandler)
+    if (!pRequest || !ppResponse || !pRESTHandle)
     {
-       VMREST_LOG_ERROR("Invalid params");
+       VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
        dwError =  VMREST_APPLICATION_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (pRESTHandler->pHttpHandler == NULL)
+    if (pRESTHandle->pHttpHandler == NULL)
     {
-        VMREST_LOG_ERROR("No application callback registered");
+        VMREST_LOG_ERROR(pRESTHandle,"No application callback registered");
         dwError = VMREST_APPLICATION_NO_CB_REGISTERED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (pRESTHandler->pHttpHandler->pfnHandleRequest)
+    if (pRESTHandle->pHttpHandler->pfnHandleRequest)
     {
-        dwError = pRESTHandler->pHttpHandler->pfnHandleRequest(pRESTHandler,pRequest, ppResponse);
+        dwError = pRESTHandle->pHttpHandler->pfnHandleRequest(pRESTHandle,pRequest, ppResponse);
     }
     else
     {
-        VMREST_LOG_ERROR("No Request callback registered");
+        VMREST_LOG_ERROR(pRESTHandle,"No Request callback registered");
         dwError = VMREST_APPLICATION_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);

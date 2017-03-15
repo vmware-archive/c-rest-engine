@@ -17,30 +17,31 @@ int  vmrest_syslog_level;
 
 uint32_t
 VmHTTPInit(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                  pRESTHandle,
     PREST_CONF                       pConfig,
     char const*                      file
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    PVM_REST_CONFIG                  restConfig = NULL;
-    PREST_ENG_GLOBALS                pInstanceGlobal = NULL;
+    //PVM_REST_CONFIG                  restConfig = NULL;
+//    PREST_ENG_GLOBALS                pInstanceGlobal = NULL;
 
-    if (!pRESTHandler)
+    if (!pRESTHandle)
     {
-        VMREST_LOG_DEBUG("Invalid REST Handler");
+        VMREST_LOG_DEBUG(pRESTHandle,"Invalid REST Handler");
         dwError = REST_ENGINE_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTAllocateMemory(
+/*    dwError = VmRESTAllocateMemory(
                   sizeof(REST_ENG_GLOBALS),
                   (void **)&pInstanceGlobal
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+*/
     
-    pRESTHandler->pInstanceGlobal = pInstanceGlobal;
-    pRESTHandler->debugLogLevel = VMREST_LOG_LEVEL_DEBUG;
+//    pRESTHandle->pInstanceGlobal = pInstanceGlobal;
+    pRESTHandle->debugLogLevel = VMREST_LOG_LEVEL_DEBUG;
 
 
     //vmrest_syslog_level = VMREST_LOG_LEVEL_DEBUG;
@@ -49,7 +50,7 @@ VmHTTPInit(
     {
         dwError = VmRESTCopyConfig(
                       pConfig,
-                      &restConfig
+                      &(pRESTHandle->pRESTConfig)
                       );
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -60,14 +61,14 @@ VmHTTPInit(
             /**** Init the rest engine with default config ****/
             dwError = VmRESTParseAndPopulateConfigFile(
                           "/root/restconfig.txt",
-                          &restConfig
+                          &(pRESTHandle->pRESTConfig)
                           );
         }
         else
         {
             dwError = VmRESTParseAndPopulateConfigFile(
                           file,
-                          &restConfig
+                          &(pRESTHandle->pRESTConfig)
                           );
         }
         BAIL_ON_VMREST_ERROR(dwError);
@@ -75,31 +76,31 @@ VmHTTPInit(
 
         /**** Validate the config param ****/
         dwError= VmRESTValidateConfig(
-                      restConfig
+                      pRESTHandle->pRESTConfig
                       );
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
     /**** Init the debug log ****/
     dwError = VmRESTLogInitialize(
-                  restConfig->debug_log_file
+                  pRESTHandle
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Validate the config param ****/
     dwError = VmRESTValidateConfig(
-                  restConfig
+                  pRESTHandle->pRESTConfig
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Init Transport ****/
-    dwError = VmwSockInitialize(pRESTHandler);
+    dwError = VmwSockInitialize(pRESTHandle);
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Update context Info for this lib instance ****/
-//    pRESTHandler->pInstanceGlobal->config = restConfig;
-    pRESTHandler->pRESTConfig = restConfig;
-    pRESTHandler->pInstanceGlobal->useEndPoint = 0;
+//    pRESTHandle->pInstanceGlobal->config = restConfig;
+  //  pRESTHandle->pRESTConfig = restConfig;
+    pRESTHandle->pInstanceGlobal->useEndPoint = 0;
 
     /**** Set the config at Global level ****/
   //  VmRESTSetConfig(restConfig);
@@ -107,29 +108,30 @@ VmHTTPInit(
 cleanup:
     return dwError;
 error:
+    /*
     if (restConfig)
     {
         VmRESTFreeConfigFileStruct(
                 restConfig
                 );
-        if (pRESTHandler && pRESTHandler->pRESTConfig)
+        if (pRESTHandle && pRESTHandle->pRESTConfig)
         {
-            pRESTHandler->pRESTConfig = NULL; 
+            pRESTHandle->pRESTConfig = NULL; 
         }
     //    VmRESTUnSetConfig();
     }
-    
+    */
     goto cleanup;
 }
 
 uint32_t
 VmHTTPStart(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                  pRESTHandle
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    dwError = VmRESTInitProtocolServer(pRESTHandler);
+    dwError = VmRESTInitProtocolServer(pRESTHandle);
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
@@ -141,18 +143,18 @@ error:
 
 uint32_t
 VmHTTPRegisterHandler(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                  pRESTHandle,
     PREST_PROCESSOR                  pHandler
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (!pHandler || !pRESTHandler)
+    if (!pHandler || !pRESTHandle)
     {
         dwError = REST_ENGINE_INVALID_REST_PROCESSER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    pRESTHandler->pHttpHandler = pHandler;
+    pRESTHandle->pHttpHandler = pHandler;
 
 cleanup:
     return dwError;
@@ -162,17 +164,18 @@ error:
 
 uint32_t
 VmHTTPUnRegisterHandler(
-    void
+    PVMREST_HANDLE                  pRESTHandle
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (gpHttpHandler == NULL)
+    if (pRESTHandle == NULL)
     {
         dwError = REST_ENGINE_INVALID_REST_PROCESSER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    gpHttpHandler = NULL;
+
+    pRESTHandle->pHttpHandler = NULL;
 
 cleanup:
     return dwError;
@@ -182,16 +185,17 @@ error:
 
 uint32_t
 VmHTTPStop(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                  pRESTHandle
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    VMREST_LOG_DEBUG("%s","Shutting down rest engine ....");
-    VmRESTShutdownProtocolServer(pRESTHandler);
+    VMREST_LOG_DEBUG(pRESTHandle,"%s","Shutting down rest engine ....");
+    VmRESTShutdownProtocolServer(pRESTHandle);
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
+    VMREST_LOG_DEBUG(pRESTHandle,"Stop returning %u", dwError);
     return dwError;
 error:
     goto cleanup;
@@ -199,18 +203,14 @@ error:
 
 void
 VmHTTPShutdown(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                  pRESTHandle
     )
 {
-    VmwSockShutdown(pRESTHandler);
+    VmwSockShutdown(pRESTHandle);
 
-    if (pRESTHandler->pRESTConfig)
+    if (pRESTHandle)
     {
-        VmRESTFreeConfigFileStruct(
-            pRESTHandler->pRESTConfig
-            );
-        VmRESTLogTerminate(
-            );
-        pRESTHandler->pRESTConfig = NULL;
+        VmRESTLogTerminate(pRESTHandle);
+        VmRESTFreeHandle(pRESTHandle);        
     }
 }

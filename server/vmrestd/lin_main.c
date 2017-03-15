@@ -747,11 +747,11 @@ int launch_server_sample()
 
     printf("Starting: %s\n", gRestProviders[0].name);
 
-    dwError = VmRESTInit(NULL,"/tmp/restconfig.txt", &gpRESTHandler);
+    dwError = VmRESTInit(NULL,"/tmp/restconfig.txt", &gpRESTHandle);
 
-    VmRESTRegisterHandler(gpRESTHandler, "/v1/pkg", &gRestProviders[0].restProcessor, NULL);
+    VmRESTRegisterHandler(gpRESTHandle, "/v1/pkg", &gRestProviders[0].restProcessor, NULL);
 
-    VmRESTStart(gpRESTHandler);
+    VmRESTStart(gpRESTHandle);
 
     while(1) //cnt < 20)
     {
@@ -759,11 +759,11 @@ int launch_server_sample()
        // cnt++;
     }
     
-    dwError = VmRESTStop(gpRESTHandler);
+    dwError = VmRESTStop(gpRESTHandle);
 
-    //dwError = VmRESTUnRegisterHandler(gpRESTHandler,"/v1/pkg/*");
+    //dwError = VmRESTUnRegisterHandler(gpRESTHandle,"/v1/pkg/*");
 
-    VmRESTShutdown(gpRESTHandler);
+    VmRESTShutdown(gpRESTHandle);
 
     
 return dwError;

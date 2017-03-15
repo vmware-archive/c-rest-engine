@@ -23,7 +23,7 @@
 #include <vmrestdefines.h>
 #include <vmsock.h>
 #include <vmrestcommon.h>
-#include <vmsockapi.h>
+//#include <vmsockapi.h>
 #include <vmsockposix.h>
 
 #include "defines.h"

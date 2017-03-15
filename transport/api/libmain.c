@@ -17,17 +17,17 @@
 
 DWORD
 VmwSockInitialize(
-    PVMREST_HANDLER                    pRESTHandler
+    PVMREST_HANDLE                    pRESTHandle
     )
 {
     DWORD dwError = 0;
 
-    if (pRESTHandler)
+    if (pRESTHandle)
     {
 #ifdef _WIN32
         dwError = VmWinSockInitialize(&gpVmSockPackage);
 #else
-        dwError = VmSockPosixInitialize(&(pRESTHandler->pPackage));
+        dwError = VmSockPosixInitialize(&(pRESTHandle->pPackage));
 #endif
     }
 
@@ -36,15 +36,15 @@ VmwSockInitialize(
 
 VOID
 VmwSockShutdown(
-    PVMREST_HANDLER                    pRESTHandler
+    PVMREST_HANDLE                    pRESTHandle
     )
 {
-    if (pRESTHandler->pPackage)
+    if (pRESTHandle && pRESTHandle->pPackage)
     {
 #ifdef _WIN32
         VmWinSockShutdown(gpVmSockPackage);
 #else
-        VmSockPosixShutdown(pRESTHandler->pPackage);
+        VmSockPosixShutdown(pRESTHandle->pPackage);
 #endif
     }
 }

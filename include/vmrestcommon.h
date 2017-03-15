@@ -23,9 +23,6 @@
 extern "C" {
 #endif
 
-//extern int  vmrest_syslog;
-//extern int  vmrest_debug;
-
 typedef enum
 {
     VMREST_LOG_TYPE_CONSOLE = 0,
@@ -50,27 +47,21 @@ typedef enum
 
 uint32_t
 VmRESTLogInitialize(
-	char*   pLogFileName
+	PVMREST_HANDLE    pRESTHandle
 	);
 
 void
-VmRESTLogTerminate();
+VmRESTLogTerminate(
+   PVMREST_HANDLE    pRESTHandle
+   );
 
 void
 VmRESTLog(
+   PVMREST_HANDLE   pRESTHandle,
    VMREST_LOG_LEVEL level,
    const char*      fmt,
    ...);
 
-/*
-typedef struct _VMREST_LOG_HANDLE* PVMREST_LOG_HANDLE;
-
-extern PVMREST_LOG_HANDLE gpVMRESTLogHandle;
-extern VMREST_LOG_LEVEL   gVMRESTLogLevel;
-extern HANDLE           gpEventLog;
-extern VMREST_LOG_TYPE    gVMRESTLogType;
-extern VMREST_LOG_LEVEL VMRESTLogGetLevel();
-*/
 
 #ifndef WIN32
 
@@ -84,59 +75,46 @@ extern VMREST_LOG_LEVEL VMRESTLogGetLevel();
                ##__VA_ARGS__);                     \
     } while (0)
 
-#define VMREST_LOG_GENERAL_( Level, Format, ... ) \
-    VMREST_LOG_( Level, Format, ##__VA_ARGS__ )
+#define VMREST_LOG_GENERAL_( pRESTHandle,Level, Format, ... ) \
+    VMREST_LOG_( pRESTHandle, Level, Format, ##__VA_ARGS__ )
 
-#define VMREST_LOG_WARNING( Format, ... ) \
-    VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_WARNING, Format, ##__VA_ARGS__ )
-#define VMREST_LOG_INFO( Format, ... )    \
-    VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_INFO, Format, ##__VA_ARGS__ )
-#define VMREST_LOG_VERBOSE( Format, ... ) \
-    VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_DEBUG, Format, ##__VA_ARGS__ )
+#define VMREST_LOG_WARNING( pRESTHandle,Format, ... ) \
+    VMREST_LOG_GENERAL_( pRESTHandle, VMREST_LOG_LEVEL_WARNING, Format, ##__VA_ARGS__ )
+#define VMREST_LOG_INFO( pRESTHandle,Format, ... )    \
+    VMREST_LOG_GENERAL_( pRESTHandle,VMREST_LOG_LEVEL_INFO, Format, ##__VA_ARGS__ )
+#define VMREST_LOG_VERBOSE( pRESTHandle,Format, ... ) \
+    VMREST_LOG_GENERAL_( pRESTHandle,VMREST_LOG_LEVEL_DEBUG, Format, ##__VA_ARGS__ )
 
 
-#define VMREST_LOG_DEBUG(Format, ... )       \
+#define VMREST_LOG_DEBUG(pRESTHandle,Format, ... )       \
     VMREST_LOG_GENERAL_(                      \
+        pRESTHandle,                          \
         VMREST_LOG_LEVEL_DEBUG,               \
     Format " [file: %s][line: %d]",     \
     ##__VA_ARGS__, __FILE__, __LINE__ )
 
 
-#define VMREST_LOG_ERROR(Format, ... )       \
+#define VMREST_LOG_ERROR(pRESTHandle,Format, ... )       \
     VMREST_LOG_GENERAL_(                      \
+        pRESTHandle,                          \
         VMREST_LOG_LEVEL_ERROR,               \
     Format " [file: %s][line: %d]",     \
     ##__VA_ARGS__, __FILE__, __LINE__ )
 
 #else
 
-#define VMREST_LOG_( Level, Format, ... ) \
+#define VMREST_LOG_( pRESTHandle,Level, Format, ... ) \
     do                                             \
     {                                              \
-        VmRESTLog(                                   \
+        VmRESTLog(                                 \
+               pRESTHandle,                        \
                Level,                              \
                Format,                             \
                ##__VA_ARGS__);                     \
     } while (0)
 
-#define VMREST_LOG_GENERAL_( Level, Format, ... ) \
-    VMREST_LOG_( Level, Format, ##__VA_ARGS__ )
-
-#define VMREST_LOG_ERROR( Format, ... )   \
-    VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_ERROR, Format, ##__VA_ARGS__ )
-#define VMREST_LOG_WARNING( Format, ... ) \
-    VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_WARNING, Format, ##__VA_ARGS__ )
-#define VMREST_LOG_INFO( Format, ... )    \
-    VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_INFO, Format, ##__VA_ARGS__ )
-#define VMREST_LOG_VERBOSE( Format, ... ) \
-    VMREST_LOG_GENERAL_( VMREST_LOG_LEVEL_DEBUG, Format, ##__VA_ARGS__ )
-
-
-#define VMREST_LOG_DEBUG(Format, ... )       \
-    VMREST_LOG_GENERAL_(                      \
-        VMREST_LOG_LEVEL_DEBUG,               \
-    Format " [file: %s][line: %d]",     \
-    ##__VA_ARGS__, __FILE__, __LINE__ )
+#define VMREST_LOG_GENERAL_( pRESTHandle, Level, Format, ... ) \
+    VMREST_LOG_( pRESTHandle,Level, Format, ##__VA_ARGS__ )
 
 #endif
 
@@ -253,9 +231,10 @@ typedef struct _VM_SOCK_PACKAGE *PVM_SOCK_PACKAGE;
 typedef struct _REST_ENG_GLOBALS *PREST_ENG_GLOBALS;
 typedef struct _REST_PROCESSOR *PREST_PROCESSOR;
 
-typedef struct _VMREST_HANDLER
+typedef struct _VMREST_HANDLE
 {
     int                              debugLogLevel;
+    FILE*                            logFile;
     PVM_SOCK_PACKAGE                 pPackage;
     PVM_SOCK_SSL_INFO                pSSLInfo;
     PREST_PROCESSOR                  pHttpHandler;
@@ -263,12 +242,12 @@ typedef struct _VMREST_HANDLER
     PVMREST_SOCK_CONTEXT             pSockContext;
     PVM_REST_CONFIG                  pRESTConfig;                     
 
-} VMREST_HANDLER,*PVMREST_HANDLER;
+} VMREST_HANDLE,*PVMREST_HANDLE;
 
 typedef struct _VM_WORKER_THREAD_DATA
 {
     PVMREST_SOCK_CONTEXT             pSockContext;
-    PVMREST_HANDLER                  pRESTHandler;
+    PVMREST_HANDLE                  pRESTHandle;
 
 }VM_WORKER_THREAD_DATA, *PVM_WORKER_THREAD_DATA;
 
@@ -303,17 +282,17 @@ typedef struct _VMREST_THREAD_START_INFO
 
 DWORD
 VmRESTInitProtocolServer(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 VOID
 VmRESTShutdownProtocolServer(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 uint32_t
 VmsockPosixGetXBytes(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     uint32_t                         bytesRequested,
     char*                            appBuffer,
     PVM_SOCKET                       pSocket,
@@ -323,14 +302,14 @@ VmsockPosixGetXBytes(
 
 uint32_t
 VmSockPosixAdjustProcessedBytes(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     uint32_t                         dataSeen
     );
 
 uint32_t
 VmsockPosixWriteDataAtOnce(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     char*                            buffer,
     uint32_t                         bytes
@@ -338,7 +317,7 @@ VmsockPosixWriteDataAtOnce(
 
 uint32_t
 VmRESTProcessIncomingData(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            buffer,
     uint32_t                         byteRead,
     PVM_SOCKET                       pSocket

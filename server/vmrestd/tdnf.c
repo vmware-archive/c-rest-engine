@@ -86,7 +86,7 @@ VmHandleEchoData(
     while(done != 1)
     {
         dwError = VmRESTGetData(
-                      gpRESTHandler,
+                      gpRESTHandle,
                       pRequest,
                       buffer,
                       &done
@@ -163,7 +163,7 @@ VmHandleEchoData(
         memcpy(buffer, (AllData + index), nWrite); 
 
         dwError = VmRESTSetData(
-                  gpRESTHandler,
+                  gpRESTHandle,
                   ppResponse,
                   buffer,
                   nWrite,

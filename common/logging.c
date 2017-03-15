@@ -18,10 +18,6 @@
 #define EXTRA_LOG_MESSAGE_LEN 128
 #define MAX_LOG_MESSAGE_LEN   4096
 
-extern int  vmrest_syslog_level;
-
-static FILE * logFile = NULL;
-
 static const char *
 logLevelToTag(
     int level
@@ -29,20 +25,20 @@ logLevelToTag(
 
 uint32_t
 VmRESTLogInitialize(
-    char*     pLogFileName
+    PVMREST_HANDLE    pRESTHandle
     )
 {
     uint32_t   dwError = 0;
    
-    if (pLogFileName == NULL)
+    if (!pRESTHandle || !(pRESTHandle->pRESTConfig) || (strlen(pRESTHandle->pRESTConfig->debug_log_file) == 0))
     {
         dwError = 1;
         BAIL_ON_VMREST_ERROR(dwError); 
     }
 
-    if ((logFile = fopen(pLogFileName, "a")) == NULL)
+    if ((pRESTHandle->logFile = fopen(pRESTHandle->pRESTConfig->debug_log_file, "a")) == NULL)
     {
-        fprintf( stderr, "logFileName: \"%s\" open failed", pLogFileName);
+        fprintf( stderr, "logFileName: \"%s\" open failed", pRESTHandle->pRESTConfig->debug_log_file);
         dwError = 1;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -54,17 +50,20 @@ error:
 }
 
 void
-VmRESTLogTerminate()
+VmRESTLogTerminate(
+    PVMREST_HANDLE    pRESTHandle
+    )
 {
-    if (logFile)
+    if (pRESTHandle && pRESTHandle->logFile != NULL)
     {
-       fclose( logFile );
+       fclose(pRESTHandle->logFile);
     }
-    logFile = NULL;
+    pRESTHandle->logFile = NULL;
 }
 
 void
 VmRESTLog(
+    PVMREST_HANDLE    pRESTHandle,
     VMREST_LOG_LEVEL  level,
     const char*       fmt,
     ...)
@@ -78,8 +77,14 @@ VmRESTLog(
     va_list     va;
     const char* logLevelTag = "";
 
+    if (!pRESTHandle)
+    {
+        return;
+    }
+
+
 #if 1
-    if (level <= vmrest_syslog_level)
+    if (level <= pRESTHandle->debugLogLevel)
     {
         va_start( va, fmt );
         vsnprintf( logMessage, sizeof(logMessage), fmt, va );
@@ -110,10 +115,10 @@ VmRESTLog(
 #endif
                   logLevelTag? logLevelTag : "UNKNOWN");
 
-         if( logFile != NULL )
+         if(pRESTHandle->logFile != NULL )
          {
-            fprintf(logFile, "%s%s\n", extraLogMessage, logMessage);
-            fflush( logFile );
+            fprintf(pRESTHandle->logFile, "%s%s\n", extraLogMessage, logMessage);
+            fflush( pRESTHandle->logFile );
          }
          else
          {

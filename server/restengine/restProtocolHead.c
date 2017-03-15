@@ -16,7 +16,7 @@
 
 uint32_t
 VmRestEngineHandler(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     )
@@ -30,7 +30,7 @@ VmRestEngineHandler(
     uint32_t                         paramsCount = 0;
     PREST_ENDPOINT                   pEndPoint = NULL;
 
-    VMREST_LOG_DEBUG("1","Internal Handler called");
+    VMREST_LOG_DEBUG(pRESTHandle,"%s","Internal Handler called");
 
     /**** 1. Init all the funcition variables *****/
 
@@ -53,7 +53,7 @@ VmRestEngineHandler(
         VmRESTFreeMemory(ptr);
         ptr = NULL;
     }
-    VMREST_LOG_DEBUG("HTTP method %s", httpMethod);
+    VMREST_LOG_DEBUG(pRESTHandle,"HTTP method %s", httpMethod);
 
     /**** 3. Get the URI ****/
 
@@ -70,7 +70,7 @@ VmRestEngineHandler(
         ptr = NULL;
     }
 
-    VMREST_LOG_DEBUG("HTTP URI %s", httpURI);
+    VMREST_LOG_DEBUG(pRESTHandle,"HTTP URI %s", httpURI);
 
     /**** 4. Get the End point from URI ****/
     dwError = VmRestGetEndPointURIfromRequestURI(
@@ -86,16 +86,16 @@ VmRestEngineHandler(
         ptr = NULL;
     }
 
-    VMREST_LOG_DEBUG("EndPoint URI %s", endPointURI);
+    VMREST_LOG_DEBUG(pRESTHandle,"EndPoint URI %s", endPointURI);
 
     dwError = VmRestEngineGetEndPoint(
-                  pRESTHandler,
+                  pRESTHandle,
                   endPointURI,
                   &pEndPoint
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VMREST_LOG_DEBUG("EndPoint found for URI %s",endPointURI);
+    VMREST_LOG_DEBUG(pRESTHandle,"EndPoint found for URI %s",endPointURI);
 
     /**** 5. Get Params count ****/
 
@@ -105,7 +105,7 @@ VmRestEngineHandler(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VMREST_LOG_DEBUG("Params count %u", paramsCount);
+    VMREST_LOG_DEBUG(pRESTHandle,"Params count %u", paramsCount);
 
     /**** 6. Parse and populate all params in request URL ****/
 
@@ -117,7 +117,7 @@ VmRestEngineHandler(
                       pRequest
                       );
         BAIL_ON_VMREST_ERROR(dwError);
-        VMREST_LOG_DEBUG("Params parsing done, returned code %u", dwError);
+        VMREST_LOG_DEBUG(pRESTHandle,"Params parsing done, returned code %u", dwError);
     }
 
     /**** 7. Give App CB based on HTTP method and registered endpoint ****/
@@ -130,7 +130,7 @@ VmRestEngineHandler(
         }
         else
         {
-            VMREST_LOG_ERROR("Read on resource %s not allowed",endPointURI);
+            VMREST_LOG_ERROR(pRESTHandle,"Read on resource %s not allowed",endPointURI);
             dwError = VMREST_HTTP_INVALID_PARAMS;
         }
     }
@@ -142,7 +142,7 @@ VmRestEngineHandler(
         }
         else
         {
-            VMREST_LOG_ERROR("Create on resource %s not allowed",endPointURI);
+            VMREST_LOG_ERROR(pRESTHandle,"Create on resource %s not allowed",endPointURI);
             dwError = VMREST_HTTP_INVALID_PARAMS;
         }
     }
@@ -154,7 +154,7 @@ VmRestEngineHandler(
         }
         else
         {
-            VMREST_LOG_ERROR("Update on resource %s not allowed",endPointURI);
+            VMREST_LOG_ERROR(pRESTHandle,"Update on resource %s not allowed",endPointURI);
             dwError = VMREST_HTTP_INVALID_PARAMS;
         }
     }
@@ -166,7 +166,7 @@ VmRestEngineHandler(
         }
         else
         {
-            VMREST_LOG_ERROR("Delete on resource %s not allowed",endPointURI);
+            VMREST_LOG_ERROR(pRESTHandle,"Delete on resource %s not allowed",endPointURI);
             dwError = VMREST_HTTP_INVALID_PARAMS;
         }
     }
@@ -179,13 +179,13 @@ VmRestEngineHandler(
         }
         else
         {
-            VMREST_LOG_ERROR(" %s Not a valid HTTP method for resource %s", httpMethod,endPointURI);
+            VMREST_LOG_ERROR(pRESTHandle," %s Not a valid HTTP method for resource %s", httpMethod,endPointURI);
             dwError = VMREST_HTTP_INVALID_PARAMS;
         }
     }
     else
     {
-        VMREST_LOG_ERROR("CRUD on resource %s not allowed",endPointURI);
+        VMREST_LOG_ERROR(pRESTHandle,"CRUD on resource %s not allowed",endPointURI);
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -198,38 +198,38 @@ error:
 
 uint32_t
 VmRestEngineInitEndPointRegistration(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                   pRESTHandle
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (!pRESTHandler)
+    if (!pRESTHandle)
     {
-        VMREST_LOG_DEBUG("Invalid REST handler");
+        VMREST_LOG_DEBUG(pRESTHandle,"Invalid REST handler");
         dwError = REST_ENGINE_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);    
 
-    if(pRESTHandler->pInstanceGlobal)
+    if(pRESTHandle->pInstanceGlobal)
     {
 
         dwError = pthread_mutex_init(
-                      &(pRESTHandler->pInstanceGlobal->mutex),
+                      &(pRESTHandle->pInstanceGlobal->mutex),
                       NULL
                       );
         BAIL_ON_VMREST_ERROR(dwError);
 
-        pthread_mutex_lock(&(pRESTHandler->pInstanceGlobal->mutex));
-        pRESTHandler->pInstanceGlobal->pEndPointQueue = NULL;
-        pRESTHandler->pInstanceGlobal->useEndPoint = 1;
-        pthread_mutex_unlock(&(pRESTHandler->pInstanceGlobal->mutex));
+        pthread_mutex_lock(&(pRESTHandle->pInstanceGlobal->mutex));
+        pRESTHandle->pInstanceGlobal->pEndPointQueue = NULL;
+        pRESTHandle->pInstanceGlobal->useEndPoint = 1;
+        pthread_mutex_unlock(&(pRESTHandle->pInstanceGlobal->mutex));
 
-        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleRequest = &VmRestEngineHandler;
-        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleCreate = NULL;
-        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleDelete = NULL;
-        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleUpdate = NULL;
-        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleRead = NULL;
-        pRESTHandler->pInstanceGlobal->internalHandler.pfnHandleOthers = NULL;
+        pRESTHandle->pInstanceGlobal->internalHandler.pfnHandleRequest = &VmRestEngineHandler;
+        pRESTHandle->pInstanceGlobal->internalHandler.pfnHandleCreate = NULL;
+        pRESTHandle->pInstanceGlobal->internalHandler.pfnHandleDelete = NULL;
+        pRESTHandle->pInstanceGlobal->internalHandler.pfnHandleUpdate = NULL;
+        pRESTHandle->pInstanceGlobal->internalHandler.pfnHandleRead = NULL;
+        pRESTHandle->pInstanceGlobal->internalHandler.pfnHandleOthers = NULL;
     }
 
 cleanup:
@@ -240,23 +240,23 @@ error:
 
 void
 VmRestEngineShutdownEndPointRegistration(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                   pRESTHandle
     )
 {
     PREST_ENDPOINT                   temp = NULL;
     PREST_ENDPOINT                   prev = NULL;
 
-    if (!pRESTHandler)
+    if (!pRESTHandle)
     {
-        VMREST_LOG_ERROR("Invalid REST handler");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid REST handler");
         return;
     }
 
     /**** TODO: Add check to perform this only when engine is not running ****/
 
-    pthread_mutex_lock(&(pRESTHandler->pInstanceGlobal->mutex));
+    pthread_mutex_lock(&(pRESTHandle->pInstanceGlobal->mutex));
 
-    temp = pRESTHandler->pInstanceGlobal->pEndPointQueue;
+    temp = pRESTHandle->pInstanceGlobal->pEndPointQueue;
 
     while(temp != NULL)
     {
@@ -265,18 +265,18 @@ VmRestEngineShutdownEndPointRegistration(
 
         VmRESTFreeEndPoint(prev);
     }
-    pRESTHandler->pInstanceGlobal->pEndPointQueue = NULL;
-    pRESTHandler->pInstanceGlobal->useEndPoint = 0; 
-    pthread_mutex_unlock(&(pRESTHandler->pInstanceGlobal->mutex));
+    pRESTHandle->pInstanceGlobal->pEndPointQueue = NULL;
+    pRESTHandle->pInstanceGlobal->useEndPoint = 0; 
+    pthread_mutex_unlock(&(pRESTHandle->pInstanceGlobal->mutex));
 
     pthread_mutex_destroy(
-        &(pRESTHandler->pInstanceGlobal->mutex)
+        &(pRESTHandle->pInstanceGlobal->mutex)
         );
 }
 
 uint32_t
 VmRestEngineAddEndpoint(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            pEndPointURI,
     PREST_PROCESSOR                  pHandler
     )
@@ -289,9 +289,9 @@ VmRestEngineAddEndpoint(
 
     /**** TODO: Add check to perform this only when engine is not running ****/
 
-    if (!pEndPointURI || !pHandler || !pRESTHandler)
+    if (!pEndPointURI || !pHandler || !pRESTHandle)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -302,14 +302,14 @@ VmRestEngineAddEndpoint(
     hasSpace = strchr(pEndPointURI, ' ');
     if (hasSpace != NULL)
     {
-        VMREST_LOG_ERROR("Space found in URL - Not Valid");
+        VMREST_LOG_ERROR(pRESTHandle,"Space found in URL - Not Valid");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** If Endpoint already exists - return****/
     dwError = VmRestEngineGetEndPoint(
-                  pRESTHandler,
+                  pRESTHandle,
                   pEndPointURI,
                   &temp
                   );
@@ -351,22 +351,22 @@ VmRestEngineAddEndpoint(
     }
 
     /**** Add to list of endpoints ****/
-    pthread_mutex_lock(&(pRESTHandler->pInstanceGlobal->mutex));
+    pthread_mutex_lock(&(pRESTHandle->pInstanceGlobal->mutex));
 
-    if (pRESTHandler->pInstanceGlobal->pEndPointQueue == NULL)
+    if (pRESTHandle->pInstanceGlobal->pEndPointQueue == NULL)
     {
-        pRESTHandler->pInstanceGlobal->pEndPointQueue = pEndPoint;
+        pRESTHandle->pInstanceGlobal->pEndPointQueue = pEndPoint;
     }
     else
     {
-        temp = pRESTHandler->pInstanceGlobal->pEndPointQueue;
+        temp = pRESTHandle->pInstanceGlobal->pEndPointQueue;
         while(temp->next != NULL)
         { 
             temp = temp->next;
         }
         temp->next = pEndPoint;
     }
-    pthread_mutex_unlock(&(pRESTHandler->pInstanceGlobal->mutex));
+    pthread_mutex_unlock(&(pRESTHandle->pInstanceGlobal->mutex));
 cleanup:
     return dwError;
 error:
@@ -380,8 +380,8 @@ error:
 
 uint32_t
 VmRestEngineRemoveEndpoint(
-    PVMREST_HANDLER                  pRESTHandler,
-    char*                            pEndPointURI
+    PVMREST_HANDLE                   pRESTHandle,
+    char const *                     pEndPointURI
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -390,22 +390,22 @@ VmRestEngineRemoveEndpoint(
 
     /**** TODO: Add check to perform this only when engine is not running ****/
 
-    if (!pEndPointURI || !pRESTHandler)
+    if (!pEndPointURI || !pRESTHandle)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Remove from list of endpoints ****/
-    pthread_mutex_lock(&(pRESTHandler->pInstanceGlobal->mutex));
+    pthread_mutex_lock(&(pRESTHandle->pInstanceGlobal->mutex));
 
-    temp = pRESTHandler->pInstanceGlobal->pEndPointQueue;
+    temp = pRESTHandle->pInstanceGlobal->pEndPointQueue;
     prev = temp;
 
     if ((temp != NULL) && (temp->pszEndPointURI != NULL) && (strcmp(temp->pszEndPointURI,pEndPointURI) == 0))
     {
-        pRESTHandler->pInstanceGlobal->pEndPointQueue = temp->next;
+        pRESTHandle->pInstanceGlobal->pEndPointQueue = temp->next;
     }
     else
     {
@@ -416,14 +416,14 @@ VmRestEngineRemoveEndpoint(
        }
        if (temp == NULL)
        {
-           VMREST_LOG_ERROR("Requested endpoint %s not registered", pEndPointURI);
+           VMREST_LOG_ERROR(pRESTHandle,"Requested endpoint %s not registered", pEndPointURI);
        }
        else
        {
            prev->next = temp->next;
        }
     }
-    pthread_mutex_unlock(&(pRESTHandler->pInstanceGlobal->mutex));
+    pthread_mutex_unlock(&(pRESTHandle->pInstanceGlobal->mutex));
 
     if (temp)
     {
@@ -437,7 +437,7 @@ error:
 
 uint32_t
 VmRestEngineGetEndPoint(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            pEndPointURI,
     PREST_ENDPOINT*                  ppEndPoint
     )
@@ -447,15 +447,15 @@ VmRestEngineGetEndPoint(
 
     PREST_ENDPOINT                   temp = NULL;
 
-    if (!pEndPointURI || !pRESTHandler)
+    if (!pEndPointURI || !pRESTHandle)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     *ppEndPoint = NULL;
-    temp = pRESTHandler->pInstanceGlobal->pEndPointQueue;
+    temp = pRESTHandle->pInstanceGlobal->pEndPointQueue;
 
     while (temp != NULL)
     {
@@ -507,7 +507,6 @@ VmRestGetParamsCountInReqURI(
 
     if (!pRequestURI || !paramCount)
     {
-        VMREST_LOG_ERROR("Request URI or result pointer is NULL");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -515,7 +514,6 @@ VmRestGetParamsCountInReqURI(
     hasSpace = strchr(pRequestURI, ' ');
     if (hasSpace != NULL || strlen(pRequestURI) == 0 || strlen(pRequestURI) > MAX_URI_LEN)
     {
-        VMREST_LOG_ERROR("Request URI has space or wrong length");
         dwError = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -573,14 +571,12 @@ VmRestParseParams(
     
     if (!pRequestURI || !pRequest)
     {
-        VMREST_LOG_ERROR("Request URI or Request is NULL");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     if (paramsCount > MAX_URL_PARAMS_ARR_SIZE)
     {
-        VMREST_LOG_ERROR("More than allowed limit of 10 params found in URL");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -621,7 +617,6 @@ VmRestParseParams(
                 }
                 else
                 {
-                    VMREST_LOG_ERROR("Size of param %u key is greater than allowed limit of %u", i, MAX_KEY_VAL_PARAM_LEN);
                     dwError = VMREST_HTTP_INVALID_PARAMS;
                 }
                 BAIL_ON_VMREST_ERROR(dwError);
@@ -638,7 +633,6 @@ VmRestParseParams(
                     }
                     else
                     {
-                        VMREST_LOG_ERROR("Size of param %u value is greater than allowed limit of %u", i, MAX_KEY_VAL_PARAM_LEN);
                         dwError = VMREST_HTTP_INVALID_PARAMS;
                     }
                     BAIL_ON_VMREST_ERROR(dwError);
@@ -650,13 +644,11 @@ VmRestParseParams(
             }
             else
             {
-                VMREST_LOG_ERROR("Param %u has no data",i);
                 dwError = VMREST_HTTP_INVALID_PARAMS;
             }
         }
         else
         {
-             VMREST_LOG_ERROR("URI  has no Params or ? character");
              dwError = VMREST_HTTP_INVALID_PARAMS;
         }
         BAIL_ON_VMREST_ERROR(dwError);
@@ -718,7 +710,6 @@ VmRESTGetPreSlashIndex(
 
     if (patternURI == NULL || preSlashIndex == NULL)
     {
-        VMREST_LOG_ERROR("Invalid Params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -768,7 +759,6 @@ VmRESTCopyWCStringByIndex(
 
     if (requestEndPointURI == NULL || des == NULL)
     {
-        VMREST_LOG_ERROR("Invalid Params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -848,14 +838,12 @@ VmRESTGetParamsByIndex(
 
     if (paramIndex > paramsCount || paramIndex == 0) 
     {
-        VMREST_LOG_ERROR("Param Index %u is wrong", paramIndex);
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     if (!ppszKey || !ppszValue)
     {
-        VMREST_LOG_ERROR("Result variables are NULL");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -885,7 +873,6 @@ VmRESTGetParamsByIndex(
     }
     else
     {
-        VMREST_LOG_ERROR("Key Not Found for index %u", paramIndex);
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
 
@@ -894,10 +881,6 @@ VmRESTGetParamsByIndex(
         VmRESTDecodeEncodedURLString(
             pRequest->paramArray[index].value,
             pszValue);
-    }
-    else
-    {
-        VMREST_LOG_DEBUG("WARNING: Value Not Found for index %u", paramIndex);
     }
 
     *ppszKey = pszKey;
@@ -929,7 +912,7 @@ error:
 
 uint32_t
 VmRESTGetWildCardCount(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     uint32_t*                        wildCardCount
     )
@@ -943,7 +926,7 @@ VmRESTGetWildCardCount(
 
     if (pRequest == NULL || wildCardCount == NULL)
     {
-        VMREST_LOG_ERROR("Invalid Params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid Params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -977,7 +960,7 @@ VmRESTGetWildCardCount(
     }
 
     dwError = VmRestEngineGetEndPoint(
-                  pRESTHandler,
+                  pRESTHandle,
                   endPointURI,
                   &pEndPoint
                   );
@@ -1009,7 +992,7 @@ error:
 
 uint32_t
 VmRESTGetWildCardByIndex(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     uint32_t                         index,
     char**                           ppszWildCard
@@ -1026,13 +1009,13 @@ VmRESTGetWildCardByIndex(
 
     if (pRequest == NULL)
     {
-        VMREST_LOG_ERROR("Invalid Params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid Params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTGetWildCardCount(
-                  pRESTHandler,
+                  pRESTHandle,
                   pRequest,
                   &count
                   );
@@ -1040,7 +1023,7 @@ VmRESTGetWildCardByIndex(
 
     if (index > count)
     {
-        VMREST_LOG_ERROR("Invalid index count %u index %u", count, index);
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid index count %u index %u", count, index);
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1079,7 +1062,7 @@ VmRESTGetWildCardByIndex(
     }
 
     dwError = VmRestEngineGetEndPoint(
-                  pRESTHandler,
+                  pRESTHandle,
                   endPointURI,
                   &pEndPoint
                   );
@@ -1130,14 +1113,12 @@ VmRestGetEndPointURIfromRequestURI(
 
     if (!pRequestURI || !ppszEndPointURI)
     {
-        VMREST_LOG_ERROR("Request URI is NULL");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     if ((strlen(pRequestURI) == 0) || (strlen(pRequestURI) > MAX_URI_LEN))
     {
-        VMREST_LOG_ERROR("Request URI has wrong length - Invalid");
         dwError = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1165,7 +1146,6 @@ VmRestGetEndPointURIfromRequestURI(
     hasSpace = strchr(pszEndPointURI, ' ');
     if (hasSpace != NULL)
     {
-        VMREST_LOG_ERROR("Endpoint URI has space - Invalid");
         dwError = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);

@@ -62,7 +62,7 @@ VmRESTSecureSocket(
 
     if (key == NULL || certificate == NULL)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -75,7 +75,7 @@ VmRESTSecureSocket(
     if (!context) 
     {
         dwError = VMREST_TRANSPORT_SSL_CONFIG_ERROR;
-        VMREST_LOG_ERROR("SSL Context NULL");
+        VMREST_LOG_ERROR(pRESTHandle,"SSL Context NULL");
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -88,7 +88,7 @@ VmRESTSecureSocket(
     ret = SSL_CTX_set_cipher_list(context, "!aNULL:kECDH+AESGCM:ECDH+AESGCM:RSA+AESGCM:kECDH+AES:ECDH+AES:RSA+AES");
     if (ret == 0)
     {
-        VMREST_LOG_ERROR("SSL_CTX_set_cipher_list() : Cannot apply security approved cipher suites");
+        VMREST_LOG_ERROR(pRESTHandle,"SSL_CTX_set_cipher_list() : Cannot apply security approved cipher suites");
         dwError = VMREST_TRANSPORT_SSL_INVALID_CIPHER_SUITES;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -96,21 +96,21 @@ VmRESTSecureSocket(
     if (SSL_CTX_use_certificate_file(context, certificate, SSL_FILETYPE_PEM) <= 0) 
 	{
          dwError = VMREST_TRANSPORT_SSL_CERTIFICATE_ERROR;
-         VMREST_LOG_ERROR("SSL Certificate cannot be used");
+         VMREST_LOG_ERROR(pRESTHandle,"SSL Certificate cannot be used");
     }
 	BAIL_ON_VMREST_ERROR(dwError);
 
     if (SSL_CTX_use_PrivateKey_file(context, key, SSL_FILETYPE_PEM) <= 0)
 	{
         dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_ERROR;
-        VMREST_LOG_ERROR("SSL key cannot be used");
+        VMREST_LOG_ERROR(pRESTHandle,"SSL key cannot be used");
     }
 	BAIL_ON_VMREST_ERROR(dwError);
 
     if (!SSL_CTX_check_private_key(context)) 
 	{
         dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_CHECK_ERROR;
-        VMREST_LOG_ERROR("SSL Error in private key");
+        VMREST_LOG_ERROR(pRESTHandle,"SSL Error in private key");
 	}
 	BAIL_ON_VMREST_ERROR(dwError);
 
@@ -1001,7 +1001,7 @@ tryAgain:
 	     else if (sockError < 0)
              {
                  dwError = errorCode;
-                 VMREST_LOG_ERROR("SSL read failed, sockError = %u", dwError);
+                 VMREST_LOG_ERROR(pRESTHandle,"SSL read failed, sockError = %u", dwError);
 	         BAIL_ON_VMREST_ERROR(dwError);
 	     }
 	     dwBytesRead = sockError;
@@ -1018,7 +1018,7 @@ tryAgain:
 	      else if (sockError < 0)
 	      {
                   dwError = errorCode;
-		  VMREST_LOG_ERROR("Socket %u read failed with errorCode %d", pSocket->hSocket, errorCode);
+		  VMREST_LOG_ERROR(pRESTHandle,"Socket %u read failed with errorCode %d", pSocket->hSocket, errorCode);
 	          BAIL_ON_VMREST_ERROR(dwError);
 	      }
 	      dwBytesRead = sockError;
@@ -1099,7 +1099,7 @@ VmSockWinWrite(
         {
             bytesWritten += dwBytesWritten;
             bytesLeft -= dwBytesWritten;
-            VMREST_LOG_DEBUG("Bytes written this write %d, Total bytes written %u", dwBytesWritten, bytesWritten);
+            VMREST_LOG_DEBUG(pRESTHandle,"Bytes written this write %d, Total bytes written %u", dwBytesWritten, bytesWritten);
             dwBytesWritten = 0;
         }
         else
@@ -1109,7 +1109,7 @@ VmSockWinWrite(
                 dwBytesWritten = 0;
                 continue;
             }
-            VMREST_LOG_ERROR("Write failed with Error Code %d", errorCode);
+            VMREST_LOG_ERROR(pRESTHandle,"Write failed with Error Code %d", errorCode);
             dwError = errorCode;
             BAIL_ON_VMREST_ERROR(dwError);
         }
@@ -1172,7 +1172,7 @@ VmSockWinClose(
     PVM_SOCKET           pSocket
     )
 {
-    VMREST_LOG_DEBUG("Close Connectiom - Socket: %d", (DWORD)pSocket->hSocket);
+    VMREST_LOG_DEBUG(pRESTHandle,"Close Connectiom - Socket: %d", (DWORD)pSocket->hSocket);
 
     if (pSocket->hSocket != INVALID_SOCKET)
     {
@@ -1309,7 +1309,7 @@ VmSockWinAcceptConnection(
 	if (!ssl)
 	{
             dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
-	    VMREST_LOG_ERROR("Error in SSL_new");
+	    VMREST_LOG_ERROR(pRESTHandle,"Error in SSL_new");
 	}
         BAIL_ON_VMREST_ERROR(dwError);
         SSL_set_fd(ssl, clientSocket);
@@ -1325,7 +1325,7 @@ retry:
 	    }
 	    else
 	    {
-                VMREST_LOG_ERROR("SSL Accept failed dwError = %d error code %d", err, SSL_get_error(ssl,err));
+                VMREST_LOG_ERROR(pRESTHandle,"SSL Accept failed dwError = %d error code %d", err, SSL_get_error(ssl,err));
                 dwError = 101;
 		BAIL_ON_VMREST_ERROR(dwError);
 	    }

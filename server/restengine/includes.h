@@ -30,8 +30,6 @@ typedef unsigned __int8 uint8_t;
 #include <vmrest.h>
 #include <vmsock.h>
 #include <vmrestcommon.h>
-//#include <vmrestsock.h>
 #include "defines.h"
 #include "structs.h"
-#include "externs.h"
 #include "prototype.h"

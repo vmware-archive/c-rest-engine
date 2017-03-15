@@ -16,7 +16,7 @@
 static
 uint32_t
 VmRESTSecureSocket(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            certificate,
     char*                            key
     );
@@ -69,7 +69,7 @@ VmSockPosixFreeSocket(
 static
 uint32_t
 VmRESTSecureSocket(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            certificate,
     char*                            key
     )
@@ -82,7 +82,7 @@ VmRESTSecureSocket(
 
     if (key == NULL || certificate == NULL)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -93,7 +93,7 @@ VmRESTSecureSocket(
     context = SSL_CTX_new(method);
     if ( context == NULL )
     {
-        VMREST_LOG_ERROR("SSL context is NULL");
+        VMREST_LOG_ERROR(pRESTHandle,"SSL context is NULL");
         dwError = VMREST_TRANSPORT_SSL_CONFIG_ERROR;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -107,7 +107,7 @@ VmRESTSecureSocket(
     ret = SSL_CTX_set_cipher_list(context, "!aNULL:kECDH+AESGCM:ECDH+AESGCM:RSA+AESGCM:kECDH+AES:ECDH+AES:RSA+AES");
     if (ret == 0)
     {
-        VMREST_LOG_ERROR("SSL_CTX_set_cipher_list() : Cannot apply security approved cipher suites");
+        VMREST_LOG_ERROR(pRESTHandle,"SSL_CTX_set_cipher_list() : Cannot apply security approved cipher suites");
         dwError = VMREST_TRANSPORT_SSL_INVALID_CIPHER_SUITES;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -115,7 +115,7 @@ VmRESTSecureSocket(
     ret = SSL_CTX_use_certificate_file(context, certificate, SSL_FILETYPE_PEM);
     if (ret <= 0)
     {
-        VMREST_LOG_ERROR("Cannot Use SSL certificate");
+        VMREST_LOG_ERROR(pRESTHandle,"Cannot Use SSL certificate");
         dwError = VMREST_TRANSPORT_SSL_CERTIFICATE_ERROR;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -123,18 +123,18 @@ VmRESTSecureSocket(
     ret = SSL_CTX_use_PrivateKey_file(context, key, SSL_FILETYPE_PEM);
     if (ret <= 0)
     {
-        VMREST_LOG_ERROR("Cannot use private key file");
+        VMREST_LOG_ERROR(pRESTHandle,"Cannot use private key file");
         dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_ERROR;
         BAIL_ON_VMREST_ERROR(dwError);
     }
     if (!SSL_CTX_check_private_key(context))
     {
-        VMREST_LOG_ERROR("Error in Private Key");
+        VMREST_LOG_ERROR(pRESTHandle,"Error in Private Key");
         dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_CHECK_ERROR;
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    pRESTHandler->pSSLInfo->sslContext = context;
+    pRESTHandle->pSSLInfo->sslContext = context;
 
 cleanup:
     return dwError;
@@ -195,7 +195,6 @@ VmSockPosixOpenClient(
 
     if (getaddrinfo(pszHost, szPort, &hints, &pAddrInfo) != 0)
     {
-        VMREST_LOG_ERROR("getaddrinfo() Failed with errno %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
     }
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
@@ -289,7 +288,7 @@ error:
 
 DWORD
 VmSockPosixOpenServer(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     USHORT                           usPort,
     int                              iListenQueueSize,
     VM_SOCK_CREATE_FLAGS             dwFlags,
@@ -300,9 +299,9 @@ VmSockPosixOpenServer(
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pRESTHandler)
+    if (!pRESTHandle)
     {
-        VMREST_LOG_DEBUG("Invalid REST Handler");
+        VMREST_LOG_DEBUG(pRESTHandle,"Invalid REST Handler");
         dwError = REST_ENGINE_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -352,21 +351,14 @@ VmSockPosixOpenServer(
 
     socketParams.protocol = 0;
 
-    dwError = VmRESTAllocateMemory(
-                  sizeof(VM_SOCK_SSL_INFO),
-                  (void **)&pSSLInfo
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
+    pSSLInfo = pRESTHandle->pSSLInfo;
 
-    pRESTHandler->pSSLInfo = pSSLInfo;
-
-    
     /**** Check if connection is over SSL ****/
     if(dwFlags & VM_SOCK_IS_SSL)
     {
         SSL_library_init();
         dwError = VmRESTSecureSocket(
-                      pRESTHandler,
+                      pRESTHandle,
                       sslCert,
                       sslKey
                       );
@@ -382,7 +374,7 @@ VmSockPosixOpenServer(
     fd = socket(socketParams.domain, socketParams.type, socketParams.protocol);
     if (fd < 0)
     {
-        VMREST_LOG_ERROR("Socket call failed with Error code %d", errno);
+        VMREST_LOG_ERROR(pRESTHandle,"Socket call failed with Error code %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
     }
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
@@ -433,7 +425,7 @@ VmSockPosixOpenServer(
 
     if (bind(fd, pSockAddr, addrLen) < 0)
     {
-        VMREST_LOG_ERROR("bind() call failed with Error code %d", errno);
+        VMREST_LOG_ERROR(pRESTHandle,"bind() call failed with Error code %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
     }
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
@@ -453,12 +445,12 @@ VmSockPosixOpenServer(
 
         if (listen(fd, iListenQueueSize) < 0)
         {
-            VMREST_LOG_ERROR("Listen() on server socket with fd %d failed with Error code %d", fd, errno);
+            VMREST_LOG_ERROR(pRESTHandle,"Listen() on server socket with fd %d failed with Error code %d", fd, errno);
             dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         }
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    VMREST_LOG_DEBUG("Server Listening on socket with fd %d ...", fd);
+    VMREST_LOG_DEBUG(pRESTHandle,"Server Listening on socket with fd %d ...", fd);
 
     dwError = VmRESTAllocateMemory(
                   sizeof(*pSocket),
@@ -509,17 +501,12 @@ error:
         close(fd);
     }
 
-    if (pSSLInfo)
-    {
-        VmRESTFreeMemory(pSSLInfo);
-        pSSLInfo = NULL;
-    }
     goto cleanup;
 }
 
 DWORD
 VmSockPosixCreateEventQueue(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     int                              iEventQueueSize,
     PVM_SOCK_EVENT_QUEUE*            ppQueue
     )
@@ -527,9 +514,9 @@ VmSockPosixCreateEventQueue(
     DWORD                            dwError = REST_ENGINE_SUCCESS;
     PVM_SOCK_EVENT_QUEUE             pQueue = NULL;
 
-    if (!ppQueue || !pRESTHandler)
+    if (!ppQueue || !pRESTHandle)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -565,7 +552,7 @@ VmSockPosixCreateEventQueue(
     pQueue->epollFd = epoll_create(pQueue->dwSize);
     if (pQueue->epollFd < 0)
     {
-        VMREST_LOG_ERROR("epoll create failed with Error code %d", errno);
+        VMREST_LOG_ERROR(pRESTHandle,"epoll create failed with Error code %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -582,9 +569,9 @@ VmSockPosixCreateEventQueue(
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
     *ppQueue = pQueue;
-    pRESTHandler->pSSLInfo->isQueueInUse = 1;
+    pRESTHandle->pSSLInfo->isQueueInUse = 1;
 
-    VMREST_LOG_DEBUG("Event queue creation successful");
+    VMREST_LOG_DEBUG(pRESTHandle,"Event queue creation successful");
 
 cleanup:
 
@@ -607,7 +594,7 @@ error:
 
 DWORD
 VmSockPosixEventQueueAdd(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     PVM_SOCKET                       pSocket
     )
@@ -617,7 +604,7 @@ VmSockPosixEventQueueAdd(
 
     if (!pQueue || !pSocket)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -654,7 +641,7 @@ error:
 
 DWORD
 VmSockPosixWaitForEvent(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     int                              iTimeoutMS,
     PVM_SOCKET*                      ppSocket,
@@ -673,7 +660,7 @@ VmSockPosixWaitForEvent(
 
     if (!pQueue || !ppSocket || !pEventType)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -704,7 +691,7 @@ VmSockPosixWaitForEvent(
                                  );
             if ((pQueue->nReady < 0) && (errno != EINTR))
             {
-                VMREST_LOG_ERROR("epoll_wait() failed with Error code %d", errno);
+                VMREST_LOG_ERROR(pRESTHandle,"epoll_wait() failed with Error code %d", errno);
                 dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
                 BAIL_ON_POSIX_SOCK_ERROR(dwError);
             }
@@ -721,7 +708,7 @@ VmSockPosixWaitForEvent(
 
             if (!pEventSocket)
             {
-                VMREST_LOG_ERROR("Bad socket information");
+                VMREST_LOG_ERROR(pRESTHandle,"Bad socket information");
                 dwError = ERROR_INVALID_STATE;
                 BAIL_ON_POSIX_SOCK_ERROR(dwError);
             }
@@ -744,15 +731,15 @@ VmSockPosixWaitForEvent(
                         BAIL_ON_POSIX_SOCK_ERROR(dwError);
                         pSocket->inUse = 0;
 
-                        dwError = VmSockPosixSetNonBlocking(pRESTHandler,pSocket);
+                        dwError = VmSockPosixSetNonBlocking(pRESTHandle,pSocket);
                         BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
                         
 
                         /**** If conn is over SSL, do the needful ****/
-                        if (pRESTHandler->pSSLInfo->isSecure)
+                        if (pRESTHandle->pSSLInfo->isSecure)
                         {
-                             ssl = SSL_new(pRESTHandler->pSSLInfo->sslContext);
+                             ssl = SSL_new(pRESTHandle->pSSLInfo->sslContext);
                              SSL_set_fd(ssl,pSocket->fd);
 retry:
                              if (SSL_accept(ssl) == -1)
@@ -764,7 +751,7 @@ retry:
                                  }
                                  else
                                  {
-                                     VMREST_LOG_ERROR("SSL accept failed");
+                                     VMREST_LOG_ERROR(pRESTHandle,"SSL accept failed");
                                      dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
                                      BAIL_ON_VMREST_ERROR(dwError);
                                  }
@@ -801,7 +788,7 @@ retry:
                 }
                 else
                 {
-                    pSocket = VmSockPosixAcquireSocket(pRESTHandler, pEventSocket);
+                    pSocket = VmSockPosixAcquireSocket(pRESTHandle, pEventSocket);
                     eventType = VM_SOCK_EVENT_TYPE_DATA_AVAILABLE;
                 }
             }
@@ -836,7 +823,13 @@ cleanup:
     if (dwError == ERROR_SHUTDOWN_IN_PROGRESS && freeEventQueue == 1)
     {
         VmSockPosixFreeEventQueue(pQueue);
-        pRESTHandler->pSSLInfo->isQueueInUse = 0;
+        pRESTHandle->pSSLInfo->isQueueInUse = 0;
+
+        if (pRESTHandle->pSSLInfo->sslContext)
+        {
+            VmRESTFreeMemory(pRESTHandle->pSSLInfo->sslContext);
+            pRESTHandle->pSSLInfo->sslContext = NULL;
+        }
     }
 
     return dwError;
@@ -853,7 +846,7 @@ error:
     }
     if (pSocket)
     {
-        VmSockPosixReleaseSocket(pRESTHandler,pSocket);
+        VmSockPosixReleaseSocket(pRESTHandle,pSocket);
     }
 
     goto cleanup;
@@ -861,7 +854,7 @@ error:
 
 VOID
 VmSockPosixCloseEventQueue(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                  pRESTHandle,
     PVM_SOCK_EVENT_QUEUE             pQueue
     )
 {
@@ -881,7 +874,7 @@ VmSockPosixCloseEventQueue(
 
     while(retry < 10)
     {
-        if (pRESTHandler->pSSLInfo->isQueueInUse == 0)
+        if (pRESTHandle->pSSLInfo->isQueueInUse == 0)
         {
            break;
         }
@@ -892,7 +885,7 @@ VmSockPosixCloseEventQueue(
 
 DWORD
 VmSockPosixSetNonBlocking(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket
     )
 {
@@ -923,7 +916,7 @@ error:
 
 DWORD
 VmSockPosixGetProtocol(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PDWORD                           pdwProtocol
     )
@@ -934,7 +927,7 @@ VmSockPosixGetProtocol(
 
     if (!pSocket || !pdwProtocol)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -987,7 +980,7 @@ error:
 
 DWORD
 VmSockPosixSetData(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVOID                            pData,
     PVOID*                           ppOldData
@@ -999,7 +992,7 @@ VmSockPosixSetData(
 
     if (!pSocket)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -1039,7 +1032,7 @@ error:
 
 DWORD
 VmSockPosixGetData(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVOID*                           ppData
     )
@@ -1049,7 +1042,7 @@ VmSockPosixGetData(
 
     if (!pSocket || !ppData)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -1082,7 +1075,7 @@ error:
 
 DWORD
 VmSockPosixRead(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     )
@@ -1098,7 +1091,7 @@ VmSockPosixRead(
 
     if (!pSocket || !pIoBuffer || !pIoBuffer->pData)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -1118,7 +1111,7 @@ VmSockPosixRead(
     bLocked = TRUE;
 
 tryAgain:
-    if (pRESTHandler->pSSLInfo->isSecure && (pSocket->ssl != NULL))
+    if (pRESTHandle->pSSLInfo->isSecure && (pSocket->ssl != NULL))
     {
         nRead = SSL_read(pSocket->ssl, pIoBuffer->pData + pIoBuffer->dwCurrentSize, dwBufSize);
         errorCode = SSL_get_error(pSocket->ssl, nRead);
@@ -1142,7 +1135,7 @@ tryAgain:
     }
     else if (nRead < 0)
     {
-        VMREST_LOG_ERROR("Socket Read failed");
+        VMREST_LOG_ERROR(pRESTHandle,"Socket Read failed");
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -1166,7 +1159,7 @@ error:
 
 DWORD
 VmSockPosixWrite(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     const struct sockaddr*           pClientAddress,
     socklen_t                        addrLength,
@@ -1186,7 +1179,7 @@ VmSockPosixWrite(
 
     if (!pSocket || !pIoBuffer || !pIoBuffer->pData)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -1236,7 +1229,7 @@ VmSockPosixWrite(
 
     while(bytesWritten < bytes )
     {
-         if (pRESTHandler->pSSLInfo->isSecure && (pSocket->ssl != NULL))
+         if (pRESTHandle->pSSLInfo->isSecure && (pSocket->ssl != NULL))
          {
              nWritten = SSL_write(pSocket->ssl,(pIoBuffer->pData + bytesWritten),bytesLeft);
          }
@@ -1254,25 +1247,25 @@ VmSockPosixWrite(
          {
              bytesWritten += nWritten;
              bytesLeft -= nWritten;
-             VMREST_LOG_DEBUG("\nBytes written this write %d, Total bytes written %u", nWritten, bytesWritten);
+             VMREST_LOG_DEBUG(pRESTHandle,"\nBytes written this write %d, Total bytes written %u", nWritten, bytesWritten);
              nWritten = 0;
          }
          else
          {
              if (errno == 11)
              {
-                 VMREST_LOG_DEBUG("retry write");
+                 VMREST_LOG_DEBUG(pRESTHandle,"retry write");
                  usleep(1000);
                  nWritten = 0;
                  continue;
              }
-             VMREST_LOG_ERROR("Write failed with errorno %d", errno);
+             VMREST_LOG_ERROR(pRESTHandle,"Write failed with errorno %d", errno);
              dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
              BAIL_ON_VMREST_ERROR(dwError);
         }
 
     }
-    VMREST_LOG_DEBUG("\nWrite Status on Socket with fd = %d\nRequested: %d bytes\nWritten %d bytes\n", pSocket->fd, bytes, bytesWritten);
+    VMREST_LOG_DEBUG(pRESTHandle,"\nWrite Status on Socket with fd = %d\nRequested: %d bytes\nWritten %d bytes\n", pSocket->fd, bytes, bytesWritten);
 
     pIoBuffer->dwCurrentSize += nWritten;
     pIoBuffer->dwBytesTransferred = nWritten;
@@ -1293,7 +1286,7 @@ error:
 
 PVM_SOCKET
 VmSockPosixAcquireSocket(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket
     )
 {
@@ -1306,7 +1299,7 @@ VmSockPosixAcquireSocket(
 
 VOID
 VmSockPosixReleaseSocket(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket
     )
 {
@@ -1321,16 +1314,16 @@ VmSockPosixReleaseSocket(
 
 DWORD
 VmSockPosixCloseSocket(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
     BOOLEAN                          bLocked = FALSE;
 
-    if (pRESTHandler)
+    if (!pRESTHandle)
     {
-        VMREST_LOG_ERROR("Invalid REST Handler");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid REST Handler");
         dwError = REST_ENGINE_INVALID_HANDLER;
     }
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
@@ -1340,7 +1333,7 @@ VmSockPosixCloseSocket(
 
     bLocked = TRUE;
 
-    if (pRESTHandler->pSSLInfo->isSecure)
+    if (pRESTHandle->pSSLInfo->isSecure)
     {
         if (pSocket->ssl)
         {
@@ -1388,7 +1381,6 @@ VmSockPosixCreateSignalSockets(
 
     if (socketpair(AF_LOCAL, SOCK_STREAM, 0, fdPair) < 0)
     {
-        VMREST_LOG_ERROR("socketpair() failed with errbi %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -1463,7 +1455,6 @@ VmSockPosixEventQueueAdd_inlock(
 
     if (epoll_ctl(pQueue->epollFd, EPOLL_CTL_ADD, pSocket->fd, &event) < 0)
     {
-        VMREST_LOG_ERROR("epoll_ctl() failed with Error code %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -1518,7 +1509,6 @@ VmSockPosixAcceptConnection(
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
-    VMREST_LOG_DEBUG("Accepted connection with fd %d, listner fd %u", fd, pListener->fd);
     pSocket->fd = fd;
 
     pSocket->pAddr = &pSocket->addr;
@@ -1556,7 +1546,6 @@ VmSockPosixSetDescriptorNonBlocking(
 
     if ((flags = fcntl(fd, F_GETFL, 0)) < 0)
     {
-        VMREST_LOG_ERROR("fcntl() GET failed with Error Code %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -1565,7 +1554,6 @@ VmSockPosixSetDescriptorNonBlocking(
 
     if ((flags = fcntl(fd, F_SETFL, flags)) < 0)
     {
-        VMREST_LOG_ERROR("fcntl() SET failed with Error Code %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -1586,7 +1574,6 @@ VmSockPosixSetReuseAddress(
 
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0)
     {
-        VMREST_LOG_ERROR("setsoctopt() failed with Error Code %d", errno);
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
@@ -1604,7 +1591,6 @@ VmSockPosixFreeEventQueue(
 {
     if (!pQueue)
     {
-        VMREST_LOG_ERROR("pQueue is NULL");
         return;
     }
     
@@ -1663,7 +1649,7 @@ VmSockPosixFreeSocket(
 
 DWORD
 VmSockPosixStartListening(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     int                              iListenQueueSize
     )
@@ -1673,7 +1659,7 @@ VmSockPosixStartListening(
 
 DWORD
 VmSockPosixAllocateIoBuffer(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     VM_SOCK_EVENT_TYPE               eventType,
     DWORD                            dwSize,
     PVM_SOCK_IO_BUFFER*              ppIoBuffer
@@ -1684,7 +1670,7 @@ VmSockPosixAllocateIoBuffer(
 
     if (!ppIoBuffer)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -1708,7 +1694,7 @@ error:
 
     if (pIoContext)
     {
-        VmSockPosixFreeIoBuffer(pRESTHandler,&pIoContext->IoBuffer);
+        VmSockPosixFreeIoBuffer(pRESTHandle,&pIoContext->IoBuffer);
     }
 
     goto cleanup;
@@ -1716,7 +1702,7 @@ error:
 
 VOID
 VmSockPosixFreeIoBuffer(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_IO_BUFFER               pIoBuffer
     )
 {
@@ -1740,7 +1726,7 @@ VmSockPosixFreeIoBuffer(
  */
 DWORD
 VmSockPosixGetAddress(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     struct sockaddr_storage*         pAddress,
     socklen_t*                       pAddresLen
@@ -1770,7 +1756,7 @@ error :
 
 VOID
 VmSockPosixGetStreamBuffer(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER*               ppStreamBuffer
     )
@@ -1787,7 +1773,7 @@ VmSockPosixGetStreamBuffer(
 
 VOID
 VmSockPosixSetStreamBuffer(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER                pStreamBuffer
     )

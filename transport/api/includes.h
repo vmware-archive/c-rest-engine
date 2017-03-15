@@ -31,12 +31,9 @@ typedef unsigned __int8 uint8_t;
 #endif
 
 
-//#include <vmrestsys.h>
 #include <vmrestdefines.h>
-//#include <vmrestsock.h>
 #include <vmsock.h>
 #include <vmrestcommon.h>
-#include <vmsockapi.h>
 
 #ifdef _WIN32
 #include <vmwinsock.h>
@@ -48,4 +45,3 @@ typedef unsigned __int8 uint8_t;
 
 
 #include "defines.h"
-#include "externs.h"

@@ -23,11 +23,13 @@ VmRESTGetSockPackagePosix(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_SOCK_PACKAGE                 pSockPackagePosix = NULL;
 
-    dwError = VmRESTAllocateMemory(
-                  sizeof(VM_SOCK_PACKAGE),
-                  (void **)&pSockPackagePosix
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
+    if (!ppSockPackagePosix)
+    {
+        dwError = REST_ENGINE_NO_MEMORY;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    pSockPackagePosix = *ppSockPackagePosix;
 
     pSockPackagePosix->pfnOpenClientSocket = &VmSockPosixOpenClient;
     pSockPackagePosix->pfnOpenServerSocket = &VmSockPosixOpenServer;
@@ -50,10 +52,6 @@ VmRESTGetSockPackagePosix(
     pSockPackagePosix->pfnGetStreamBuffer = &VmSockPosixGetStreamBuffer;
     pSockPackagePosix->pfnSetStreamBuffer = &VmSockPosixSetStreamBuffer;
         
-
-    *ppSockPackagePosix = pSockPackagePosix;
-
-
 cleanup:
 
     return dwError;
@@ -70,44 +68,7 @@ VmRESTFreeSockPackagePosix(
     )
 {
     if (pSockPackagePosix)
-    { 
-        VmRESTFreeMemory(pSockPackagePosix);
+    {
+        /* Do nothing */ 
     }
 }
-
-
-
-/*
-
-
-VM_SOCK_PACKAGE gVmSockPosixPackage =
-{
-    .pfnOpenClientSocket = &VmSockPosixOpenClient;
-    .pfnOpenServerSocket = &VmSockPosixOpenServer;
-    .pfnCreateEventQueue = &VmSockPosixCreateEventQueue;
-    .pfnAddEventQueue = &VmSockPosixEventQueueAdd;
-    .pfnWaitForEvent = &VmSockPosixWaitForEvent;
-    .pfnCloseEventQueue = &VmSockPosixCloseEventQueue;
-    .pfnSetNonBlocking = &VmSockPosixSetNonBlocking;
-    .pfnGetProtocol = &VmSockPosixGetProtocol;
-    .pfnSetData = &VmSockPosixSetData;
-    .pfnGetData = &VmSockPosixGetData;
-    .pfnRead = &VmSockPosixRead;
-    .pfnWrite = &VmSockPosixWrite;
-    .pfnAcquireSocket = &VmSockPosixAcquireSocket;
-    .pfnReleaseSocket = &VmSockPosixReleaseSocket;
-    .pfnCloseSocket = &VmSockPosixCloseSocket;
-    .pfnGetAddress = &VmSockPosixGetAddress;
-    .pfnAllocateIoBuffer = &VmSockPosixAllocateIoBuffer;
-    .pfnReleaseIoBuffer = &VmSockPosixFreeIoBuffer;
-    .pfnGetStreamBuffer = &VmSockPosixGetStreamBuffer;
-    .pfnSetStreamBuffer = &VmSockPosixSetStreamBuffer
-};
-
-
-*/
-
-//PVM_SOCK_PACKAGE gpVmSockPosixPackage = &gVmSockPosixPackage;
-
-//SOCK_SSL_INFO gSockSSLInfo = {NULL; 0 ;0};
-

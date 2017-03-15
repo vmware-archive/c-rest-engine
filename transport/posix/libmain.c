@@ -20,13 +20,8 @@ VmSockPosixInitialize(
     PVM_SOCK_PACKAGE*                ppPackage
     )
 {
-    //*ppPackage = gpVmSockPosixPackage;
-
-    //return 0;
 
     return VmRESTGetSockPackagePosix(ppPackage);
-
-
 
 }
 

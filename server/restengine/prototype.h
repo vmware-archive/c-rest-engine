@@ -58,7 +58,7 @@ VmRESTParseHTTPReqLine(
 
 uint32_t
 VmRESTParseAndPopulateHTTPHeaders(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            buffer,
     uint32_t                         packetLen,
     PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
@@ -104,26 +104,26 @@ VMRESTWriteChunkedMessageInResponseStream(
 
 uint32_t
 VmRESTSendHeader(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
 uint32_t
 VmRESTSendChunkedPayload(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket,
     uint32_t                         dataLen
     );
 
 uint32_t
 VmRESTSendHeaderAndPayload(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResPacket
     );
 
 uint32_t
 VmRESTTriggerAppCb(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_REST_HTTP_REQUEST_PACKET     pRequest,
     PVM_REST_HTTP_RESPONSE_PACKET*   ppResponse
     );
@@ -164,6 +164,16 @@ VmRESTFreeHTTPResponsePacket(
 uint32_t
 VmRESTAllocateEndPoint(
      PREST_ENDPOINT*                 ppEndPoint
+     );
+
+uint32_t
+VmRESTAllocateHandle(
+     PVMREST_HANDLE*                 ppRESTHandle
+     );
+
+void
+VmRESTFreeHandle(
+     PVMREST_HANDLE                  pRESTHandle
      );
 
 /***************** httpUtilsInternal.c ************/
@@ -281,7 +291,7 @@ VmRESTGetResponseBufferSize(
 
 uint32_t
 VmRestEngineHandler(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     );
@@ -296,20 +306,20 @@ VmRestEngineShutdownEndPointRegistration(
 
 uint32_t
 VmRestEngineAddEndpoint(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            pEndPointURI,
     PREST_PROCESSOR                  pHandler
     );
 
 uint32_t
 VmRestEngineRemoveEndpoint(
-    PVMREST_HANDLER                  pRESTHandler,
-    char*                            pEndPointURI
+    PVMREST_HANDLE                   pRESTHandle,
+    char const*                      pEndPointURI
     );
 
 uint32_t
 VmRestEngineGetEndPoint(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            pEndPointURI,
     PREST_ENDPOINT*                  ppEndPoint
     );
@@ -353,35 +363,35 @@ VmRESTCopyWCStringByIndex(
 
 uint32_t
 VmHTTPInit(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_CONF                       pConfig,
     char const*                      file
     );
 
 uint32_t
 VmHTTPStart(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 uint32_t
 VmHTTPRegisterHandler(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_PROCESSOR                  pHandler
     );
 
 uint32_t
 VmHTTPUnRegisterHandler(
-    void
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 uint32_t
 VmHTTPStop(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 void
 VmHTTPShutdown(
-    PVMREST_HANDLER                  pRESTHandler
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 /********************* httpValidate.c *******************/

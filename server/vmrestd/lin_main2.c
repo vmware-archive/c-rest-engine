@@ -22,8 +22,8 @@
 #include <time.h>
 #include <stdio.h>
 
-PVMREST_HANDLER  gpRESTHandler = NULL;
-PVMREST_HANDLER  gpRESTHandler1 = NULL;
+PVMREST_HANDLE  gpRESTHandle = NULL;
+PVMREST_HANDLE  gpRESTHandle1 = NULL;
 
 uint32_t
 VmRESTUtilsConvertInttoString(
@@ -58,36 +58,39 @@ REST_PROCESSOR gVmRestHandlers1 =
 int main()
 {
     uint32_t                         dwError = 0;
-   // uint32_t                         cnt = 0;
+    uint32_t                         cnt = 0;
 
 
 
-    dwError = VmRESTInit(NULL,"/tmp/restconfig.txt", &gpRESTHandler);
-    dwError = VmRESTInit(NULL,"/tmp/restconfig2.txt", &gpRESTHandler1);
+    dwError = VmRESTInit(NULL,"/tmp/restconfig.txt", &gpRESTHandle);
 
-    VmRESTRegisterHandler(gpRESTHandler, "/v1/pkg", &gVmRestHandlers, NULL);
-    VmRESTRegisterHandler(gpRESTHandler1, "/v1/blah", &gVmRestHandlers1, NULL);
+    printf("DWERROR = %u", dwError);
+    dwError = VmRESTInit(NULL,"/tmp/restconfig2.txt", &gpRESTHandle1);
 
-    VmRESTStart(gpRESTHandler);
-    VmRESTStart(gpRESTHandler1);
+    VmRESTRegisterHandler(gpRESTHandle, "/v1/pkg", &gVmRestHandlers, NULL);
+    VmRESTRegisterHandler(gpRESTHandle1, "/v1/blah", &gVmRestHandlers1, NULL);
+
+    VmRESTStart(gpRESTHandle);
+    VmRESTStart(gpRESTHandle1);
 
 
     
 
 
-    while(1) //cnt < 20)
+    while(cnt < 20)
     {
         sleep(1);
-       // cnt++;
+        cnt++;
     }
 
-    dwError = VmRESTStop(gpRESTHandler);
-    dwError = VmRESTStop(gpRESTHandler1);
+    dwError = VmRESTStop(gpRESTHandle);
+    dwError = VmRESTStop(gpRESTHandle1);
 
-    //dwError = VmRESTUnRegisterHandler(gpRESTHandler,"/v1/pkg/*");
+    dwError = VmRESTUnRegisterHandler(gpRESTHandle,"/v1/pkg");
+    dwError = VmRESTUnRegisterHandler(gpRESTHandle1,"/v1/blah");
 
-    VmRESTShutdown(gpRESTHandler);
-    VmRESTShutdown(gpRESTHandler1);
+    VmRESTShutdown(gpRESTHandle);
+    VmRESTShutdown(gpRESTHandle1);
 
 
 return dwError;
@@ -154,7 +157,7 @@ VmHandleEchoData1(
     while(done != 1)
     {
         dwError = VmRESTGetData(
-                      gpRESTHandler1,
+                      gpRESTHandle1,
                       pRequest,
                       buffer,
                       &done
@@ -231,7 +234,7 @@ VmHandleEchoData1(
         memcpy(buffer, (AllData + index), nWrite);
 
         dwError = VmRESTSetData(
-                  gpRESTHandler1,
+                  gpRESTHandle1,
                   ppResponse,
                   buffer,
                   nWrite,
@@ -315,7 +318,7 @@ VmHandleEchoData(
     while(done != 1)
     {
         dwError = VmRESTGetData(
-                      gpRESTHandler,
+                      gpRESTHandle,
                       pRequest,
                       buffer,
                       &done
@@ -392,7 +395,7 @@ VmHandleEchoData(
         memcpy(buffer, (AllData + index), nWrite); 
 
         dwError = VmRESTSetData(
-                  gpRESTHandler,
+                  gpRESTHandle,
                   ppResponse,
                   buffer,
                   nWrite,

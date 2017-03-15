@@ -27,7 +27,6 @@ VmRESTCopyString(
 
     if ( !src  || !des )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_APPLICATION_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -39,7 +38,6 @@ VmRESTCopyString(
     }
     else
     {
-        VMREST_LOG_ERROR("Bad source length");
         dwError = VMREST_APPLICATION_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -62,7 +60,6 @@ VmRESTGetHttpResponseHeader(
 
     if (!pResponse || !header || !response )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_APPLICATION_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -84,7 +81,6 @@ VmRESTGetHttpResponseHeader(
     }
     else
     {
-        VMREST_LOG_DEBUG("WARNING :: Header %s not found in request object", header);
         response = NULL;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -107,7 +103,6 @@ VmRESTMapStatusCodeToEnumAndReasonPhrase(
 
     if (!statusCode || !result || !reasonPhrase)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_APPLICATION_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -337,7 +332,6 @@ VmRESTSetHttpRequestHeader(
 
     if (!pRequest || !header || !value || (*resStatus != OK))
     {
-        VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
         *resStatus = BAD_REQUEST;
     }
@@ -371,23 +365,18 @@ VmRESTParseAndPopulateConfigFile(
 
     if (!configFile)
     {
-        VMREST_LOG_ERROR("No Config file found");
         dwError = REST_ENGINE_MISSING_CONFIG;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTAllocateMemory(
-              sizeof(VM_REST_CONFIG),
-              (void**)&pRESTConfig
-              );
-    BAIL_ON_VMREST_ERROR(dwError);
+    pRESTConfig = *ppRESTConfig;
+
     fp = fopen(
              configFile,
              "r"
          );
     if (fp == NULL)
     {
-        VMREST_LOG_ERROR("Unable to open config file");
         dwError = REST_ENGINE_BAD_CONFIG_FILE_PATH;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -443,7 +432,6 @@ VmRESTParseAndPopulateConfigFile(
         strcpy(pRESTConfig->client_count, DEFAULT_CLIENT_CNT);
     }
 
-    *ppRESTConfig = pRESTConfig;
 
 cleanup:
     if (fp)
@@ -453,13 +441,7 @@ cleanup:
     }
     return dwError;
 error:
-    if (pRESTConfig)
-    {
-        VmRESTFreeMemory(
-            pRESTConfig
-            );
-    }
-    *ppRESTConfig = NULL;
+
     goto cleanup;
 }
 
@@ -490,7 +472,6 @@ VmRESTValidateConfig(
 
     if (!pRESTConfig)
     {
-        VMREST_LOG_ERROR("No rest engine config provided");
         dwError = REST_ENGINE_FAILURE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -499,7 +480,6 @@ VmRESTValidateConfig(
 
     if ((portLen == 0) || (portLen > MAX_SERVER_PORT_LEN))
     {
-        VMREST_LOG_ERROR("Configuration Validation failed: Port not specified");
         dwError = REST_ENGINE_INVALID_CONFIG_PORT;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -520,7 +500,6 @@ VmRESTValidateConfig(
 
         if (keyLen == 0 || keyLen > MAX_PATH_LEN || certLen == 0 || certLen > MAX_PATH_LEN)
         {
-            VMREST_LOG_ERROR("Bad SSL certificate length");
             dwError = REST_ENGINE_INVALID_CONFIG_SSL_CERT;
         }
         BAIL_ON_VMREST_ERROR(dwError);
@@ -528,7 +507,6 @@ VmRESTValidateConfig(
 
     if (atoi(portNo) == 0 || atoi(portNo) > MAX_PORT_NUMBER)
     {
-        VMREST_LOG_ERROR("Invalid port %s", portNo);
         dwError = REST_ENGINE_INVALID_CONFIG_PORT;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -537,7 +515,6 @@ VmRESTValidateConfig(
     { 
         if((atoi(pRESTConfig->client_count) == 0) || (atoi(pRESTConfig->client_count) > MAX_CLIENT_CNT))
         {
-            VMREST_LOG_ERROR("Invalid client Count %s", pRESTConfig->client_count);
             dwError = REST_ENGINE_INVALID_CONFIG_CLT_CNT;
             BAIL_ON_VMREST_ERROR(dwError);
         }
@@ -547,7 +524,6 @@ VmRESTValidateConfig(
     {
         if((atoi(pRESTConfig->worker_thread_count) == 0) || (atoi(pRESTConfig->worker_thread_count) > MAX_WORKER_THR_CNT))
         {
-            VMREST_LOG_ERROR("Invalid Worker thread Count %s", pRESTConfig->worker_thread_count);
             dwError = REST_ENGINE_INVALID_CONFIG_WKR_THR_CNT;
             BAIL_ON_VMREST_ERROR(dwError);
         }
@@ -568,21 +544,14 @@ VmRESTCopyConfig(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_CONFIG                  pRESTConfig = NULL;
 
-    if (!pConfig)
+    if (!pConfig || !ppRESTConfig)
     {
-        VMREST_LOG_ERROR("No Config found");
         dwError = REST_ENGINE_MISSING_CONFIG;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTAllocateMemory(
-                  sizeof(VM_REST_CONFIG),
-                  (void**)&pRESTConfig
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
+    pRESTConfig = *ppRESTConfig;
 
-    memset(pRESTConfig, '\0', sizeof(VM_REST_CONFIG));
-  
     if (pConfig->pSSLCertificate)
     {
         strncpy(pRESTConfig->ssl_certificate, pConfig->pSSLCertificate,( MAX_PATH_LEN - 1));
@@ -621,8 +590,6 @@ VmRESTCopyConfig(
         strncpy(pRESTConfig->client_count, DEFAULT_CLIENT_CNT, (MAX_WORKER_COUNT_LEN - 1));
     }
 
-    *ppRESTConfig = pRESTConfig;
-
 cleanup:
     return dwError;
 error:
@@ -648,7 +615,6 @@ VmRESTSetHTTPMiscHeader(
 
     if (!miscHeaderQueue || !header || !value || (strlen(header) > MAX_HTTP_HEADER_ATTR_LEN) || (strlen(value) > MAX_HTTP_HEADER_VAL_LEN))
     {
-        VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -675,7 +641,6 @@ VmRESTSetHTTPMiscHeader(
 
     if (headerLen == 0 || headerLen >= MAX_HTTP_HEADER_ATTR_LEN || valueLen == 0 || valueLen >= MAX_HTTP_HEADER_VAL_LEN)
     {
-        VMREST_LOG_ERROR("Wrong header or Value length : Header Len %u, Value Len %u", headerLen,valueLen);
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -725,15 +690,13 @@ VmRESTRemoveAllHTTPMiscHeader(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVM_REST_HTTP_HEADER_NODE        node = NULL;
     PVM_REST_HTTP_HEADER_NODE        temp = NULL;
-	int x = 1;
 
     temp = miscHeaderQueue->head;
     while (temp != NULL)
     {
         node = temp;
         temp = temp->next;
-        //node->next = NULL;
-		x++;
+        
         VmRESTFreeMemory(
             node
             );
@@ -759,7 +722,6 @@ VmRESTGetHTTPMiscHeader(
 
     if (!miscHeaderQueue)
     {
-        VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -800,7 +762,6 @@ VmRESTGetChunkSize(
 
     if (!lineStart || !skipBytes || !chunkSize)
     {
-        VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -838,7 +799,6 @@ VmRESTGetChunkSize(
             /**** This might be error or last chunk - identify it ****/
             if (!((strcmp(ignoreSpace, "0") == 0) || (strcmp(ignoreSpace, "0x00") == 0) || (strcmp(ignoreSpace, "0x0") == 0)))
             {
-                VMREST_LOG_ERROR("Invalid chunk size received");
                 dwError = BAD_REQUEST;
                 BAIL_ON_VMREST_ERROR(dwError);
             }
@@ -848,7 +808,6 @@ VmRESTGetChunkSize(
     }
     else
     {
-        VMREST_LOG_ERROR("Error in parsing content length");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -876,7 +835,6 @@ VmRESTCopyDataWithoutCRLF(
 
     if (!src || !des || !actualBytes || maxBytes > MAX_DATA_BUFFER_LEN)
     {
-        VMREST_LOG_ERROR("Invalid Params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -982,7 +940,6 @@ VmRESTGetResponseBufferSize(
 
     if (!pSize || !pResPacket)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);

@@ -280,6 +280,125 @@ VmRESTFreeEndPoint(
     }
 }
 
+uint32_t
+VmRESTAllocateHandle(
+     PVMREST_HANDLE*                 ppRESTHandle
+     )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PVMREST_HANDLE                   pRESTHandle = NULL;
+    PVM_SOCK_PACKAGE                 pPackage = NULL;
+    PVM_SOCK_SSL_INFO                pSSLInfo = NULL;
+    PREST_ENG_GLOBALS                pInstanceGlobal = NULL;
+    PVMREST_SOCK_CONTEXT             pSockContext = NULL;
+    PVM_REST_CONFIG                  pRESTConfig = NULL;
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VMREST_HANDLE),
+                  (void**)&pRESTHandle
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(REST_ENG_GLOBALS),
+                  (void **)&pInstanceGlobal
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    pRESTHandle->pInstanceGlobal = pInstanceGlobal;
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VM_REST_CONFIG),
+                  (void**)&pRESTConfig
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    pRESTHandle->pRESTConfig = pRESTConfig;
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VMREST_SOCK_CONTEXT),
+                  (PVOID*)&pSockContext
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    pRESTHandle->pSockContext = pSockContext;
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VM_SOCK_PACKAGE),
+                  (void **)&pPackage
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    pRESTHandle->pPackage = pPackage;
+
+    dwError = VmRESTAllocateMemory(
+                  sizeof(VM_SOCK_SSL_INFO),
+                  (void **)&pSSLInfo
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    pRESTHandle->pSSLInfo = pSSLInfo;
+
+    pRESTHandle->pHttpHandler = NULL;
+
+    *ppRESTHandle = pRESTHandle;
+
+cleanup:
+
+    return dwError;
+
+error:
+    if (pRESTHandle)
+    {
+        VmRESTFreeHandle(
+            pRESTHandle
+            );
+    }
+    goto cleanup;
+}
+
+void
+VmRESTFreeHandle(
+     PVMREST_HANDLE                  pRESTHandle
+     )
+{
+    if (pRESTHandle)
+    {
+        if (pRESTHandle->pInstanceGlobal)
+        {
+            VmRESTFreeMemory(pRESTHandle->pInstanceGlobal);
+            pRESTHandle->pInstanceGlobal = NULL;
+        }
+
+        if (pRESTHandle->pRESTConfig)
+        {
+             VmRESTFreeMemory(pRESTHandle->pRESTConfig);
+             pRESTHandle->pRESTConfig = NULL;
+        }
+
+        if (pRESTHandle->pSockContext)
+        {
+            VmRESTFreeMemory(pRESTHandle->pSockContext);
+            pRESTHandle->pSockContext = NULL;
+        }
+
+        if (pRESTHandle->pPackage)
+        {
+            VmRESTFreeMemory(pRESTHandle->pPackage);
+            pRESTHandle->pPackage = NULL;
+        }
+
+        if (pRESTHandle->pSSLInfo)
+        {
+            VmRESTFreeMemory(pRESTHandle->pSSLInfo);
+            pRESTHandle->pSSLInfo = NULL;
+        }
+
+        VmRESTFreeMemory(pRESTHandle);
+    }
+}
+
+
 static
 uint32_t
 VmRESTAllocateRequestLine(

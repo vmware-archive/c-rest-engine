@@ -6,7 +6,6 @@ noinst_LTLIBRARIES = libvmsock.la
 
 libvmsock_la_SOURCES = \
     api.c \
-    globals.c \
     libmain.c
 
 libvmsock_la_CPPFLAGS = \

@@ -49,7 +49,6 @@ VmRESTAllocateMutex(
 
     if ( ppMutex == NULL )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -85,7 +84,6 @@ VmRESTInitializeMutexContent(
 
     if ( ( pMutex == NULL ) || ( pMutex->bInitialized != FALSE ) )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -199,7 +197,6 @@ VmRESTAllocateCondition(
 
     if ( ppCondition == NULL )
     {
-        VMREST_LOG_ERROR("%s","Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -236,7 +233,6 @@ VmRESTInitializeConditionContent(
 
     if ( ( pCondition == NULL ) || ( pCondition->bInitialized != FALSE ) )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -294,7 +290,6 @@ VmRESTConditionWait(
          ( pMutex->bInitialized == FALSE )
        )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -330,7 +325,6 @@ VmRESTConditionTimedWait(
          ( pMutex->bInitialized == FALSE )
        )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -376,7 +370,6 @@ VmRESTConditionSignal(
          ( pCondition->bInitialized == FALSE )
        )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -406,7 +399,6 @@ ThreadFunction(
 
     if( pArgs == NULL)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -416,7 +408,6 @@ ThreadFunction(
 
     if( pThreadStart == NULL )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -450,7 +441,6 @@ VmRESTCreateThread(
 
     if ( ( pThread == NULL ) || ( pStartRoutine == NULL ) )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -520,7 +510,6 @@ VmRESTThreadJoin(
 
     if(pThread == NULL)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
     }
@@ -568,7 +557,6 @@ VmRESTAllocateRWLock(
 
     if (ppLock == NULL)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = ERROR_INVALID_PARAMETER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -640,14 +628,12 @@ VmRESTLockRead(
             Simply increment a read count but don't lock for read
             as that would cause undefined behavior.
             ****/
-           VMREST_LOG_DEBUG("%s","Lock read when already holding %u write lock.",*pWriteLockCount);
         }
         else
         {
             if (*pReadLockCount == 0)
             {
                 pthread_rwlock_rdlock(&pLock->rwLock);
-               VMREST_LOG_DEBUG("%s","Actually locking for read. Result read count: %u\n", *pReadLockCount + 1);
             }
         }
         (*pReadLockCount)++;
@@ -678,10 +664,6 @@ VmRESTTryLockRead(
             if (*pReadLockCount == 0)
             {
                 result = pthread_rwlock_tryrdlock(&pLock->rwLock);
-                if (!result)
-                {
-                   VMREST_LOG_DEBUG("%s","Locked for read. Result read count: %u\n",*pReadLockCount + 1);
-                }
             }
             else
             {
@@ -708,31 +690,26 @@ VmRESTUnlockRead(
 
     if (!pWriteLockCount || !pReadLockCount)
     {
-        VMREST_LOG_ERROR("Out of memory, can't decrement lock count.");
     }
     else
     {
         if (*pWriteLockCount > 0)
         {
-           VMREST_LOG_DEBUG("%s","Read unlock while already holding write lock.");
         }
         else
         {
             if (*pReadLockCount ==1)
             {
                 pthread_rwlock_unlock(&pLock->rwLock);
-               VMREST_LOG_DEBUG("%s","[UNLOCK READ]");
             }
         }
 
         if (*pReadLockCount > 0)
         {
             (*pReadLockCount)--;
-           VMREST_LOG_DEBUG("%s","[--READ %u]\n",*pReadLockCount);
         }
         else
         {
-           VMREST_LOG_DEBUG("%s","Unexpected read unlock");
         }
     }
 }
@@ -745,7 +722,6 @@ VmRESTLockWrite(
     int*                             pWriteLockCount = VmRESTGetLockKey(&pLock->writeKey);
     if (!pWriteLockCount)
     {
-       VMREST_LOG_DEBUG("%s","Out of memory, try plain locking.");
         pthread_rwlock_wrlock(&pLock->rwLock);
     }
     else
@@ -753,10 +729,8 @@ VmRESTLockWrite(
         if (*pWriteLockCount == 0)
         {
             pthread_rwlock_wrlock(&pLock->rwLock);
-           VMREST_LOG_DEBUG("%s","[LOCK WRITE]");
         }
         (*pWriteLockCount)++;
-       VMREST_LOG_DEBUG("%s","[++WRITE %u]\n", *pWriteLockCount);
     }
 }
 
@@ -772,7 +746,6 @@ VmRESTTryLockWrite(
     {
         if (*pReadLockCount > 0)
         {
-           VMREST_LOG_DEBUG("%s","Cannot wrlock with %u existing rdlock from same thread.\n",*pReadLockCount);
             result = ERROR_POSSIBLE_DEADLOCK;
         }
         else
@@ -780,10 +753,6 @@ VmRESTTryLockWrite(
             if (*pWriteLockCount <= 0)
             {
                 result = pthread_rwlock_trywrlock(&pLock->rwLock);
-                if (result)
-                {
-                   VMREST_LOG_DEBUG("%s","trywrlock returned %u\n", result);
-                }
             }
             else
             {
@@ -793,7 +762,6 @@ VmRESTTryLockWrite(
             if (!result)
             {
                 (*pWriteLockCount)++;
-                VMREST_LOG_DEBUG("%s","[++WRITE %u]\n", *pWriteLockCount);
             }
         }
     }
@@ -809,24 +777,17 @@ VmRESTUnlockWrite(
     int*                             pWriteLockCount = VmRESTGetLockKey(&pLock->writeKey);
     if (!pWriteLockCount)
     {
-        VMREST_LOG_ERROR("Out of memory, can't decrement lock count.");
     }
     else
     {
         if (*pWriteLockCount ==1)
         {
             pthread_rwlock_unlock(&pLock->rwLock);
-           VMREST_LOG_DEBUG("%s","[UNLOCK WRITE] result write count is %u.\n", *pWriteLockCount);
         }
 
         if (*pWriteLockCount > 0)
         {
             (*pWriteLockCount)--;
-           VMREST_LOG_DEBUG("%s","[--WRITE %u]\n", *pWriteLockCount);
-        }
-        else
-        {
-           VMREST_LOG_DEBUG("%s","Unexpected unlock write, write count is %u.\n",*pWriteLockCount);
         }
     }
 }

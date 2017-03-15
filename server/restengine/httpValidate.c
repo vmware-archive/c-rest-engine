@@ -25,7 +25,6 @@ VmRESTTrimSpaces(
 
     if (src == NULL || des == NULL)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -69,7 +68,6 @@ VmRESTRemovePreSpace(
 
     if (!src  || !dest)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -107,7 +105,6 @@ VmRESTRemovePostSpace(
 
     if (!src || !dest)
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -149,7 +146,7 @@ VmRESTConverUpperToLower(
 
     if (!src || !dest)
     {
-        VMREST_LOG_ERROR("Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,pRESTHandle,pRESTHandle,pRESTHandle,"Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -318,7 +315,6 @@ VmRESTValidateHTTPVersion(
 
     if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -357,7 +353,6 @@ VmRESTValidateHTTPRequestURI(
 
     if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -435,7 +430,6 @@ VmRESTValidateHTTPContentType(
 
     if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -504,7 +498,6 @@ VmRESTValidateAccept(
 
     if ( !pRequest || !result  || !err )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -574,7 +567,6 @@ VmRESTValidateAcceptCharSet(
 
     if ( !pRequest || !result || !err )
     {
-        VMREST_LOG_ERROR("Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);

@@ -18,7 +18,7 @@
 
 uint32_t
 VmRESTHandleHTTP_REQUEST(
-    PVMREST_HANDLER                  pRESTHandler,
+    PVMREST_HANDLE                  pRESTHandle,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse
     )

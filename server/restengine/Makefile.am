@@ -6,7 +6,6 @@ librestengine_la_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 librestengine_la_SOURCES = \
-    globals.c \
     httpValidate.c \
     libmain.c \
     httpProtocolHead.c \
