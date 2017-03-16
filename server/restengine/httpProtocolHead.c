@@ -506,7 +506,7 @@ VMRESTWriteChunkedMessageInResponseStream(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            curr = NULL;
-    char                             chunkSize[HTTP_CHUNCKED_DATA_LEN] = {0};
+    char                             chunkSize[HTTP_CHUNKED_DATA_LEN] = {0};
     size_t                           chunkLen = 0;
 
     if (!buffer || srcSize > MAX_DATA_BUFFER_LEN)

@@ -77,7 +77,7 @@ int main()
     
 
 
-    while(cnt < 20)
+    while(1) //cnt < 20)
     {
         sleep(1);
         cnt++;

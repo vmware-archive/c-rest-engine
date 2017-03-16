@@ -46,9 +46,8 @@ VmRESTGetHttpMethod(
                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    memset(pMethod, '\0', MAX_METHOD_LEN);
     strncpy(pMethod,pRequest->requestLine->method, (MAX_METHOD_LEN -1));
-           
+
     *ppResponse = pMethod;
 
 cleanup:
@@ -89,8 +88,6 @@ VmRESTGetHttpURI(
                  (void **)&pHttpURI
                  );
     BAIL_ON_VMREST_ERROR(dwError);
-
-    memset(pHttpURI, '\0', MAX_URI_LEN);
 
     VmRESTDecodeEncodedURLString(
        pRequest->requestLine->uri,
@@ -138,7 +135,6 @@ VmRESTGetHttpVersion(
                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    memset(pVersion, '\0', MAX_VERSION_LEN);
     strncpy(pVersion, pRequest->requestLine->version, (MAX_VERSION_LEN -1));
 
     *ppResponse = pVersion;
@@ -156,8 +152,8 @@ error:
 uint32_t
 VmRESTGetHttpHeader(
     PREST_REQUEST                    pRequest,
-    char const*                      header,
-    char**                           ppResponse
+    char const*                      pcszHeader,
+    char**                           ppszResponse
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -165,7 +161,7 @@ VmRESTGetHttpHeader(
     char*                            headerValue = NULL;
     char*                            temp = NULL;
 
-    if (!(pRequest) || !(header) || !(ppResponse))
+    if (!(pRequest) || !(pcszHeader) || !(ppszResponse))
     {
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
@@ -173,7 +169,7 @@ VmRESTGetHttpHeader(
 
     dwError = VmRESTGetHTTPMiscHeader(
                   pRequest->miscHeader,
-                  header,
+                  pcszHeader,
                   &temp
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -190,21 +186,20 @@ VmRESTGetHttpHeader(
                        (void **)&headerValue
                        );
          BAIL_ON_VMREST_ERROR(dwError);
-         memset(headerValue, '\0', MAX_HTTP_HEADER_VAL_LEN);
          strncpy(headerValue, temp, (MAX_HTTP_HEADER_VAL_LEN - 1));
-         *ppResponse = headerValue;
+         *ppszResponse = headerValue;
     }
     else
     {
-        *ppResponse = NULL;
+        *ppszResponse = NULL;
     }
 
 cleanup:
     return dwError;
 error:
-    if (ppResponse)
+    if (ppszResponse)
     {
-        *ppResponse = NULL;
+        *ppszResponse = NULL;
     }
     goto cleanup;
 }
@@ -229,7 +224,6 @@ VmRESTGetHttpPayload(
     uint32_t                         newChunk = 0;
     uint32_t                         extraRead = 0;
     uint32_t                         tryCnt = 0;
-    uint32_t                         maxTry = 50000;
     char*                            res = NULL;
     char*                            contentLength = NULL;
     char*                            transferEncoding = NULL;
@@ -277,8 +271,11 @@ VmRESTGetHttpPayload(
         {
             readXBytes = MAX_DATA_BUFFER_LEN;
         }
-tryagain:
-        dwError = VmsockPosixGetXBytes(
+
+        /**** If Expect:100-continue was received, re-attempt read considering RTT delay ****/
+        do
+        {
+            dwError = VmsockPosixGetXBytes(
                       pRESTHandle,
                       readXBytes,
                       localAppBuffer,
@@ -286,13 +283,8 @@ tryagain:
                       &bytesRead,
                       1
                       );
-
-        /**** If Expect:100-continue was received, re-attempt read considering RTT delay ****/
-        if (dwError !=0 && pRequest->dataNotRcvd == 1 && tryCnt < maxTry)
-        { 
             tryCnt++;
-            goto tryagain;
-        }
+        } while (dwError !=0 && pRequest->dataNotRcvd == 1 && tryCnt < MAX_READ_RETRIES);
         BAIL_ON_VMREST_ERROR(dwError);
 
         if (pRequest->dataNotRcvd == 1)
@@ -326,7 +318,7 @@ tryagain:
         dataRemaining = pRequest->dataRemaining;
         if (dataRemaining == 0)
         {
-            readXBytes = HTTP_CHUNCKED_DATA_LEN;
+            readXBytes = HTTP_CHUNKED_DATA_LEN;
             newChunk = 1;
         }
         else if (dataRemaining > MAX_DATA_BUFFER_LEN)
@@ -341,25 +333,23 @@ tryagain:
         }
 
         /**** This is chunked encoded packet ****/
-tryagain1:
-        dwError = VmsockPosixGetXBytes(
-                      pRESTHandle,
-                      readXBytes,
-                      localAppBuffer,
-                      pRequest->pSocket,
-                      &bytesRead,
-                      1
-                      );
 
         /**** If Expect:100-continue was received, re-attempt read considering RTT delay ****/
-        if (dwError == 5100 && pRequest->dataNotRcvd == 1 && tryCnt < maxTry)
+        do
         {
+            dwError = VmsockPosixGetXBytes(
+                          pRESTHandle,
+                          readXBytes,
+                          localAppBuffer,
+                          pRequest->pSocket,
+                          &bytesRead,
+                          1
+                          );
             tryCnt++;
-            goto tryagain1;
-        }
+        } while (dwError == ERROR_SYS_CALL_FAILED && pRequest->dataNotRcvd == 1 && tryCnt < MAX_READ_RETRIES);
 
         /**** Cross examine size if its last chuck ****/
-        if (dwError == 5100 && bytesRead > 0 && bytesRead < HTTP_CHUNCKED_DATA_LEN)
+        if (dwError == ERROR_SYS_CALL_FAILED && bytesRead > 0 && bytesRead < HTTP_CHUNKED_DATA_LEN)
         {
             dwError = 0;
         }
@@ -450,18 +440,16 @@ cleanup:
     if (contentLength != NULL)
     {
         VmRESTFreeMemory(contentLength);
-        contentLength = NULL;
     }
     if (transferEncoding != NULL)
     {
         VmRESTFreeMemory(transferEncoding);
-        transferEncoding = NULL;
     }
 
     return dwError;
 error:
     response = NULL;
-    if (dwError == 5100)
+    if (dwError == ERROR_SYS_CALL_FAILED)
     {
         dwError = LENGTH_REQUIRED;
     }
@@ -637,7 +625,7 @@ VmRESTSetHttpStatusCode(
     if ((atoi(statusCode) < 100) || (atoi(statusCode) > 600))
     {
         dwError = VMREST_HTTP_INVALID_PARAMS;
-    }  
+    }
     BAIL_ON_VMREST_ERROR(dwError);
 
     strcpy(pResponse->statusLine->statusCode, statusCode);

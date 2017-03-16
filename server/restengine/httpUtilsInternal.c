@@ -754,7 +754,7 @@ VmRESTGetChunkSize(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            temp = NULL;
     char*                            line = NULL;
-    char                             local[HTTP_CHUNCKED_DATA_LEN] = {0};
+    char                             local[HTTP_CHUNKED_DATA_LEN] = {0};
     uint32_t                         count = 0;
     uint32_t                         done = 0;
     long int                         hexToDec = 0;
@@ -765,10 +765,10 @@ VmRESTGetChunkSize(
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    memset(local,'\0', HTTP_CHUNCKED_DATA_LEN);
+    memset(local,'\0', HTTP_CHUNKED_DATA_LEN);
     temp = lineStart;
     line = local;
-    while ((count < (HTTP_CHUNCKED_DATA_LEN - 1)) && (*temp != '\0'))
+    while ((count < (HTTP_CHUNKED_DATA_LEN - 1)) && (*temp != '\0'))
     {
          if(*temp == '\r' && *(temp + 1) == '\n')
          {
