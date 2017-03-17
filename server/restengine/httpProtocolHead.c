@@ -393,7 +393,7 @@ VmRESTParseAndPopulateHTTPHeaders(
 
     if (!buffer || !pReqPacket || (*resStatus != OK) || (packetLen <= 4))
     {
-       VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+       VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
        dwError =  BAD_REQUEST;
        *resStatus = BAD_REQUEST;
     }
@@ -437,7 +437,7 @@ VmRESTParseAndPopulateHTTPHeaders(
                 if ((packetLen <= 4) && (strcmp(appBuffer, "\r\n\r\n") != 0))
                 {
                     skipRead = 1;
-                    VMREST_LOG_ERROR(pRESTHandle,"Bad HTTP request detected");
+                    VMREST_LOG_ERROR(pRESTHandle,"%s","Bad HTTP request detected");
                     dwError =  VMREST_HTTP_VALIDATION_FAILED;
                     *resStatus = BAD_REQUEST;
                 }
@@ -739,7 +739,7 @@ VmRESTSendHeader(
 
     if (!ppResPacket  || (*ppResPacket == NULL))
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -828,7 +828,7 @@ VmRESTSendChunkedPayload(
 
     if (!ppResPacket  || (*ppResPacket == NULL))
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -899,7 +899,7 @@ VmRESTSendHeaderAndPayload(
 
     if (!ppResPacket || (*ppResPacket == NULL))
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1089,7 +1089,7 @@ VmRESTProcessIncomingData(
 
     if (!pRESTHandle)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid REST Handler");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid REST Handler");
         dwError = REST_ENGINE_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1401,7 +1401,7 @@ error:
                 }
                 if (tempStatus)
                 {
-                    VMREST_LOG_ERROR(pRESTHandle,"ERROR setting the failure response object");
+                    VMREST_LOG_ERROR(pRESTHandle,"%s","ERROR setting the failure response object");
                     goto cleanup;
                 }
 
@@ -1413,7 +1413,7 @@ error:
 
                 if (tempStatus)
                 {
-                    VMREST_LOG_ERROR(pRESTHandle,"ERROR setting the data length in failure response");
+                    VMREST_LOG_ERROR(pRESTHandle,"%s","ERROR setting the data length in failure response");
                     goto cleanup;
                 }
 
@@ -1427,14 +1427,14 @@ error:
 
                 if (tempStatus)
                 {
-                    VMREST_LOG_ERROR(pRESTHandle,"ERROR: DOUBLE FAILURE :: setting data in failure response");
+                    VMREST_LOG_ERROR(pRESTHandle,"%s","ERROR: DOUBLE FAILURE :: setting data in failure response");
                 }
 
                 pResPacket->headerSent = 1;
             }
             if (tempStatus)
             {
-                VMREST_LOG_ERROR(pRESTHandle,"Error in VmRESTSendHeaderAndPayload");
+                VMREST_LOG_ERROR(pRESTHandle,"%s","Error in VmRESTSendHeaderAndPayload");
                 goto cleanup;
             }
         }
@@ -1453,14 +1453,14 @@ VmRESTTriggerAppCb(
 
     if (!pRequest || !ppResponse || !pRESTHandle)
     {
-       VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+       VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
        dwError =  VMREST_APPLICATION_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
     if (pRESTHandle->pHttpHandler == NULL)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"No application callback registered");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","No application callback registered");
         dwError = VMREST_APPLICATION_NO_CB_REGISTERED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1471,7 +1471,7 @@ VmRESTTriggerAppCb(
     }
     else
     {
-        VMREST_LOG_ERROR(pRESTHandle,"No Request callback registered");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","No Request callback registered");
         dwError = VMREST_APPLICATION_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);

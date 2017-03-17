@@ -205,7 +205,7 @@ VmRestEngineInitEndPointRegistration(
 
     if (!pRESTHandle)
     {
-        VMREST_LOG_DEBUG(pRESTHandle,"Invalid REST handler");
+        VMREST_LOG_DEBUG(pRESTHandle,"%s","Invalid REST handler");
         dwError = REST_ENGINE_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);    
@@ -248,7 +248,7 @@ VmRestEngineShutdownEndPointRegistration(
 
     if (!pRESTHandle)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid REST handler");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid REST handler");
         return;
     }
 
@@ -291,7 +291,7 @@ VmRestEngineAddEndpoint(
 
     if (!pEndPointURI || !pHandler || !pRESTHandle)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -302,7 +302,7 @@ VmRestEngineAddEndpoint(
     hasSpace = strchr(pEndPointURI, ' ');
     if (hasSpace != NULL)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Space found in URL - Not Valid");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Space found in URL - Not Valid");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -392,7 +392,7 @@ VmRestEngineRemoveEndpoint(
 
     if (!pEndPointURI || !pRESTHandle)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -416,7 +416,7 @@ VmRestEngineRemoveEndpoint(
        }
        if (temp == NULL)
        {
-           VMREST_LOG_ERROR(pRESTHandle,"Requested endpoint %s not registered", pEndPointURI);
+           VMREST_LOG_ERROR(pRESTHandle,"%s","Requested endpoint %s not registered");
        }
        else
        {
@@ -449,7 +449,7 @@ VmRestEngineGetEndPoint(
 
     if (!pEndPointURI || !pRESTHandle)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -926,7 +926,7 @@ VmRESTGetWildCardCount(
 
     if (pRequest == NULL || wildCardCount == NULL)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid Params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid Params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1009,7 +1009,7 @@ VmRESTGetWildCardByIndex(
 
     if (pRequest == NULL)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid Params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid Params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);

@@ -45,10 +45,7 @@ typedef unsigned __int8 uint8_t;
 #include <vmsock.h>
 #include <vmrestdefines.h>
 #include <vmrestcommon.h>
-#include <vmsockapi.h>
-
 #include "defines.h"
 #include "structs.h"
-#include "externs.h"
 #include "prototypes.h"
 

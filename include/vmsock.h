@@ -12,6 +12,7 @@
  * under the License.
  */
 
+#include <vmrest.h>
 #ifdef WIN32
 #include <winsock2.h>
 #include <windows.h>
@@ -48,9 +49,6 @@ typedef UINT32                           VM_SOCK_CREATE_FLAGS;
 
 typedef struct _VM_SOCKET*               PVM_SOCKET;
 typedef struct _VM_SOCK_EVENT_QUEUE*     PVM_SOCK_EVENT_QUEUE;
-typedef struct _VMREST_HANDLE*          PVMREST_HANDLE;
-
-
 
 typedef struct _VM_SOCK_IO_BUFFER
 {

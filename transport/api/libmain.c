@@ -25,7 +25,7 @@ VmwSockInitialize(
     if (pRESTHandle)
     {
 #ifdef _WIN32
-        dwError = VmWinSockInitialize(&gpVmSockPackage);
+        dwError = VmWinSockInitialize(&(pRESTHandle->pPackage));
 #else
         dwError = VmSockPosixInitialize(&(pRESTHandle->pPackage));
 #endif
@@ -42,7 +42,7 @@ VmwSockShutdown(
     if (pRESTHandle && pRESTHandle->pPackage)
     {
 #ifdef _WIN32
-        VmWinSockShutdown(gpVmSockPackage);
+        VmWinSockShutdown(pRESTHandle->pPackage);
 #else
         VmSockPosixShutdown(pRESTHandle->pPackage);
 #endif

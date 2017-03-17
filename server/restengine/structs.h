@@ -21,7 +21,7 @@ typedef struct _REST_ENG_GLOBALS
     uint32_t                         useEndPoint;
     REST_PROCESSOR                   internalHandler;
 
-} REST_ENG_GLOBALS, *PREST_ENG_GLOBALS;
+} REST_ENG_GLOBALS;
 
 typedef struct _VM_REST_HTTP_MESSAGE_BODY
 {

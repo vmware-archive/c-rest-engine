@@ -116,7 +116,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\transport\include;..\include;..\include\public;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(GOBUILD_CAYMAN_OPENSSL_ROOT)\win64_vc90sp1\include&quot;;..\transport\include;..\include;..\include\public;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;SERVER_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -136,8 +136,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(OutDir)\librestengine.dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(TargetDir)librestengine.pdb"
 				SubSystem="2"
 				TargetMachine="17"
 			/>
@@ -265,7 +267,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\transport\include;..\include;..\include\public;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(GOBUILD_CAYMAN_OPENSSL_ROOT)\win64_vc90sp1\include&quot;;..\transport\include;..\include;..\include\public;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;SERVER_EXPORTS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -284,8 +286,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				OutputFile="$(OutDir)\librestengine.dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(TargetDir)librestengine.pdb"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -322,10 +326,6 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
-			<File
-				RelativePath=".\restengine\globals.c"
-				>
-			</File>
 			<File
 				RelativePath=".\restengine\httpAllocStruct.c"
 				>

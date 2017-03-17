@@ -230,7 +230,7 @@ VmRESTGetHttpPayload(
 
     if (!pRequest || !response  || !done)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -308,7 +308,7 @@ VmRESTGetHttpPayload(
         if (bytesRead == 0 && readXBytes != 0)
         {
             dwError = VMREST_HTTP_VALIDATION_FAILED;
-            VMREST_LOG_ERROR(pRESTHandle,"No data available over socket to read");
+            VMREST_LOG_ERROR(pRESTHandle,"%s","No data available over socket to read");
             *done = 1;
         }
     }
@@ -474,7 +474,7 @@ VmRESTSetHttpPayload(
 
     if (!ppResponse  || (*ppResponse == NULL) || !buffer || !done)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -553,7 +553,7 @@ VmRESTSetHttpPayload(
     }
     else
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Both Content length and TransferEncoding missing");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Both Content length and TransferEncoding missing");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -561,7 +561,7 @@ VmRESTSetHttpPayload(
 cleanup:
     return dwError;
 error:
-    VMREST_LOG_ERROR(pRESTHandle,"Set Payload Failed");
+    VMREST_LOG_ERROR(pRESTHandle,"%s","Set Payload Failed");
     goto cleanup;
 }
 

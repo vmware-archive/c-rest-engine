@@ -15,26 +15,14 @@
 
 #include "includes.h"
 
-static uint32_t
-VmRESTSecureSocket(
-    char*                   certificate,
-    char*                   key
-    );
-
-
 static DWORD
 VmSockWinAcceptConnection(
+    PVMREST_HANDLE          pRESTHandle,
     PVM_SOCKET              pListenSocket,
     SOCKET                  clientSocket,
     struct sockaddr*        pClientAddress,
     int                     addrLen,
-    PVM_SOCKET              pSocket
-    );
-
-static DWORD
-VmSockWinCopyTargetAddress(
-    struct addrinfo*        pInfo,
-    PVM_SOCKET              pSocket
+	PVM_SOCKET              pSocket
     );
 
 static VOID
@@ -42,27 +30,23 @@ VmSockWinFreeSocket(
     PVM_SOCKET              pSocket
     );
 
-static DWORD WINAPI
-VmSockWinListenerThreadProc(
-    LPVOID                  pThreadParam
-    );
-
 static
 uint32_t
 VmRESTSecureSocket(
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            certificate,
     char*                            key
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     int                              ret = 0;
-    long                             options = 0;
+	long                             options = 0;
     const SSL_METHOD*                method = NULL;
     SSL_CTX*                         context = NULL;
 
     if (key == NULL || certificate == NULL)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Invalid params");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError = VMREST_TRANSPORT_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -73,13 +57,13 @@ VmRESTSecureSocket(
     method = SSLv23_server_method();
     context = SSL_CTX_new (method);
     if (!context) 
-    {
-        dwError = VMREST_TRANSPORT_SSL_CONFIG_ERROR;
-        VMREST_LOG_ERROR(pRESTHandle,"SSL Context NULL");
+	{
+		dwError = VMREST_TRANSPORT_SSL_CONFIG_ERROR;
+        VMREST_LOG_ERROR(pRESTHandle,"%s","SSL Context NULL");
     }
-    BAIL_ON_VMREST_ERROR(dwError);
+	BAIL_ON_VMREST_ERROR(dwError);
 
-    options = SSL_CTX_get_options(context);
+	options = SSL_CTX_get_options(context);
 
     options = options | SSL_OP_NO_TLSv1|SSL_OP_NO_SSLv3|SSL_OP_NO_SSLv2;
 
@@ -88,7 +72,7 @@ VmRESTSecureSocket(
     ret = SSL_CTX_set_cipher_list(context, "!aNULL:kECDH+AESGCM:ECDH+AESGCM:RSA+AESGCM:kECDH+AES:ECDH+AES:RSA+AES");
     if (ret == 0)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"SSL_CTX_set_cipher_list() : Cannot apply security approved cipher suites");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","SSL_CTX_set_cipher_list() : Cannot apply security approved cipher suites");
         dwError = VMREST_TRANSPORT_SSL_INVALID_CIPHER_SUITES;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -96,25 +80,25 @@ VmRESTSecureSocket(
     if (SSL_CTX_use_certificate_file(context, certificate, SSL_FILETYPE_PEM) <= 0) 
 	{
          dwError = VMREST_TRANSPORT_SSL_CERTIFICATE_ERROR;
-         VMREST_LOG_ERROR(pRESTHandle,"SSL Certificate cannot be used");
+         VMREST_LOG_ERROR(pRESTHandle,"%s","SSL Certificate cannot be used");
     }
 	BAIL_ON_VMREST_ERROR(dwError);
 
     if (SSL_CTX_use_PrivateKey_file(context, key, SSL_FILETYPE_PEM) <= 0)
 	{
         dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_ERROR;
-        VMREST_LOG_ERROR(pRESTHandle,"SSL key cannot be used");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","SSL key cannot be used");
     }
 	BAIL_ON_VMREST_ERROR(dwError);
 
     if (!SSL_CTX_check_private_key(context)) 
 	{
         dwError = VMREST_TRANSPORT_SSL_PRIVATEKEY_CHECK_ERROR;
-        VMREST_LOG_ERROR(pRESTHandle,"SSL Error in private key");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","SSL Error in private key");
 	}
 	BAIL_ON_VMREST_ERROR(dwError);
 
-    gSockSSLInfo.sslContext = context;
+	pRESTHandle->pSSLInfo->sslContext = context;
 	
 cleanup:
     return dwError;
@@ -124,154 +108,6 @@ error:
     goto cleanup;
 }
 
-
-/**
- * @brief Opens a client socket
- *
- * @param[in]  pszHost  Target host name or IP Address.
- *                      An empty string will imply the local host.
- * @param[in]  usPort   16 bit port number
- * @param[in]  dwFlags  32 bit flags specifying socket creation preferences
- * @param[out] ppSocket Pointer to created socket context
- *
- * @return 0 on success
- */
-DWORD
-VmSockWinOpenClient(
-    PCSTR                   pszHost,
-    USHORT                  usPort,
-    VM_SOCK_CREATE_FLAGS    dwFlags,
-    PVM_SOCKET*             ppSocket
-    )
-{
-    DWORD                   dwError = 0;
-    DWORD                   dwSockFlags = 0;
-    int                     nAddressFamily = AF_INET;
-    int                     nConnectionType = SOCK_STREAM;
-    struct addrinfo         hints = { 0 };
-    struct addrinfo*        pAddrInfo = NULL;
-    struct addrinfo*        pInfo = NULL;
-    struct addrinfo*        pClientAddress = NULL;
-    CHAR                    szPort[32] = { 0 };
-    SOCKET                  socket = INVALID_SOCKET;
-    PVM_SOCKET              pSocket = NULL;
-
-    if (!pszHost || !usPort || !ppSocket)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    if (dwFlags & VM_SOCK_CREATE_FLAGS_IPV6)
-    {
-        hints.ai_family = AF_INET6;
-    }
-    else if (dwFlags & VM_SOCK_CREATE_FLAGS_IPV4)
-    {
-        hints.ai_family = AF_INET;
-    }
-    else
-    {
-        hints.ai_family = AF_UNSPEC;
-    }
-
-    if (dwFlags & VM_SOCK_CREATE_FLAGS_UDP)
-    {
-        nConnectionType = hints.ai_socktype = SOCK_DGRAM;
-    }
-    else
-    {
-        nConnectionType = hints.ai_socktype = SOCK_STREAM;
-    }
-
-    hints.ai_flags    = AI_CANONNAME | AI_NUMERICSERV;
-
-    sprintf_s(szPort, sizeof(szPort), "%d", usPort);
-
-    if (getaddrinfo(pszHost, szPort, &hints, &pAddrInfo) != 0)
-    {
-        dwError = WSAGetLastError();
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    for (pInfo = pAddrInfo;
-        (socket == INVALID_SOCKET && pInfo != NULL);
-        pInfo = pInfo->ai_next)
-    {
-        socket = WSASocketW(
-                        pInfo->ai_family,
-                        pInfo->ai_socktype,
-                        pInfo->ai_protocol,
-                        NULL,
-                        0,
-                        dwSockFlags);
-
-        if (socket == INVALID_SOCKET)
-        {
-            continue;
-        }
-
-        if (nConnectionType == SOCK_STREAM)
-        {
-            if (connect(socket, pInfo->ai_addr, pInfo->ai_addrlen) < 0)
-            {
-                dwError = WSAGetLastError();
-                continue;
-            }
-        }
-
-        pClientAddress = pInfo;
-    }
-
-    if (socket == INVALID_SOCKET)
-    {
-        dwError = ERROR_CONNECTION_UNAVAIL;
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    dwError = VmRESTAllocateMemory(sizeof(*pSocket), (PVOID*)&pSocket);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    pSocket->refCount = 1;
-    pSocket->type = VM_SOCK_TYPE_CLIENT;
-
-    if (nConnectionType == SOCK_STREAM)
-    {
-        pSocket->protocol = VM_SOCK_PROTOCOL_TCP;
-    }
-    else
-    {
-        pSocket->protocol = VM_SOCK_PROTOCOL_UDP;
-    }
-
-    dwError = VmSockWinCopyTargetAddress(pClientAddress, pSocket);
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    pSocket->hSocket = socket;
-    socket = INVALID_SOCKET;
-
-    *ppSocket = pSocket;
-    pSocket = NULL;
-
-cleanup:
-
-    if (pAddrInfo)
-    {
-        freeaddrinfo(pAddrInfo);
-    }
-
-    return dwError;
-
-error :
-    if (socket != INVALID_SOCKET)
-    {
-        closesocket(socket);
-    }
-
-    VMREST_SAFE_FREE_MEMORY(pSocket);
-
-    goto cleanup;
-}
 
 /**
  * @brief Opens a server socket
@@ -289,12 +125,13 @@ error :
 
 DWORD
 VmSockWinOpenServer(
+    PVMREST_HANDLE       pRESTHandle,
     USHORT               usPort,
     int                  iListenQueueSize,
     VM_SOCK_CREATE_FLAGS dwFlags,
     PVM_SOCKET*          ppSocket,
-    char*                sslCert,
-    char*                sslKey
+	char*                sslCert,
+	char*                sslKey
     )
 {
     DWORD dwError = 0;
@@ -318,6 +155,7 @@ VmSockWinOpenServer(
     SOCKET socket = INVALID_SOCKET;
     PVM_SOCKET pSocket = NULL;
     DWORD dwSockFlags = 0;
+	PVM_SOCK_SSL_INFO                pSSLInfo = NULL;
 
     if (dwFlags & VM_SOCK_CREATE_FLAGS_IPV6)
     {
@@ -349,21 +187,24 @@ VmSockWinOpenServer(
         dwSockFlags = WSA_FLAG_OVERLAPPED;
     }
 
+	pSSLInfo = pRESTHandle->pSSLInfo;
+
     /**** Check if connection is over SSL ****/
     if(dwFlags & VM_SOCK_IS_SSL)
     {
-	//sslCert = "./MYCERT.crt";
-	//sslKey = "./MYKEY.key";
+		//sslCert = "./MYCERT.crt";
+		//sslKey = "./MYKEY.key";
         dwError = VmRESTSecureSocket(
+			          pRESTHandle,
                       sslCert,
                       sslKey
                       );
         BAIL_ON_VMREST_ERROR(dwError);
-        gSockSSLInfo.isSecure = 1;
+        pSSLInfo->isSecure = 1;
     }
     else
     {
-        gSockSSLInfo.isSecure = 0;
+        pSSLInfo->isSecure = 0;
     }
 
     socket = WSASocketW(
@@ -429,9 +270,9 @@ VmSockWinOpenServer(
     BAIL_ON_VMREST_ERROR(dwError);
 
     pSocket->pStreamBuffer = NULL;
-    pSocket->ssl = NULL;
+	pSocket->ssl = NULL;
     pSocket->refCount = 1;
-    pSocket->wThrCnt = iListenQueueSize;
+	pSocket->wThrCnt = iListenQueueSize;
     pSocket->type = VM_SOCK_TYPE_LISTENER;
 
     if (dwFlags & VM_SOCK_CREATE_FLAGS_UDP)
@@ -443,9 +284,9 @@ VmSockWinOpenServer(
         pSocket->protocol = VM_SOCK_PROTOCOL_TCP;
     }
 
-    if (dwFlags & VM_SOCK_CREATE_FLAGS_IPV6)
+	if (dwFlags & VM_SOCK_CREATE_FLAGS_IPV6)
     {
-        pSocket->v4v6 = VM_SOCK_TYPE_TCP_V6;
+		pSocket->v4v6 = VM_SOCK_TYPE_TCP_V6;
     }
     else if (dwFlags & VM_SOCK_CREATE_FLAGS_IPV4)
     {
@@ -453,7 +294,7 @@ VmSockWinOpenServer(
     }
     else
     {
-        pSocket->v4v6 = VM_SOCK_TYPE_UNKNOWN; 
+		pSocket->v4v6 = VM_SOCK_TYPE_UNKNOWN; 
     }
 
     pSocket->hSocket = socket;
@@ -496,6 +337,7 @@ error:
  */
 DWORD
 VmSockWinCreateEventQueue(
+    PVMREST_HANDLE          pRESTHandle,
     int                     iEventQueueSize,
     PVM_SOCK_EVENT_QUEUE*   ppQueue
     )
@@ -504,7 +346,7 @@ VmSockWinCreateEventQueue(
     int sockError = 0;
     PVM_SOCK_EVENT_QUEUE pQueue = NULL;
 
-    if (!ppQueue)
+    if (!ppQueue || !pRESTHandle)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
@@ -540,7 +382,7 @@ VmSockWinCreateEventQueue(
     }
 
     *ppQueue = pQueue;
-    gSockSSLInfo.isQueueInUse = 1;
+	pRESTHandle->pSSLInfo->isQueueInUse = 1;
 
 cleanup:
 
@@ -553,21 +395,22 @@ error:
         *ppQueue = NULL;
     }
 
-    VmSockWinCloseEventQueue(pQueue);
-    if (pQueue && pQueue->pMutex)
-    {
+    VmSockWinCloseEventQueue(pRESTHandle, pQueue);
+	if (pQueue && pQueue->pMutex)
+	{
         VmRESTFreeMemory(pQueue->pMutex);
-    }
-    if (pQueue)
-    {
+	}
+	if (pQueue)
+	{
         VmRESTFreeMemory(pQueue);
-    }
+	}
 
     goto cleanup;
 }
 
 DWORD
 VmSockWinEventQueueAdd(
+    PVMREST_HANDLE       pRESTHandle,
     PVM_SOCK_EVENT_QUEUE pQueue,
     PVM_SOCKET           pSocket
     )
@@ -600,18 +443,18 @@ VmSockWinEventQueueAdd(
                         FD_ACCEPT);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((pSocket->v4v6 == VM_SOCK_TYPE_TCP_V4) && (pSocket->type == VM_SOCK_TYPE_LISTENER))
-    {
-        pQueue->pListenerTCPv4 = pSocket;
-        pQueue->thrCnt = pSocket->wThrCnt;
-    }
-    else if ((pSocket->v4v6 == VM_SOCK_TYPE_TCP_V6) && (pSocket->type == VM_SOCK_TYPE_LISTENER))
-    {
-        pQueue->pListenerTCPv6 = pSocket;
-        pQueue->thrCnt = pSocket->wThrCnt;
-    }
+	if ((pSocket->v4v6 == VM_SOCK_TYPE_TCP_V4) && (pSocket->type == VM_SOCK_TYPE_LISTENER))
+	{
+		pQueue->pListenerTCPv4 = pSocket;
+		pQueue->thrCnt = pSocket->wThrCnt;
+	}
+	else if ((pSocket->v4v6 == VM_SOCK_TYPE_TCP_V6) && (pSocket->type == VM_SOCK_TYPE_LISTENER))
+	{
+		pQueue->pListenerTCPv6 = pSocket;
+		pQueue->thrCnt = pSocket->wThrCnt;
+	}
 
-    pSocket->pEventQueue = pQueue;
+	pSocket->pEventQueue = pQueue;
 
 cleanup:
 
@@ -620,23 +463,6 @@ cleanup:
 error:
 
     goto cleanup;
-}
-
-/**
- * @brief Starts socket listener
- *
- * @param[in] pSocket Pointer to Socket
- * @param[in,optional] iListenQueueSize
- *
- * @return 0 on success
- */
-DWORD
-VmSockWinStartListening(
-    PVM_SOCKET           pSocket,
-    int                  iListenQueueSize
-    )
-{
-    return 0;
 }
 
 /**
@@ -654,6 +480,7 @@ VmSockWinStartListening(
 
 DWORD
 VmSockWinWaitForEvent(
+	PVMREST_HANDLE       pRESTHandle,				    
     PVM_SOCK_EVENT_QUEUE pQueue,
     int                  iTimeoutMS,
     PVM_SOCKET*          ppSocket,
@@ -667,9 +494,9 @@ VmSockWinWaitForEvent(
     int                  socketError = 0;
     SOCKET               clientSocket = INVALID_SOCKET;
     int                  nAddrLen = -1;
-    PVM_SOCKET           pSocket = NULL;
-    BOOLEAN              blocked = FALSE;
-    uint32_t             freeEventQueue = 0;
+	PVM_SOCKET           pSocket = NULL;
+	BOOLEAN              blocked = FALSE;
+	uint32_t             freeEventQueue = 0;
 
     if (!pQueue)
     {
@@ -677,25 +504,25 @@ VmSockWinWaitForEvent(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    if (pQueue->pListenerTCPv4 != NULL)
-    {
-        pListenSocket = pQueue->pListenerTCPv4;
-    }
-    else if(pQueue->pListenerTCPv6 != NULL)
-    {
-        pListenSocket = pQueue->pListenerTCPv6;
-    }
+	if (pQueue->pListenerTCPv4 != NULL)
+	{
+		pListenSocket = pQueue->pListenerTCPv4;
+	}
+	else if(pQueue->pListenerTCPv6 != NULL)
+	{
+		pListenSocket = pQueue->pListenerTCPv6;
+	}
 
-    if (!pListenSocket->pEventQueue)
-    {
+	if (!pListenSocket->pEventQueue)
+	{
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMREST_ERROR(dwError);
-    }
+	}
 
     dwError = VmRESTLockMutex(pQueue->pMutex);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    blocked = TRUE;
+	blocked = TRUE;
 
     dwError = WSAWaitForMultipleEvents(
                   1,
@@ -711,13 +538,13 @@ VmSockWinWaitForEvent(
 
     if (pQueue->bShutdown)
     {
-        pQueue->thrCnt--;
-        if (pQueue->thrCnt == 0)
+		pQueue->thrCnt--;
+		if (pQueue->thrCnt == 0)
         {
             freeEventQueue = 1;
         }
-        dwError = ERROR_SHUTDOWN_IN_PROGRESS;
-        BAIL_ON_VMREST_ERROR(dwError);
+		dwError = ERROR_SHUTDOWN_IN_PROGRESS;
+		BAIL_ON_VMREST_ERROR(dwError);
     }
 
     socketError = WSAEnumNetworkEvents(
@@ -745,11 +572,12 @@ VmSockWinWaitForEvent(
             else
             {
                 dwError = VmSockWinAcceptConnection(
+					          pRESTHandle,
                               pListenSocket,
                               clientSocket,
                               (struct sockaddr*)&clientAddress,
                               addLen,
-                              &pSocket);
+						      &pSocket);
                 BAIL_ON_VMREST_ERROR(WSAGetLastError());
             }
         }
@@ -759,7 +587,7 @@ VmSockWinWaitForEvent(
         }
     }
     VmRESTUnlockMutex(pQueue->pMutex);
-    blocked = FALSE;
+	blocked = FALSE;
 	
     *ppSocket = pSocket;
     *pEventType = VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION;
@@ -767,7 +595,7 @@ VmSockWinWaitForEvent(
 
 cleanup:
 
-    if (dwError == ERROR_SHUTDOWN_IN_PROGRESS && freeEventQueue == 1)
+	if (dwError == ERROR_SHUTDOWN_IN_PROGRESS && freeEventQueue == 1)
     {
         if (pQueue->hEventListen != WSA_INVALID_EVENT)
         {
@@ -778,26 +606,26 @@ cleanup:
         {
             CloseHandle(pQueue->hIOCP);
         
-        }
+		}
         if (pQueue && pQueue->pMutex)
-	{
+	    {
             VmRESTFreeMemory(pQueue->pMutex);
-	}
-	if (pQueue)
-	{
+	    }
+	    if (pQueue)
+	    {
             VmRESTFreeMemory(pQueue);
-	}
-        gSockSSLInfo.isQueueInUse = 0;
+	    }
+       pRESTHandle->pSSLInfo->isQueueInUse = 0;
     }
 
     return dwError;
 
 error:
 
-    if (blocked == TRUE && pQueue != NULL)
-    {
+	if (blocked == TRUE && pQueue != NULL)
+	{
         VmRESTUnlockMutex(pQueue->pMutex);
-    }
+	}
     goto cleanup;
 }
 
@@ -811,136 +639,26 @@ error:
 
 VOID
 VmSockWinCloseEventQueue(
-    PVM_SOCK_EVENT_QUEUE pQueue
+    PVMREST_HANDLE        pRESTHandle,
+    PVM_SOCK_EVENT_QUEUE  pQueue
     )
 {
-    uint32_t             retry = 0;
+	uint32_t             retry = 0;
     if (pQueue)
     {
-        pQueue->bShutdown = 1;
+		pQueue->bShutdown = 1;
     }
+	/**** Worker threads are detached threads, give them some time for cleanup. Block upto 10 seconds *****/
 
-    /**** Worker threads are detached threads, give them some time for cleanup. Block upto 10 seconds *****/
     while(retry < 10)
     {
-        if (gSockSSLInfo.isQueueInUse == 0)
+        if (pRESTHandle->pSSLInfo->isQueueInUse == 0)
         {
            break;
         }
         Sleep(1000);
         retry++;
     }
-}
-
-/**
- * @brief sets socket to be non-blocking
- *
- * @param[in] pSocket Pointer to socket
- *
- * @return 0 on success
- */
-
-DWORD
-VmSockWinSetNonBlocking(
-    PVM_SOCKET           pSocket
-    )
-{
-    return 0;
-}
-
-/**
- * @brief Retrieves the protocol the socket has been configured with
- *
- * @param[in]     pSocket     Pointer to socket
- * @param[in,out] pdwProtocol Protocol the socket has been configured with
- *                            This will be one of { SOCK_STREAM, SOCK_DGRAM... }
- */
-DWORD
-VmSockWinGetProtocol(
-    PVM_SOCKET           pSocket,
-    PDWORD               pdwProtocol
-    )
-{
-    DWORD dwError = 0;
-    BOOLEAN bLocked = FALSE;
-    DWORD dwProtocol = 0;
-
-    if (!pSocket || !pdwProtocol)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    switch (pSocket->protocol)
-    {
-    case VM_SOCK_PROTOCOL_UDP:
-
-        dwProtocol = SOCK_DGRAM;
-        break;
-
-    case VM_SOCK_PROTOCOL_TCP:
-
-        dwProtocol = SOCK_STREAM;
-        break;
-
-    default:
-
-        dwError = ERROR_INTERNAL_ERROR;
-        BAIL_ON_VMREST_ERROR(dwError);
-
-        break;
-    }
-
-    *pdwProtocol = dwProtocol;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    if (pdwProtocol)
-    {
-        *pdwProtocol = 0;
-    }
-
-    goto cleanup;
-}
-
-/**
- * @brief Sets data associated with the socket
- *
- * @param[in] pSocket Pointer to socket
- * @param[in] pData   Pointer to data associated with the socket
- * @param[in,out,optional] ppOldData Pointer to receive old data
- *
- * @return 0 on success
- */
-DWORD
-VmSockWinSetData(
-    PVM_SOCKET           pSocket,
-    PVOID                pData,
-    PVOID*               ppOldData
-    )
-{
-    return 0;
-}
-
-/**
- * @brief Gets data currently associated with the socket.
- *
- * @param[in]     pSocket Pointer to socket
- * @param[in,out] ppData  Pointer to receive data
- *
- * @return 0 on success
- */
-DWORD
-VmSockWinGetData(
-    PVM_SOCKET          pSocket,
-    PVOID*              ppData
-    )
-{
-    return 0;
 }
 
 /**
@@ -957,6 +675,7 @@ VmSockWinGetData(
  */
 DWORD
 VmSockWinRead(
+    PVMREST_HANDLE      pRESTHandle,
     PVM_SOCKET          pSocket,
     PVM_SOCK_IO_BUFFER  pIoBuffer
     )
@@ -965,11 +684,11 @@ VmSockWinRead(
     int                 sockError = 0;
     DWORD               dwBytesRead = 0;
     DWORD               dwFlags = 0;
-    DWORD               dwBufSize = 0;
-    char*               buffer = NULL;
-    int                 errorCode = 0;
-    unsigned int        tryCnt = 0;
-    unsigned int        maxTry = 500000;
+	DWORD               dwBufSize = 0;
+	char*               buffer = NULL;
+	int                 errorCode = 0;
+	unsigned int        tryCnt = 0;
+	unsigned int        maxTry = 500000;
 
     if (!pSocket || !pIoBuffer)
     {
@@ -989,40 +708,40 @@ VmSockWinRead(
 tryAgain:
     if (pSocket->protocol == VM_SOCK_PROTOCOL_TCP)
     {
-         if (gSockSSLInfo.isSecure && (pSocket->ssl != NULL))
+         if (pRESTHandle->pSSLInfo->isSecure && (pSocket->ssl != NULL))
          {
              sockError = SSL_read(pSocket->ssl, buffer, dwBufSize);
-	     errorCode = SSL_get_error(pSocket->ssl, sockError);
-             if ( sockError < 0 && errorCode == SSL_ERROR_WANT_READ && tryCnt < maxTry)
-             {
+			 errorCode = SSL_get_error(pSocket->ssl, sockError);
+			 if ( sockError < 0 && errorCode == SSL_ERROR_WANT_READ && tryCnt < maxTry)
+			 {
                   tryCnt++;
-		  goto tryAgain;
-	     } 
-	     else if (sockError < 0)
-             {
+				  goto tryAgain;
+			 } 
+			 else if (sockError < 0)
+			 {
                  dwError = errorCode;
                  VMREST_LOG_ERROR(pRESTHandle,"SSL read failed, sockError = %u", dwError);
-	         BAIL_ON_VMREST_ERROR(dwError);
-	     }
-	     dwBytesRead = sockError;
+			     BAIL_ON_VMREST_ERROR(dwError);
+			 }
+			 dwBytesRead = sockError;
          }
-	 else if(pSocket->hSocket > 0)
-         {
-              sockError = recv(pSocket->hSocket, buffer, dwBufSize,dwFlags);
-              errorCode = WSAGetLastError();
-	      if ( sockError < 0  && tryCnt < maxTry)
-	      {
+		 else if(pSocket->hSocket > 0)
+		 {
+             sockError = recv(pSocket->hSocket, buffer, dwBufSize,dwFlags);
+			 errorCode = WSAGetLastError();
+			 if ( sockError < 0  && tryCnt < maxTry)
+			 {
                   tryCnt++;
-	          goto tryAgain;
-	      } 
-	      else if (sockError < 0)
-	      {
-                  dwError = errorCode;
-		  VMREST_LOG_ERROR(pRESTHandle,"Socket %u read failed with errorCode %d", pSocket->hSocket, errorCode);
-	          BAIL_ON_VMREST_ERROR(dwError);
-	      }
-	      dwBytesRead = sockError;
-           }
+				  goto tryAgain;
+			 } 
+			 else if (sockError < 0)
+			 {
+                 dwError = errorCode;
+				 VMREST_LOG_ERROR(pRESTHandle,"Socket %u read failed with errorCode %d", pSocket->hSocket, errorCode);
+			     BAIL_ON_VMREST_ERROR(dwError);
+			 }
+			 dwBytesRead = sockError;
+        }
 	}
 
 	pIoBuffer->dwCurrentSize = dwBytesRead;
@@ -1050,6 +769,7 @@ error:
  */
 DWORD
 VmSockWinWrite(
+    PVMREST_HANDLE      pRESTHandle,
     PVM_SOCKET          pSocket,
     struct sockaddr*    pClientAddress,
     socklen_t           addrLength,
@@ -1059,12 +779,12 @@ VmSockWinWrite(
     DWORD               dwError = 0;
     DWORD               dwBytesWritten = 0;
     DWORD               dwFlags = 0;
-    DWORD               dwBytesToWrite = 0;
-    DWORD               bytes = 0;
-    DWORD               bytesLeft = 0;
-    int                 bytesWritten = 0;
-    char*               buffer = NULL;
-    int                 errorCode = 0;
+	DWORD               dwBytesToWrite = 0;
+	DWORD               bytes = 0;
+	DWORD               bytesLeft = 0;
+	int                 bytesWritten = 0;
+	char*               buffer = NULL;
+	int                 errorCode = 0;
 
     if (!pSocket || !pIoBuffer)
     {
@@ -1078,28 +798,28 @@ VmSockWinWrite(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    dwBytesToWrite = pIoBuffer->dwExpectedSize;
-    bytesLeft = dwBytesToWrite;
-    buffer = pIoBuffer->pData + pIoBuffer->dwCurrentSize;
+	dwBytesToWrite = pIoBuffer->dwExpectedSize;
+	bytesLeft = dwBytesToWrite;
+	buffer = pIoBuffer->pData + pIoBuffer->dwCurrentSize;
 
     while(bytesWritten < dwBytesToWrite)
     {
-        if (gSockSSLInfo.isSecure && (pSocket->ssl != NULL))
+        if (pRESTHandle->pSSLInfo->isSecure && (pSocket->ssl != NULL))
         {    
             dwBytesWritten = SSL_write(pSocket->ssl,(pIoBuffer->pData + bytesWritten),bytesLeft);
-            errorCode = SSL_get_error(pSocket->ssl, dwBytesWritten);
+		    errorCode = SSL_get_error(pSocket->ssl, dwBytesWritten);
         }
-	else if (pSocket->hSocket > 0)
-	{
-	    dwBytesWritten = send(pSocket->hSocket, (buffer + bytesWritten), bytesLeft, dwFlags);
-	    errorCode = WSAGetLastError();
-        }
+	    else if (pSocket->hSocket > 0)
+		{
+	        dwBytesWritten = send(pSocket->hSocket, (buffer + bytesWritten), bytesLeft, dwFlags);
+		    errorCode = WSAGetLastError();    
+		}
 
         if (dwBytesWritten >= 0)
         {
             bytesWritten += dwBytesWritten;
             bytesLeft -= dwBytesWritten;
-            VMREST_LOG_DEBUG(pRESTHandle,"Bytes written this write %d, Total bytes written %u", dwBytesWritten, bytesWritten);
+           VMREST_LOG_DEBUG(pRESTHandle,"Bytes written this write %d, Total bytes written %u", dwBytesWritten, bytesWritten);
             dwBytesWritten = 0;
         }
         else
@@ -1109,7 +829,7 @@ VmSockWinWrite(
                 dwBytesWritten = 0;
                 continue;
             }
-            VMREST_LOG_ERROR(pRESTHandle,"Write failed with Error Code %d", errorCode);
+           VMREST_LOG_ERROR(pRESTHandle,"Write failed with Error Code %d", errorCode);
             dwError = errorCode;
             BAIL_ON_VMREST_ERROR(dwError);
         }
@@ -1134,6 +854,7 @@ error:
 
 PVM_SOCKET
 VmSockWinAcquire(
+    PVMREST_HANDLE       pRESTHandle,
     PVM_SOCKET           pSocket
     )
 {
@@ -1151,6 +872,7 @@ VmSockWinAcquire(
  */
 VOID
 VmSockWinRelease(
+    PVMREST_HANDLE       pRESTHandle,
     PVM_SOCKET           pSocket
     )
 {
@@ -1169,14 +891,15 @@ VmSockWinRelease(
  */
 DWORD
 VmSockWinClose(
+    PVMREST_HANDLE       pRESTHandle,
     PVM_SOCKET           pSocket
     )
 {
-    VMREST_LOG_DEBUG(pRESTHandle,"Close Connectiom - Socket: %d", (DWORD)pSocket->hSocket);
+   VMREST_LOG_DEBUG(pRESTHandle,"Close Connectiom - Socket: %d", (DWORD)pSocket->hSocket);
 
     if (pSocket->hSocket != INVALID_SOCKET)
     {
-        if (gSockSSLInfo.isSecure)
+        if (pRESTHandle->pSSLInfo->isSecure)
         {
             if (pSocket->ssl)
             {
@@ -1190,30 +913,6 @@ VmSockWinClose(
         pSocket->hSocket = INVALID_SOCKET;
     }
 
-    return 0;
-}
-
-/**
- * @brief Checks if the string forms a valid IPV4 or IPV6 Address
- *
- * @return TRUE(1) if the string is a valid IP Address, 0 otherwise.
- */
-BOOLEAN
-VmSockWinIsValidIPAddress(
-    PCSTR                pszAddress
-    )
-{
-    return ERROR_CALL_NOT_IMPLEMENTED;
-}
-
-static DWORD
-VmSockWinCopyTargetAddress(
-    struct addrinfo*    pInfo,
-    PVM_SOCKET          pSocket
-    )
-{
-    memcpy_s(&pSocket->addr, pInfo->ai_addrlen, pInfo->ai_addr, pInfo->ai_addrlen);
-    pSocket->addrLen = pInfo->ai_addrlen;
     return 0;
 }
 
@@ -1255,21 +954,14 @@ VmSockWinDisconnectSocket(
     closesocket(clientSocket);
 }
 
-DWORD WINAPI
-VmSockWinListenerThreadProc(
-    LPVOID pThreadParam
-    )
-{
-    return 0;
-}
-
 DWORD
 VmSockWinAcceptConnection(
+    PVMREST_HANDLE          pRESTHandle,
     PVM_SOCKET              pListenSocket,
     SOCKET                  clientSocket,
     struct sockaddr*        pClientAddr,
     int                     addrlen,
-    PVM_SOCKET*             ppSocket
+	PVM_SOCKET*             ppSocket
     )
 {
     DWORD                   dwError = 0;
@@ -1277,9 +969,9 @@ VmSockWinAcceptConnection(
     const char              chOpt = 1;
     PVM_SOCKET              pClientSocket = NULL;
     PVM_STREAM_BUFFER       pStrmBuf = NULL;
-    SSL*                    ssl = NULL;
-    DWORD                   cntRty = 0;
-    int                     err = 0;
+	SSL*                    ssl = NULL;
+	DWORD                   cntRty = 0;
+	int                     err = 0;
 
 
     if (!pListenSocket ||
@@ -1292,7 +984,7 @@ VmSockWinAcceptConnection(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    dwError = VmRESTAllocateMemory(
+	dwError = VmRESTAllocateMemory(
                     sizeof(VM_SOCKET),
                     (void **)&pClientSocket);
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1303,39 +995,39 @@ VmSockWinAcceptConnection(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (gSockSSLInfo.isSecure)
-    {
-        ssl = SSL_new(gSockSSLInfo.sslContext);
-	if (!ssl)
+    if (pRESTHandle->pSSLInfo->isSecure)
 	{
+        ssl = SSL_new(pRESTHandle->pSSLInfo->sslContext);
+		if (!ssl)
+		{
             dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
-	    VMREST_LOG_ERROR(pRESTHandle,"Error in SSL_new");
-	}
+		}
         BAIL_ON_VMREST_ERROR(dwError);
+
         SSL_set_fd(ssl, clientSocket);
 
 retry:
-	err = SSL_accept (ssl);
-	if (err == -1)
-	{
-            if (cntRty <= 500000)
-	    {
-                cntRty++;
-		goto retry;
-	    }
-	    else
-	    {
-                VMREST_LOG_ERROR(pRESTHandle,"SSL Accept failed dwError = %d error code %d", err, SSL_get_error(ssl,err));
-                dwError = 101;
-		BAIL_ON_VMREST_ERROR(dwError);
-	    }
+		err = SSL_accept (ssl);
+		if (err == -1)
+		{
+             if (cntRty <= 500000)
+			 {
+                 cntRty++;
+				 goto retry;
+			 }
+			 else
+			 {
+                 VMREST_LOG_ERROR(pRESTHandle,"SSL Accept failed dwError = %d error code %d", err, SSL_get_error(ssl,err));
+			      dwError = 101;
+				  BAIL_ON_VMREST_ERROR(dwError);
+			 }
+		}
+		pClientSocket->ssl = ssl;
 	}
-	pClientSocket->ssl = ssl;
-    }
-    else
-    {
+	else
+	{
         pClientSocket->ssl = NULL;
-    }
+	}
           
     pStrmBuf->dataProcessed = 0;
     pStrmBuf->dataRead = 0;
@@ -1382,6 +1074,7 @@ error:
 
 DWORD
 VmSockWinAllocateIoBuffer(
+    PVMREST_HANDLE          pRESTHandle,
     VM_SOCK_EVENT_TYPE      eventType,
     DWORD                   dwSize,
     PVM_SOCK_IO_BUFFER*     ppIoBuffer
@@ -1417,7 +1110,7 @@ error:
 
     if (pIoContext)
     {
-        VmSockWinFreeIoBuffer(&pIoContext->IoBuffer);
+        VmSockWinFreeIoBuffer(pRESTHandle, &pIoContext->IoBuffer);
     }
 
     goto cleanup;
@@ -1425,56 +1118,20 @@ error:
 
 VOID
 VmSockWinFreeIoBuffer(
+    PVMREST_HANDLE         pRESTHandle,
     PVM_SOCK_IO_BUFFER     pIoBuffer
     )
 {
     PVM_SOCK_IO_CONTEXT pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
-    if (pIoContext)
-    {
-        VmRESTFreeMemory(pIoContext);
-    }
-}
-
-/**
- * @brief  VmwGetClientAddreess
- *
- * @param[in] pSocket
- * @param[in] pAddress
- * @param[in] addresLen
- *
- * @return DWORD - 0 on success
- */
-DWORD
-VmSockWinGetAddress(
-    PVM_SOCKET                  pSocket,
-    struct sockaddr_storage*    pAddress,
-    socklen_t*                  pAddresLen
-    )
-{
-    DWORD dwError = ERROR_SUCCESS;
-
-    if (!pSocket ||
-        !pAddresLen ||
-        !pAddress)
-    {
-        dwError = ERROR_SUCCESS;
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    memcpy_s(pAddress, *pAddresLen, &pSocket->addr, pSocket->addrLen);
-
-cleanup:
-
-    return dwError;
-
-error :
-
-    goto cleanup;
-
+	if (pIoContext)
+	{
+	    VmRESTFreeMemory(pIoContext);
+	}
 }
 
 VOID
-VmSockPosixGetStreamBuffer(
+VmSockWinGetStreamBuffer(
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER*               ppStreamBuffer
     )
@@ -1490,7 +1147,8 @@ VmSockPosixGetStreamBuffer(
 }
 
 VOID
-VmSockPosixSetStreamBuffer(
+VmSockWinSetStreamBuffer(
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER                pStreamBuffer
     )

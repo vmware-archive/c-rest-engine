@@ -12,8 +12,12 @@
  * under the License.
  */
 
+#include <vmrest.h>
+
 #ifdef WIN32
 #include <pthread.h>
+#include "openssl\ssl.h"
+#include "openssl\err.h"
 #endif
 
 #ifndef __VMRESTCOMMON_H__
@@ -63,7 +67,7 @@ VmRESTLog(
    ...);
 
 
-#ifndef WIN32
+#if 1 //ndef WIN32
 
 
 #define VMREST_LOG_( Level, Format, ... )          \
@@ -225,6 +229,7 @@ typedef struct _SOCK_SSL_INFO
     SSL_CTX*                         sslContext;
     uint32_t                         isSecure;
     uint32_t                         isQueueInUse;
+
 } VM_SOCK_SSL_INFO, *PVM_SOCK_SSL_INFO;
 
 /*********** REST engine Configuration struct *************/
@@ -239,11 +244,7 @@ typedef struct _REST_CONFIG
     char                             worker_thread_count[MAX_WORKER_COUNT_LEN];
 } VM_REST_CONFIG, *PVM_REST_CONFIG;
 
-
-
-typedef struct _VM_SOCK_PACKAGE *PVM_SOCK_PACKAGE;
 typedef struct _REST_ENG_GLOBALS *PREST_ENG_GLOBALS;
-typedef struct _REST_PROCESSOR *PREST_PROCESSOR;
 
 typedef struct _VMREST_HANDLE
 {
@@ -256,7 +257,7 @@ typedef struct _VMREST_HANDLE
     PVMREST_SOCK_CONTEXT             pSockContext;
     PVM_REST_CONFIG                  pRESTConfig;                     
 
-} VMREST_HANDLE,*PVMREST_HANDLE;
+} VMREST_HANDLE;
 
 typedef struct _VM_WORKER_THREAD_DATA
 {

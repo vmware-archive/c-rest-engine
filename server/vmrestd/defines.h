@@ -18,10 +18,3 @@
 #define MAX_DIRECTORY_LENGTH  256
 #define MAX_IN_MEM_PAYLOAD_LEN 100000
 
-
-typedef struct _REST_PROVIDER
-{
-    char                name[MAX_CONFIG_PARAMS_LEN];
-    char*               vroot;
-    REST_PROCESSOR      restProcessor;
-} REST_PROVIDER, *PREST_PROVIDER;

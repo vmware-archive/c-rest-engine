@@ -37,25 +37,6 @@ VmWinSockShutdown(
     );
 
 /**
- * @brief Opens a client socket
- *
- * @param[in]  pszHost  Target host name or IP Address.
- *                      An empty string will imply the localhost.
- * @param[in]  usPort   16 bit port number
- * @param[in]  dwFlags  32 bit flags specifying socket creation preferences
- * @param[out] ppSocket Pointer to created socket context
- *
- * @return 0 on success
- */
-DWORD
-VmSockWinOpenClient(
-    PCSTR                   pszHost,
-    USHORT                  usPort,
-    VM_SOCK_CREATE_FLAGS    dwFlags,
-    PVM_SOCKET*             ppSocket
-    );
-
-/**
  * @brief Opens a server socket
  *
  * @param[in] usPort 16 bit local port number that the server listens on
@@ -70,24 +51,13 @@ VmSockWinOpenClient(
  */
 DWORD
 VmSockWinOpenServer(
+    PVMREST_HANDLE       pRESTHandle,
     USHORT               usPort,
     int                  iListenQueueSize,
     VM_SOCK_CREATE_FLAGS dwFlags,
-    PVM_SOCKET*          ppSocket
-    );
-
-/**
- * @brief Starts socket listener
- *
- * @param[in] pSocket Pointer to Socket
- * @param[in,optional] iListenQueueSize
- *
- * @return 0 on success
- */
-DWORD
-VmSockWinStartListening(
-    PVM_SOCKET           pSocket,
-    int                  iListenQueueSize
+    PVM_SOCKET*          ppSocket,
+	char*                sslCert,
+	char*                sslKey
     );
 
 /**
@@ -102,6 +72,7 @@ VmSockWinStartListening(
  */
 DWORD
 VmSockWinCreateEventQueue(
+    PVMREST_HANDLE          pRESTHandle,
     int                     iEventQueueSize,
     PVM_SOCK_EVENT_QUEUE*   ppQueue
     );
@@ -116,6 +87,7 @@ VmSockWinCreateEventQueue(
  */
 DWORD
 VmSockWinEventQueueAdd(
+    PVMREST_HANDLE       pRESTHandle,
     PVM_SOCK_EVENT_QUEUE pQueue,
     PVM_SOCKET           pSocket
     );
@@ -134,6 +106,7 @@ VmSockWinEventQueueAdd(
  */
 DWORD
 VmSockWinWaitForEvent(
+    PVMREST_HANDLE       pRESTHandle,
     PVM_SOCK_EVENT_QUEUE pQueue,
     int                  iTimeoutMS,
     PVM_SOCKET*          ppSocket,
@@ -151,63 +124,8 @@ VmSockWinWaitForEvent(
 
 VOID
 VmSockWinCloseEventQueue(
+    PVMREST_HANDLE       pRESTHandle,
     PVM_SOCK_EVENT_QUEUE pQueue
-    );
-
-/**
- * @brief sets socket to be non-blocking
- *
- * @param[in] pSocket Pointer to socket
- *
- * @return 0 on success
- */
-
-DWORD
-VmSockWinSetNonBlocking(
-    PVM_SOCKET           pSocket
-    );
-
-/**
- * @brief Retrieves the protocol the socket has been configured with
- *
- * @param[in]     pSocket     Pointer to socket
- * @param[in,out] pdwProtocol Protocol the socket has been configured with
- *                            This will be one of { SOCK_STREAM, SOCK_DGRAM... }
- */
-DWORD
-VmSockWinGetProtocol(
-    PVM_SOCKET           pSocket,
-    PDWORD               pdwProtocol
-    );
-
-/**
- * @brief Sets data associated with the socket
- *
- * @param[in] pSocket Pointer to socket
- * @param[in] pData   Pointer to data associated with the socket
- * @param[in,out,optional] ppOldData Pointer to receive old data
- *
- * @return 0 on success
- */
-DWORD
-VmSockWinSetData(
-    PVM_SOCKET           pSocket,
-    PVOID                pData,
-    PVOID*               ppOldData
-    );
-
-/**
- * @brief Gets data currently associated with the socket.
- *
- * @param[in]     pSocket Pointer to socket
- * @param[in,out] ppData  Pointer to receive data
- *
- * @return 0 on success
- */
-DWORD
-VmSockWinGetData(
-    PVM_SOCKET          pSocket,
-    PVOID*              ppData
     );
 
 /**
@@ -224,6 +142,7 @@ VmSockWinGetData(
  */
 DWORD
 VmSockWinRead(
+    PVMREST_HANDLE      pRESTHandle,
     PVM_SOCKET          pSocket,
     PVM_SOCK_IO_BUFFER  pIoBuffer
     );
@@ -245,6 +164,7 @@ VmSockWinRead(
  */
 DWORD
 VmSockWinWrite(
+    PVMREST_HANDLE      pRESTHandle,
     PVM_SOCKET          pSocket,
     struct sockaddr*    pClientAddress,
     socklen_t           addrLength,
@@ -259,6 +179,7 @@ VmSockWinWrite(
 
 PVM_SOCKET
 VmSockWinAcquire(
+    PVMREST_HANDLE      pRESTHandle,
     PVM_SOCKET          pSocket
     );
 
@@ -268,6 +189,7 @@ VmSockWinAcquire(
  */
 VOID
 VmSockWinRelease(
+    PVMREST_HANDLE      pRESTHandle,
     PVM_SOCKET          pSocket
     );
 
@@ -277,37 +199,13 @@ VmSockWinRelease(
  */
 DWORD
 VmSockWinClose(
+    PVMREST_HANDLE      pRESTHandle,
     PVM_SOCKET          pSocket
-    );
-
-/**
- * @brief Checks if the string forms a valid IPV4 or IPV6 Address
- *
- * @return TRUE(1) if the string is a valid IP Address, 0 otherwise.
- */
-BOOLEAN
-VmSockWinIsValidIPAddress(
-    PCSTR               pszAddress
-    );
-
-/**
- * @brief  VmwSockGetAddress
- *
- * @param[in] pSocket
- * @param[in] pAddress
- * @param[in] pAddresLen
- *
- * @return DWORD - 0 on success
- */
-DWORD
-VmSockWinGetAddress(
-    PVM_SOCKET                  pSocket,
-    struct sockaddr_storage*    pAddress,
-    socklen_t*                  pAddresLen
     );
 
 DWORD
 VmSockWinAllocateIoBuffer(
+    PVMREST_HANDLE          pRESTHandle,
     VM_SOCK_EVENT_TYPE      eventType,
     DWORD                   dwSize,
     PVM_SOCK_IO_BUFFER*     ppIoContext
@@ -322,17 +220,30 @@ VmSockWinAllocateIoBuffer(
  */
 VOID
 VmSockWinFreeIoBuffer(
-    PVM_SOCK_IO_BUFFER  pIoBuffer
+    PVMREST_HANDLE       pRESTHandle,
+    PVM_SOCK_IO_BUFFER   pIoBuffer
     );
 
 VOID
-VmSockPosixGetStreamBuffer(
+VmSockWinGetStreamBuffer(
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER*               ppStreamBuffer
     );
 
 VOID
-VmSockPosixSetStreamBuffer(
+VmSockWinSetStreamBuffer(
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     PVM_STREAM_BUFFER                pStreamBuffer
+    );
+
+uint32_t
+VmRESTGetSockPackageWin(
+     PVM_SOCK_PACKAGE*               ppSockPackageWin
+     );
+
+VOID
+VmRESTFreeSockPackageWin(
+    PVM_SOCK_PACKAGE                 pSockPackageWin
     );

@@ -28,11 +28,8 @@ typedef unsigned __int8 uint8_t;
 
 #include <vmrestsys.h>
 #include <vmrestdefines.h>
-
 #include <vmrest.h>
 
 #include "defines.h"
-#include "structs.h"
 #include "prototypes.h"
-#include "externs.h"
 

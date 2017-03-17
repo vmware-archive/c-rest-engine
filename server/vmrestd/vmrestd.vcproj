@@ -136,7 +136,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="common.lib api.lib server.lib pthreadVC2.lib ssleay32.lib libeay32.lib"
+				AdditionalDependencies="common.lib api.lib librestengine.lib pthreadVC2.lib ssleay32.lib libeay32.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(GOBUILD_CAYMAN_OPENSSL_ROOT)\win64_vc90sp1\lib&quot;;&quot;$(OutDir)&quot;;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\lib&quot;"
 				GenerateDebugInformation="true"
@@ -286,7 +286,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ssleay32.lib libeay32.lib common.lib api.lib server.lib pthreadVC2.lib"
+				AdditionalDependencies="ssleay32.lib libeay32.lib common.lib api.lib librestengine.lib pthreadVC2.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(GOBUILD_CAYMAN_OPENSSL_ROOT)\win64_vc90sp1\lib&quot;;&quot;$(OutDir)&quot;;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\lib&quot;"
 				GenerateDebugInformation="true"
@@ -336,10 +336,6 @@
 			</File>
 			<File
 				RelativePath=".\main.c"
-				>
-			</File>
-			<File
-				RelativePath=".\tdnf.c"
 				>
 			</File>
 		</Filter>

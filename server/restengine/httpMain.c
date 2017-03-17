@@ -25,7 +25,7 @@ VmHTTPInit(
 
     if (!pRESTHandle)
     {
-        VMREST_LOG_DEBUG(pRESTHandle,"Invalid REST Handler");
+        VMREST_LOG_DEBUG(pRESTHandle,"%s","Invalid REST Handler");
         dwError = REST_ENGINE_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);

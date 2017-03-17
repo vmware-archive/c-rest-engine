@@ -26,7 +26,8 @@ VmWinSockInitialize(
     dwError = WSAStartup(MAKEWORD(2, 2), &wsaData);
     BAIL_ON_VMREST_ERROR(dwError);
 
-    *ppPackage = gpVmWinSockPackage;
+    dwError = VmRESTGetSockPackageWin(ppPackage);
+	BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
 
@@ -45,4 +46,57 @@ VmWinSockShutdown(
     )
 {
    // WSACleanup();
+}
+
+
+uint32_t
+VmRESTGetSockPackageWin(
+     PVM_SOCK_PACKAGE*               ppSockPackageWin
+     )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PVM_SOCK_PACKAGE                 pSockPackageWin = NULL;
+
+    if (!ppSockPackageWin)
+    {
+        dwError = REST_ENGINE_NO_MEMORY;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    pSockPackageWin = *ppSockPackageWin;
+
+    pSockPackageWin->pfnOpenServerSocket = &VmSockWinOpenServer;
+    pSockPackageWin->pfnCreateEventQueue = &VmSockWinCreateEventQueue;
+    pSockPackageWin->pfnAddEventQueue = &VmSockWinEventQueueAdd;
+    pSockPackageWin->pfnWaitForEvent = &VmSockWinWaitForEvent;
+    pSockPackageWin->pfnCloseEventQueue = &VmSockWinCloseEventQueue;
+    pSockPackageWin->pfnRead = &VmSockWinRead;
+    pSockPackageWin->pfnWrite = &VmSockWinWrite;
+    pSockPackageWin->pfnAcquireSocket = &VmSockWinAcquire;
+    pSockPackageWin->pfnReleaseSocket = &VmSockWinRelease;
+    pSockPackageWin->pfnCloseSocket = &VmSockWinClose;
+    pSockPackageWin->pfnAllocateIoBuffer = &VmSockWinAllocateIoBuffer;
+    pSockPackageWin->pfnReleaseIoBuffer = &VmSockWinFreeIoBuffer;
+    pSockPackageWin->pfnGetStreamBuffer = &VmSockWinGetStreamBuffer;
+    pSockPackageWin->pfnSetStreamBuffer = &VmSockWinSetStreamBuffer;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+
+}
+
+VOID
+VmRESTFreeSockPackageWin(
+    PVM_SOCK_PACKAGE                 pSockPackageWin
+    )
+{
+    if (pSockPackageWin)
+    {
+        /* Do nothing */
+    }
 }

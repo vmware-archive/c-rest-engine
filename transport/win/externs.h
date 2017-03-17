@@ -13,7 +13,7 @@
  */
 
 
-extern PVM_SOCK_PACKAGE gpVmWinSockPackage;
+//extern PVM_SOCK_PACKAGE gpVmWinSockPackage;
 // extern PVM_WINSOCK_GLOBALS gpVmWinSockGlobals;
 
-extern SOCK_SSL_INFO    gSockSSLInfo;
+//extern SOCK_SSL_INFO    gSockSSLInfo;
