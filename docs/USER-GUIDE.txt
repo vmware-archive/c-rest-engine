@@ -211,6 +211,7 @@ dwError = VmRESTInit(NULL, configfilepath, &gpRESTHandle);
 /**** A. Function call back prototype ****/
 uint32_t
 VmRESTCreateCallback(
+PVMREST_HANDLE                       pRESTHandle,
 PREST_REQUEST                        pRequest,
 PREST_RESPONSE*                      ppResponse,
 uint32_t                             paramsCount
@@ -326,7 +327,7 @@ uint32_t         done=0;
 char             buffer[4096] = {0};
 while (done != 1)
 {
-    dwError = VmRESTGetData( gpRESTHandle, pRequest, buffer, &done );
+    dwError = VmRESTGetData( pRESTHandle, pRequest, buffer, &done );
     if (strlen(buffer) > 0)
     {
         /**** Print on terminal ****/
@@ -478,7 +479,7 @@ while(done != 1)
 {
     nWrite = (bytesLeft > 4096) ? 4096: bytesLeft;
     memcpy(buffer, (AllData + index), nWrite);
-    dwError = VmRESTSetData( gpRESTHandle, ppResponse, buffer, nWrite, &done);
+    dwError = VmRESTSetData( pRESTHandle, ppResponse, buffer, nWrite, &done);
     BAIL_ON_VMREST_ERROR(dwError);
     index = index + nWrite;
     bytesLeft = bytesLeft - nWrite;

@@ -14,6 +14,7 @@
 
 uint32_t
 VmHandleEchoData(
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse,
     uint32_t                         paramsCount
@@ -21,6 +22,7 @@ VmHandleEchoData(
 
 uint32_t
 VmHandleEchoData1(
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse,
     uint32_t                         paramsCount

@@ -101,6 +101,7 @@ return dwError;
 
 uint32_t
 VmHandleEchoData1(
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse,
     uint32_t                         paramsCount
@@ -157,7 +158,7 @@ VmHandleEchoData1(
     while(done != 1)
     {
         dwError = VmRESTGetData(
-                      gpRESTHandle1,
+                      pRESTHandle,
                       pRequest,
                       buffer,
                       &done
@@ -234,7 +235,7 @@ VmHandleEchoData1(
         memcpy(buffer, (AllData + index), nWrite);
 
         dwError = VmRESTSetData(
-                  gpRESTHandle1,
+                  pRESTHandle,
                   ppResponse,
                   buffer,
                   nWrite,
@@ -258,6 +259,7 @@ error:
 
 uint32_t
 VmHandleEchoData(
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse,
     uint32_t                         paramsCount
@@ -316,7 +318,7 @@ VmHandleEchoData(
     while(done != 1)
     {
         dwError = VmRESTGetData(
-                      gpRESTHandle,
+                      pRESTHandle,
                       pRequest,
                       buffer,
                       &done
@@ -393,7 +395,7 @@ VmHandleEchoData(
         memcpy(buffer, (AllData + index), nWrite); 
 
         dwError = VmRESTSetData(
-                  gpRESTHandle,
+                  pRESTHandle,
                   ppResponse,
                   buffer,
                   nWrite,

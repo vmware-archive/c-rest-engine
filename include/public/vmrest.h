@@ -41,6 +41,7 @@ typedef uint32_t(
 
 typedef uint32_t(
 *PFN_PROCESS_REST_CRUD)(
+    PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     PREST_RESPONSE*                  ppResponse,
     uint32_t                         paramsCount

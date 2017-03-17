@@ -126,7 +126,7 @@ VmRestEngineHandler(
     {
         if (pEndPoint && pEndPoint->pHandler && pEndPoint->pHandler->pfnHandleRead)
         {
-            dwError = pEndPoint->pHandler->pfnHandleRead(pRequest, ppResponse, paramsCount);
+            dwError = pEndPoint->pHandler->pfnHandleRead(pRESTHandle, pRequest, ppResponse, paramsCount);
         }
         else
         {
@@ -138,7 +138,7 @@ VmRestEngineHandler(
     {
         if (pEndPoint && pEndPoint->pHandler && pEndPoint->pHandler->pfnHandleCreate)
         {
-            dwError = pEndPoint->pHandler->pfnHandleCreate(pRequest, ppResponse, paramsCount);
+            dwError = pEndPoint->pHandler->pfnHandleCreate(pRESTHandle, pRequest, ppResponse, paramsCount);
         }
         else
         {
@@ -150,7 +150,7 @@ VmRestEngineHandler(
     {
         if (pEndPoint && pEndPoint->pHandler && pEndPoint->pHandler->pfnHandleUpdate)
         {
-            dwError = pEndPoint->pHandler->pfnHandleUpdate(pRequest, ppResponse, paramsCount);
+            dwError = pEndPoint->pHandler->pfnHandleUpdate(pRESTHandle, pRequest, ppResponse, paramsCount);
         }
         else
         {
@@ -162,7 +162,7 @@ VmRestEngineHandler(
     {
         if (pEndPoint && pEndPoint->pHandler && pEndPoint->pHandler->pfnHandleDelete)
         {
-            dwError = pEndPoint->pHandler->pfnHandleDelete(pRequest, ppResponse, paramsCount);
+            dwError = pEndPoint->pHandler->pfnHandleDelete(pRESTHandle, pRequest, ppResponse, paramsCount);
         }
         else
         {
@@ -175,7 +175,7 @@ VmRestEngineHandler(
         /**** Add all allowed HTTP methods ****/
         if (pEndPoint && pEndPoint->pHandler && pEndPoint->pHandler->pfnHandleOthers)
         {
-            dwError = pEndPoint->pHandler->pfnHandleOthers(pRequest, ppResponse, paramsCount);
+            dwError = pEndPoint->pHandler->pfnHandleOthers(pRESTHandle, pRequest, ppResponse, paramsCount);
         }
         else
         {
