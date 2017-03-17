@@ -76,8 +76,11 @@ Below are step by step example of Trident API calls
 ############################################################################################################
 
 Rest engine init must be called with proper configuration as first call to this library.
+Application can create multiple instance of REST library per process.
 
-Configuration can be provided to library in 2 ways.
+Each instance of library needs separate configuration.
+
+Configuration can be provided to each library instance in 2 ways.
 
 1. By populating the config structure with proper value and passing it with Init API call.
 
@@ -180,22 +183,25 @@ that file in init api call.
 ###########################################################################################################
 
 These are the 3 ways in which Rest Engine Init API can be called.
+As a result of successful call to init API, a rest handle will be returned which should be used 
+by application carefully to call some set of API's later.
 
+PVMREST_HANDLE  gpRESTHandle = NULL;
 
 2.1 Method 1 (Using config structure)
 --------------------------------------
 
-dwError = VmRESTInit(pConfig, NULL);
+dwError = VmRESTInit(pConfig, NULL, &gpRESTHandle);
 
 2.2 Method 2 (Using default config file)
 -----------------------------------------
 
-dwError = VmRESTInit( NULL , NULL);
+dwError = VmRESTInit( NULL , NULL), &gpRESTHandle;
 
 2.3 Method 3 (Using custom config file)
 ----------------------------------------
 
-dwError = VmRESTInit(NULL, configfilepath);
+dwError = VmRESTInit(NULL, configfilepath, &gpRESTHandle);
 
 
 ###########################################################################################################
@@ -205,15 +211,15 @@ dwError = VmRESTInit(NULL, configfilepath);
 /**** A. Function call back prototype ****/
 uint32_t
 VmRESTCreateCallback(
-PREST_REQUEST           pRequest,
-PREST_RESPONSE*       ppResponse,
+PREST_REQUEST                        pRequest,
+PREST_RESPONSE*                      ppResponse,
 uint32_t                             paramsCount
 );
 /**** Assume similar functions for read, update, delete and others ****/
 
 /**** B. Function pointer ****/
 
-REST_PROCESSOR gVmRestHandlers =
+REST_PROCESSOR gVmRestProcessor =
 {
 .pfnHandleRequest = NULL,
 .pfnHandleCreate =  &VmRESTCreateCallback,
@@ -224,11 +230,11 @@ REST_PROCESSOR gVmRestHandlers =
 };
 
 char* URI = "/v1/netmgmt/dns"
-PREST_PROCESSOR gpVmRestHandlers = &gVmRestHandlers;
+PREST_PROCESSOR gpVmRestProcessor = &gVmRestProcessor;
 
 /**** C. API Call ****/
 
-dwError = VmRESTRegisterHandler( URI, gpVmRestHandlers, NULL);
+dwError = VmRESTRegisterHandler(gpRESTHandle, URI, gpVmRestProcessor, NULL);
 
 NOTE:
 1. Keep on calling this with all resource URI.
@@ -243,7 +249,7 @@ NOTE:
 4. Start the Server.
 ###########################################################################################################
 
-dwError = VmRESTStart( );
+dwError = VmRESTStart( gpRESTHandle );
 
 
 ###########################################################################################################
@@ -320,7 +326,7 @@ uint32_t         done=0;
 char             buffer[4096] = {0};
 while (done != 1)
 {
-    dwError = VmRESTGetData( pRequest, buffer, &done );
+    dwError = VmRESTGetData( gpRESTHandle, pRequest, buffer, &done );
     if (strlen(buffer) > 0)
     {
         /**** Print on terminal ****/
@@ -472,7 +478,7 @@ while(done != 1)
 {
     nWrite = (bytesLeft > 4096) ? 4096: bytesLeft;
     memcpy(buffer, (AllData + index), nWrite);
-    dwError = VmRESTSetData( ppResponse, buffer, nWrite, &done);
+    dwError = VmRESTSetData( gpRESTHandle, ppResponse, buffer, nWrite, &done);
     BAIL_ON_VMREST_ERROR(dwError);
     index = index + nWrite;
     bytesLeft = bytesLeft - nWrite;
@@ -496,7 +502,7 @@ and sends back the failure response using the above API's, then it must return s
 13 Stop the server.
 ###########################################################################################################
 
-dwError = VmRESTStop( );
+dwError = VmRESTStop( gpRESTHandle );
 
 NOTE: Worker threads serving the clients are detached threads. Please allow some time to them to finish.
 Library waits upto maximum 10 seconds to do so.
@@ -508,13 +514,13 @@ Library waits upto maximum 10 seconds to do so.
 Valid URI must be passed to remove the registered endpoint. This must be same as the one used during 
 registration. Call this for all registered endpoints.
 
-dwError = VmRESTUnRegisterHandler(URI);
+dwError = VmRESTUnRegisterHandler(gpRESTHandle, URI);
 
 
 ###########################################################################################################
 15 ShutDown the server.
 ###########################################################################################################
 
-VmRESTShutdown( );
+VmRESTShutdown( gpRESTHandle );
 
 ===========================================================================================================
