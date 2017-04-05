@@ -451,7 +451,7 @@ error:
     response = NULL;
     if (dwError == ERROR_SYS_CALL_FAILED)
     {
-        dwError = LENGTH_REQUIRED;
+        dwError = REQUEST_TIMEOUT;
     }
     goto cleanup;
 }

@@ -785,7 +785,9 @@ VmSockPosixRead(
     ssize_t                          nRead   = 0;
     DWORD                            dwBufSize = 0;
     uint32_t                         tryCnt = 0;
-    uint32_t                         maxTry = 50000;
+    int                              maxTry = 1000;
+    uint32_t                         timerMs = 1;
+    int                              timeOutSec = 5;
     uint32_t                         errorCode = 0;
 
     if (!pSocket || !pIoBuffer || !pIoBuffer->pData)
@@ -827,9 +829,23 @@ tryAgain:
         errorCode = errno;
     }
 
-    if (nRead < 0 && tryCnt < maxTry && (errorCode == EAGAIN || errorCode == SSL_ERROR_WANT_READ))
+    /**** Make server wait upto 5 seconds before connection timeout ****/
+
+    if (nRead < 0 && (timeOutSec >= 0)  && (errorCode == EAGAIN || errorCode == SSL_ERROR_WANT_READ))
     {
         tryCnt++;
+#ifdef WIN32
+        Sleep(timerMs);
+#else
+        usleep((timerMs * 1000));
+#endif
+        if (tryCnt >= maxTry)
+        {
+            timerMs = ((timerMs >= 1000) ? 1000 : (timerMs*10));
+            maxTry = ((maxTry <= 1) ? 1 : (maxTry/10));
+            timeOutSec--;
+            tryCnt = 0;
+        }
         goto tryAgain;
     }
     else if (nRead < 0)

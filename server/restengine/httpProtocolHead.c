@@ -1351,6 +1351,14 @@ error:
                                      "URI Not Found"
                                      );
                 }
+                else if (dwError == REQUEST_TIMEOUT)
+                {
+                    tempStatus = VmRESTSetFailureResponse(
+                                     &pResPacket,
+                                     "408",
+                                     "Request Timeout"
+                                     );
+                }
                 else if (dwError == LENGTH_REQUIRED)
                 {
                     tempStatus = VmRESTSetFailureResponse(
