@@ -1,4 +1,4 @@
-This document will walk over all major Trident API's call with example.
+This document will walk over all major C-REST-Engine API's call with example.
 All assumption are also noted below the API itself.
 ===========================================================================================================
 
@@ -10,7 +10,7 @@ What are Endpoint ?
 
 Each application has to identify all unique URI endpoints and define what operations can be performed on it.
 This unique URI is called 'resource' in terms of ReST.
-Trident supports following 5 operation on each resouce. These are called CRUD operation. (plus all others 
+C-REST-Engine supports following 5 operation on each resouce. These are called CRUD operation. (plus all others 
 HTTP methods)
 
 1. CREATE (HTTP Method POST)
@@ -43,7 +43,7 @@ So application will register REST enpoint with
 URI: /v1/netmgmt/dns
 Handler function for READ and UPDATE, others are set to NULL.
 
-Trident will expect the request URI for this as
+C-REST-Engine will expect the request URI for this as
 http://172.16.127.128:80/v1/netmgmt/dns?ifname=eth0&scope=global
 
 Characters following '?' denotes query params in key value pair. Upto 10 numbers of these key value params 
@@ -69,7 +69,7 @@ http://<IP>:<Port>/v1/vmdir/ldap?scope=base&dn=cn=aggregate,cn=schemacontext
 
 ===========================================================================================================
 
-Below are step by step example of Trident API calls
+Below are step by step example of C-REST-Engine API calls
 
 ############################################################################################################
 1. Configuration.

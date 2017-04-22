@@ -1,15 +1,15 @@
-VMWare REST (Trident)
+C-REST-Engine
 =====================
-Trident is a minimal embedded HTTP(S) server written in C. Its primary intent is to 
+C-REST-Engine is a minimal embedded HTTP(S) server written in C. Its primary intent is to 
 enable REST(Representational State Transfer) API support for C daemons.
 
-Trident can also be easily consumed via copenAPI project to adhere open API
+C-REST-Engine can also be easily consumed via copenAPI project to adhere open API
 specification by linux foundation previously known as swagger API specs.
 
 Platforms
 ---------
 
-Trident provides library for following platforms
+C-REST-Engine provides library for following platforms
 
 1. Linux(.so)
 
@@ -34,7 +34,7 @@ Design Goals
 Prerequisites
 -------------
 
-Trident uses following open source project.
+C-REST-Engine uses following open source project.
 
 Linux:
 
@@ -57,7 +57,7 @@ git clone https://github.com/vmware/trident.git
 Build
 -----
 
-These build instructions are to build Trident on VMware's Photon Linux
+These build instructions are to build C-REST-Engine on VMware's Photon Linux
 distribution.
 
 1.  Clone trident git repository onto your Photon (Full) installation.
@@ -97,13 +97,13 @@ repositories that can be configured on your Photon deployment.
 After the following YUM repositories have been configured, it should be possible
 to install the trident using "tdnf install vmware-rest".
 
-### Trident YUM repository
+### C-REST-Engine YUM repository
 
 Create the file "/etc/yum.repos.d/photonSupport.repo" with the following contents.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 [photonSupport]
-name=VMware Lightwave 1.0(x86_64)
+name=C-REST-Engine 1.0(x86_64)
 baseurl=https://dl.bintray.com/vmware/photonSupport
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY
 gpgcheck=0
