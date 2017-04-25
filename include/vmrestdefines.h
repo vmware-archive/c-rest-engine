@@ -19,7 +19,7 @@
 #define REST_ENGINE_FAILURE                             1
 
 #define MAX_PATH_LEN                                    128
-#define MAX_SERVER_PORT_LEN                             6
+#define MAX_SERVER_PORT_LEN                             7
 #define MAX_CLIENT_ALLOWED_LEN                          6
 #define MAX_WORKER_COUNT_LEN                            6
 #define MAX_LINE_LEN                                    256

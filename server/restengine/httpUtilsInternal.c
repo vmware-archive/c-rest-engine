@@ -483,7 +483,7 @@ VmRESTValidateConfig(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    strcpy(portNo, pRESTConfig->server_port);
+    strncpy(portNo, pRESTConfig->server_port,MAX_SERVER_PORT_LEN);
 
     lastPortChar = VmRESTUtilsGetLastChar(
                        pRESTConfig->server_port
@@ -504,7 +504,7 @@ VmRESTValidateConfig(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    if (atoi(portNo) == 0 || atoi(portNo) > MAX_PORT_NUMBER)
+    if (atoi(portNo) <= 0 || atoi(portNo) > MAX_PORT_NUMBER)
     {
         dwError = REST_ENGINE_INVALID_CONFIG_PORT;
         BAIL_ON_VMREST_ERROR(dwError);
