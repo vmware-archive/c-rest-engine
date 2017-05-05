@@ -26,6 +26,7 @@ char* configPath1 = "c:\\tmp\\restconfig1.txt";
 #include <stdbool.h>
 #include <time.h>
 #include <stdio.h>
+#include <signal.h>
 char* configPath = "/tmp/restconfig.txt";
 char* configPath1 = "/tmp/restconfig1.txt";
 #endif
@@ -43,11 +44,26 @@ VmRESTUtilsConvertInttoString(
     char*                            str
     );
 
+#ifndef WIN32
+void sig_handler(int signo)
+{
+  if (signo == SIGPIPE)
+  {
+      /* Do nothing */
+      write(1,"\n >>>>>>>>>> SIGPIPE Received >>>>>>>>>>>\n", 46);
+
+  }
+}
+#endif
 
 int main()
 {
     uint32_t                         dwError = 0;
-    uint32_t                         cnt = 0;
+    //uint32_t                         cnt = 0;
+
+#ifndef WIN32
+    signal(SIGPIPE, sig_handler);
+#endif
 
     gVmRestHandlers.pfnHandleRequest = NULL;
     gVmRestHandlers.pfnHandleCreate = &VmHandleEchoData;
@@ -74,14 +90,14 @@ int main()
     VmRESTStart(gpRESTHandle1);
 
 
-    while(cnt < 10)
+    while(1 ) //cnt < 10)
     {
 #ifdef WIN32
         Sleep(1000);
 #else
 		sleep(1);
 #endif
-        cnt++;
+       // cnt++;
     }
 
     dwError = VmRESTStop(gpRESTHandle);
