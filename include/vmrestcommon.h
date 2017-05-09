@@ -261,7 +261,7 @@ typedef struct _VMREST_HANDLE
 typedef struct _VM_WORKER_THREAD_DATA
 {
     PVMREST_SOCK_CONTEXT             pSockContext;
-    PVMREST_HANDLE                  pRESTHandle;
+    PVMREST_HANDLE                   pRESTHandle;
 
 }VM_WORKER_THREAD_DATA, *PVM_WORKER_THREAD_DATA;
 

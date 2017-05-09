@@ -55,6 +55,7 @@ typedef enum
 } VM_SOCK_POSIX_EVENT_STATE;
 
 /**** Transport internal error codes ****/
+#define INVALID                                -1
 #define VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED    5100
 #define MAX_RETRY_ATTEMPTS                     50000
 

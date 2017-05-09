@@ -14,6 +14,33 @@
 #include "includes.h"
 
 static
+void
+VmRESTSSLThreadLockCallback(
+    int                              mode,
+    int                              type,
+    char*                            file,
+    int                              line
+    );
+
+static
+unsigned long
+VmRESTSSLThreadId(
+    void
+    );
+
+static
+uint32_t
+VmRESTSSLThreadLockInit(
+    void
+    );
+
+static
+void
+VmRESTSSLThreadLockShutdown(
+    void
+    );
+
+static
 uint32_t
 VmRESTSecureSocket(
     PVMREST_HANDLE                   pRESTHandle,
@@ -65,6 +92,89 @@ VOID
 VmSockPosixFreeSocket(
     PVM_SOCKET                       pSocket
     );
+
+static
+void
+VmRESTSSLThreadLockCallback(
+    int                              mode,
+    int                              type,
+    char*                            file,
+    int                              line
+    )
+{
+    (void)line;
+    (void)file;
+    if(mode & CRYPTO_LOCK)
+    {
+        pthread_mutex_lock(&(gSSLThreadLock[type]));
+    }
+    else
+    {
+        pthread_mutex_unlock(&(gSSLThreadLock[type]));
+    }
+}
+
+static
+unsigned long
+VmRESTSSLThreadId(
+    void
+    )
+{
+    unsigned long                      ret = 0;
+
+    ret = (unsigned long)pthread_self();
+    return ret;
+}
+
+static
+uint32_t
+VmRESTSSLThreadLockInit(
+    void
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    int                              i = 0;
+
+    gSSLThreadLock = (pthread_mutex_t *)OPENSSL_malloc(
+                                           CRYPTO_num_locks() * sizeof(pthread_mutex_t)
+                                           );
+    if (gSSLThreadLock == NULL)
+    {
+        dwError = REST_ENGINE_NO_MEMORY;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    for(i = 0; i < CRYPTO_num_locks(); i++) 
+    {
+        pthread_mutex_init(&(gSSLThreadLock[i]), NULL);
+    }
+
+    CRYPTO_set_id_callback((unsigned long (*)())VmRESTSSLThreadId);
+    CRYPTO_set_locking_callback((void (*)())VmRESTSSLThreadLockCallback);
+
+cleanup:
+    return dwError;
+error:
+    dwError = VMREST_TRANSPORT_SSL_ERROR;
+    goto cleanup;
+}
+
+static
+void
+VmRESTSSLThreadLockShutdown(
+    void
+    )
+{
+    int                              i = 0;
+
+    CRYPTO_set_locking_callback(NULL);
+
+    for( i = 0; i < CRYPTO_num_locks(); i++)
+    {
+        pthread_mutex_destroy(&(gSSLThreadLock[i]));
+    }
+    OPENSSL_free(gSSLThreadLock);
+}
 
 static
 uint32_t
@@ -214,6 +324,10 @@ VmSockPosixOpenServer(
     /**** Check if connection is over SSL ****/
     if(dwFlags & VM_SOCK_IS_SSL)
     {
+        if (gSSLisedInstaceCount == INVALID)
+        {
+            pthread_mutex_init(&gGlobalMutex, NULL);
+        }
         SSL_library_init();
         dwError = VmRESTSecureSocket(
                       pRESTHandle,
@@ -222,6 +336,15 @@ VmSockPosixOpenServer(
                       );
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
         pSSLInfo->isSecure = 1;
+        pthread_mutex_lock(&gGlobalMutex);
+        if (gSSLisedInstaceCount == 0)
+        {
+            dwError = VmRESTSSLThreadLockInit();
+            gSSLisedInstaceCount++;
+        }
+        pthread_mutex_unlock(&gGlobalMutex);
+        BAIL_ON_VMREST_ERROR(dwError);
+        
     }
     else
     {
@@ -509,6 +632,7 @@ VmSockPosixWaitForEvent(
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
     BOOLEAN                          bLocked = FALSE;
+    BOOLEAN                          destroyGlobalMutex = FALSE;
     VM_SOCK_EVENT_TYPE               eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
     PVM_SOCKET                       pSocket = NULL;
     SSL*                             ssl = NULL;
@@ -610,6 +734,9 @@ retry:
                                  else
                                  {
                                      VMREST_LOG_ERROR(pRESTHandle,"SSL accept failed");
+                                     SSL_shutdown(ssl);
+                                     SSL_free(ssl);
+                                     close(pSocket->fd);
                                      dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
                                      BAIL_ON_VMREST_ERROR(dwError);
                                  }
@@ -687,6 +814,21 @@ cleanup:
         {
             VmRESTFreeMemory(pRESTHandle->pSSLInfo->sslContext);
             pRESTHandle->pSSLInfo->sslContext = NULL;
+        }
+
+        pthread_mutex_lock(&gGlobalMutex);
+        gSSLisedInstaceCount--;
+        if (gSSLisedInstaceCount == 0)
+        {
+            VmRESTSSLThreadLockShutdown();
+            gSSLThreadLock = NULL;
+            destroyGlobalMutex = TRUE;
+            gSSLisedInstaceCount = INVALID;
+        }
+        pthread_mutex_unlock(&gGlobalMutex);
+        if (destroyGlobalMutex)
+        {
+            pthread_mutex_destroy(&gGlobalMutex);
         }
     }
 

@@ -51,7 +51,7 @@ Source code
 -----------
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-git clone https://github.com/vmware/trident.git
+git clone https://github.com/vmware/c-rest-engine.git
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Build
@@ -60,7 +60,7 @@ Build
 These build instructions are to build C-REST-Engine on VMware's Photon Linux
 distribution.
 
-1.  Clone trident git repository onto your Photon (Full) installation.
+1.  Clone c-rest-engine git repository onto your Photon (Full) installation.
 
 2.  "cd build"
 
@@ -72,7 +72,7 @@ distribution.
 
 4.  As part of a successful build, the following RPMs should be created in the
 
-    1.  trident/build/rpmbuild/RPMS/x86_64/vmware-rest-1.0.1-6.x86_64.rpm
+    1.  c-rest-engine/build/rpmbuild/RPMS/x86_64/vmware-rest-<version>.x86_64.rpm
 
 Installation
 ------------
@@ -81,13 +81,13 @@ Installation
 
 Use RPM install command to install the above generated RPM.
 
-"rpm -ivh trident/build/rpmbuild/RPMS/x86_64/vmware-rest-1.0.1-6.x86_64.rpm"
+"rpm -ivh trident/build/rpmbuild/RPMS/x86_64/vmware-rest-<version>.x86_64.rpm"
 
 The installed libraries will go in following folder 
-"/opt/vmware/lib64/"
+"/usr/lib64/"
 
 NOTE: If previous version of same RPM is already installed please delete it
-using the following command "rpm -e vmware-rest-1.0.1-6"
+using the following command "rpm -e vmware-rest"
 
 2. Using package manager on Photon OS Linux distribution.
 
@@ -96,18 +96,4 @@ repositories that can be configured on your Photon deployment.
 
 After the following YUM repositories have been configured, it should be possible
 to install the trident using "tdnf install vmware-rest".
-
-### C-REST-Engine YUM repository
-
-Create the file "/etc/yum.repos.d/photonSupport.repo" with the following contents.
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-[photonSupport]
-name=C-REST-Engine 1.0(x86_64)
-baseurl=https://dl.bintray.com/vmware/photonSupport
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY
-gpgcheck=0
-enabled=1
-skip_if_unavailable=True
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

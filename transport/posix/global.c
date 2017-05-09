@@ -11,22 +11,10 @@
 *
 */
 
-#include <config.h>
-#include <vmrestsys.h>
-#include <sys/epoll.h>
-#include <vmrestdefines.h>
-#include <vmsock.h>
-#include <vmrestcommon.h>
-#include <vmsockposix.h>
-#include "defines.h"
-#include "structs.h"
-#include "prototypes.h"
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/crypto.h>
-#include <vmrestcommon.h>
-#include <vmrest.h>
-#include <fcntl.h>
-#include <sys/epoll.h>
-#include "extern.h"
+#include "includes.h"
+
+int                                  gSSLisedInstaceCount = INVALID;
+pthread_mutex_t*                     gSSLThreadLock = NULL;
+pthread_mutex_t                      gGlobalMutex;
+
 
