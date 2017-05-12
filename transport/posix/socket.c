@@ -327,6 +327,7 @@ VmSockPosixOpenServer(
         if (gSSLisedInstaceCount == INVALID)
         {
             pthread_mutex_init(&gGlobalMutex, NULL);
+            gSSLisedInstaceCount = 0;
         }
         SSL_library_init();
         dwError = VmRESTSecureSocket(

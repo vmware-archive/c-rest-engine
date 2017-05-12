@@ -50,8 +50,6 @@ void sig_handler(int signo)
   if (signo == SIGPIPE)
   {
       /* Do nothing */
-      write(1,"\n >>>>>>>>>> SIGPIPE Received >>>>>>>>>>>\n", 46);
-
   }
 }
 #endif
