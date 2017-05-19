@@ -139,7 +139,8 @@ VmRESTRegisterHandler(
         if (pRESTHandle->pInstanceGlobal->useEndPoint == 0)
         {
             dwError = VmRestEngineInitEndPointRegistration(
-                      );
+                          pRESTHandle
+                          );
             BAIL_ON_VMREST_ERROR(dwError);
         }
         dwError = VmRestEngineAddEndpoint(
@@ -274,6 +275,7 @@ VmRESTShutdown(
     if (pRESTHandle->pInstanceGlobal->useEndPoint == 1)
     {
         VmRestEngineShutdownEndPointRegistration(
+            pRESTHandle
             );
     }
 
