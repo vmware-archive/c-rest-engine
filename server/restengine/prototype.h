@@ -296,10 +296,12 @@ VmRestEngineHandler(
 
 uint32_t
 VmRestEngineInitEndPointRegistration(
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 void
 VmRestEngineShutdownEndPointRegistration(
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 uint32_t
