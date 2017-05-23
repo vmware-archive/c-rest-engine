@@ -45,7 +45,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %exclude %{_sbindir}/*
-%{_sbindir}/*
 %{_includedir}/vmrest.h
 %{_lib64dir}/librestengine.*
 
