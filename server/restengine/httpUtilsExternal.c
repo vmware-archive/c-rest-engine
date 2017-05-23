@@ -208,7 +208,7 @@ VmRESTGetHttpPayload(
     PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     char*                            response,
-    uint32_t*                        done
+    uint32_t*                        bytesRead
     )
 {
 
@@ -217,9 +217,8 @@ VmRESTGetHttpPayload(
     char                             localAppBuffer[MAX_DATA_BUFFER_LEN] = {0};
     uint32_t                         chunkLenBytes = 0;
     uint32_t                         chunkLen = 0;
-    uint32_t                         bytesRead = 0;
+    uint32_t                         bRead = 0;
     uint32_t                         readXBytes = 0;
-    uint32_t                         actualBytesCopied = 0;
     uint32_t                         newChunk = 0;
     uint32_t                         extraRead = 0;
     uint32_t                         tryCnt = 0;
@@ -227,13 +226,13 @@ VmRESTGetHttpPayload(
     char*                            contentLength = NULL;
     char*                            transferEncoding = NULL;
 
-    if (!pRequest || !response  || !done)
+    if (!pRequest || !response  || !bytesRead)
     {
         VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
-    *done = 0;
+    *bytesRead = 0;
 
     if (sizeof(response) > MAX_DATA_BUFFER_LEN)
     {
@@ -279,7 +278,7 @@ VmRESTGetHttpPayload(
                       readXBytes,
                       localAppBuffer,
                       pRequest->pSocket,
-                      &bytesRead,
+                      &bRead,
                       1
                       );
             tryCnt++;
@@ -291,24 +290,24 @@ VmRESTGetHttpPayload(
             pRequest->dataNotRcvd = 0;
         }
 
-        dwError = VmRESTCopyDataWithoutCRLF(
-                      bytesRead,
-                      localAppBuffer,
-                      response,
-                      &actualBytesCopied
-                      );
-        BAIL_ON_VMREST_ERROR(dwError);
-        pRequest->dataRemaining = pRequest->dataRemaining - actualBytesCopied;
+        memcpy(response,localAppBuffer, bRead);
+        pRequest->dataRemaining = pRequest->dataRemaining - bRead;
+
+        *bytesRead = bRead;
 
         if (pRequest->dataRemaining == 0)
         {
-            *done = 1;
+            dwError = REST_ENGINE_IO_COMPLETED;
         }
-        if (bytesRead == 0 && readXBytes != 0)
+        else if(bRead == 0 && readXBytes != 0)
         {
             dwError = VMREST_HTTP_VALIDATION_FAILED;
             VMREST_LOG_ERROR(pRESTHandle,"%s","No data available over socket to read");
-            *done = 1;
+            BAIL_ON_VMREST_ERROR(dwError);
+        }
+        else if(pRequest->dataRemaining > 0)
+        {
+            dwError = REST_ENGINE_MORE_IO_REQUIRED;
         }
     }
     else if((transferEncoding != NULL) && (strcmp(transferEncoding,"chunked")) == 0)
@@ -341,14 +340,14 @@ VmRESTGetHttpPayload(
                           readXBytes,
                           localAppBuffer,
                           pRequest->pSocket,
-                          &bytesRead,
+                          &bRead,
                           1
                           );
             tryCnt++;
         } while (dwError == ERROR_SYS_CALL_FAILED && pRequest->dataNotRcvd == 1 && tryCnt < MAX_READ_RETRIES);
 
         /**** Cross examine size if its last chuck ****/
-        if (dwError == ERROR_SYS_CALL_FAILED && bytesRead > 0 && bytesRead < HTTP_CHUNKED_DATA_LEN)
+        if (dwError == ERROR_SYS_CALL_FAILED && bRead > 0 && bRead < HTTP_CHUNKED_DATA_LEN)
         {
             dwError = 0;
         }
@@ -371,17 +370,19 @@ VmRESTGetHttpPayload(
             VMREST_LOG_DEBUG(pRESTHandle,"Chunk Len = %u", chunkLen);
             if (chunkLen == 0)
             {
-                *done = 1;
+                *bytesRead = 0;
+                dwError =  REST_ENGINE_IO_COMPLETED;
             }
-            if (*done == 0)
+            else if (chunkLen > 0)
             {
                 /**** Copy the extra data from last read if it exists ****/
-                extraRead = bytesRead - chunkLenBytes;
+                extraRead = bRead - chunkLenBytes;
                 if (extraRead > 0)
                 {
                     memcpy(res, (localAppBuffer + chunkLenBytes), extraRead);
                     res = res + extraRead;
                     pRequest->dataRemaining = pRequest->dataRemaining - extraRead;
+                    *bytesRead = extraRead;
                 }
 
                 memset(localAppBuffer,'\0',MAX_DATA_BUFFER_LEN);
@@ -399,19 +400,14 @@ VmRESTGetHttpPayload(
                               readXBytes,
                               localAppBuffer,
                               pRequest->pSocket,
-                              &bytesRead,
+                              &bRead,
                               1
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
 
-                dwError = VmRESTCopyDataWithoutCRLF(
-                              bytesRead,
-                              localAppBuffer,
-                              res,
-                              &actualBytesCopied
-                              );
-                BAIL_ON_VMREST_ERROR(dwError);
-                pRequest->dataRemaining = pRequest->dataRemaining - actualBytesCopied;
+                memcpy(res,localAppBuffer,bRead);
+                pRequest->dataRemaining = pRequest->dataRemaining - bRead;
+                *bytesRead = *bytesRead + bRead;
 
                 /**** Read the /r/n succeeding the chunk ****/
                 if (pRequest->dataRemaining == 0)
@@ -421,19 +417,41 @@ VmRESTGetHttpPayload(
                                   2,
                                   localAppBuffer,
                                   pRequest->pSocket,
-                                  &bytesRead,
+                                  &bRead,
                                   0
                                   );
-                BAIL_ON_VMREST_ERROR(dwError);
+                    BAIL_ON_VMREST_ERROR(dwError);
                 }
+                dwError = REST_ENGINE_MORE_IO_REQUIRED;
+            }
+        }
+        else if (bRead > 0)  // not a new chunk
+        {
+            memcpy(res,localAppBuffer,bRead);
+            pRequest->dataRemaining = pRequest->dataRemaining - bRead;
+            dwError = REST_ENGINE_MORE_IO_REQUIRED;
+            *bytesRead = bRead;
+            
+            /**** Read the /r/n succeeding the chunk if current chunk ended ****/
+            if (pRequest->dataRemaining == 0)
+            {
+                dwError = VmsockPosixGetXBytes(
+                              pRESTHandle,
+                              2,
+                              localAppBuffer,
+                              pRequest->pSocket,
+                              &bRead,
+                              0
+                              );
+                BAIL_ON_VMREST_ERROR(dwError);
             }
         }
     }
     else
     {
-        *done = 1;
+        *bytesRead = 0;
+        dwError = REST_ENGINE_IO_COMPLETED;
     }
-    BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     if (contentLength != NULL)
@@ -461,7 +479,7 @@ VmRESTSetHttpPayload(
     PREST_RESPONSE*                  ppResponse,
     char const*                      buffer,
     uint32_t                         dataLen,
-    uint32_t*                        done
+    uint32_t*                        bytesWritten
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -471,7 +489,7 @@ VmRESTSetHttpPayload(
     char*                            transferEncoding = NULL;
 
 
-    if (!ppResponse  || (*ppResponse == NULL) || !buffer || !done)
+    if (!ppResponse  || (*ppResponse == NULL) || !buffer || !bytesWritten)
     {
         VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
@@ -479,7 +497,7 @@ VmRESTSetHttpPayload(
     BAIL_ON_VMREST_ERROR(dwError);
 
     pResponse = *ppResponse;
-    *done = 0;
+    *bytesWritten = 0;
 
     dwError = VmRESTGetHttpResponseHeader(
                   pResponse,
@@ -515,9 +533,10 @@ VmRESTSetHttpPayload(
                       ppResponse
                       );
        VMREST_LOG_DEBUG(pRESTHandle,"Sending Header and Payload done, returned code %u", dwError);
-        BAIL_ON_VMREST_ERROR(dwError);
-        pResponse->headerSent = 1;
-        *done = 1;
+       BAIL_ON_VMREST_ERROR(dwError);
+       pResponse->headerSent = 1;
+       *bytesWritten = contentLen;
+       dwError = REST_ENGINE_IO_COMPLETED;
     }
     else if ((transferEncoding != NULL) && (strcmp(transferEncoding, "chunked") == 0))
     {
@@ -547,15 +566,21 @@ VmRESTSetHttpPayload(
          BAIL_ON_VMREST_ERROR(dwError);
          if (dataLen == 0)
          {
-             *done = 1;
+             dwError = REST_ENGINE_IO_COMPLETED;
          }
+         else
+         {
+             dwError = REST_ENGINE_MORE_IO_REQUIRED;
+         }
+         *bytesWritten = dataLen;
+         
     }
     else
     {
         VMREST_LOG_ERROR(pRESTHandle,"%s","Both Content length and TransferEncoding missing");
         dwError = VMREST_HTTP_VALIDATION_FAILED;
+        BAIL_ON_VMREST_ERROR(dwError);
     }
-    BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     return dwError;

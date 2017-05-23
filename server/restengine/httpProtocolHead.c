@@ -1088,7 +1088,7 @@ VmRESTProcessIncomingData(
     if (!pRESTHandle)
     {
         VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid REST Handler");
-        dwError = REST_ENGINE_INVALID_HANDLER;
+        dwError = REST_ERROR_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 

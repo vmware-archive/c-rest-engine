@@ -15,36 +15,8 @@
 #define __VREST_DEFINE_H__
 
 /***** global macros **************/
-#define REST_ENGINE_SUCCESS                             0
-#define REST_ENGINE_FAILURE                             1
-
-#define MAX_PATH_LEN                                    128
-#define MAX_SERVER_PORT_LEN                             7
-#define MAX_CLIENT_ALLOWED_LEN                          6
-#define MAX_WORKER_COUNT_LEN                            6
-#define MAX_LINE_LEN                                    256
-#define MAX_STATUS_LENGTH                               6
-#define MAX_DATA_BUFFER_LEN                             4096
-
 #define PASS                                            1
 #define FAIL                                            0
-
-#define REST_ENGINE_MISSING_CONFIG                      100
-#define REST_ENGINE_INVALID_CONFIG                      101
-#define REST_ENGINE_NO_MEMORY                           102
-#define REST_ENGINE_INVALID_REST_PROCESSER              103
-#define REST_ENGINE_ENDPOINT_EXISTS                     104
-#define REST_ENGINE_ENDPOINT_BAD_URI                    105
-#define REST_ENGINE_INVALID_CONFIG_PORT                 106
-#define REST_ENGINE_INVALID_CONFIG_SSL_CERT             107
-#define REST_ENGINE_INVALID_CONFIG_CLT_CNT              108
-#define REST_ENGINE_INVALID_CONFIG_WKR_THR_CNT          109
-#define REST_ENGINE_BAD_CONFIG_FILE_PATH                110
-#define REST_ENGINE_PREV_INSTANCE_NOT_CLEAN             111
-#define REST_ENGINE_INVALID_HANDLER                     112
-
-
-
 
 #ifndef WIN32
 #define ERROR_NOT_SUPPORTED                             100

@@ -321,20 +321,26 @@ NOTE: Free the response pointer(contentLen) for each successful call.
 
 7.2 Get Data from request.
 --------------------------
-Keep on calling this API unless *done is set to 1.
+Keep on calling GetData API until return status is changed to REST_ENGINE_IO_COMPLETED from
+REST_ENGINE_MORE_IO_REQUIRED or error has occured
 
-uint32_t         done=0;
 char             buffer[4096] = {0};
-while (done != 1)
+uint32_t         dwError = 0;
+unit32_t         bytesRead = 0;
+
+do
 {
-    dwError = VmRESTGetData( pRESTHandle, pRequest, buffer, &done );
-    if (strlen(buffer) > 0)
+    dwError = VmRESTGetData( pRESTHandle, pRequest, buffer, &bytesRead);
+    if (bytesRead > 0)
     {
         /**** Print on terminal ****/
-       write(1,buffer,strlen(buffer));
+       write(1,buffer,bytesRead);
     } 
     memset(buffer, '\0', 4096);
-} 
+}while (dwError == REST_ENGINE_MORE_IO_REQUIRED);
+
+/**** Check for Error code ****/
+BAIL_ON_VMREST_ERROR(dwError);
 
 NOTE: Pre-allocated buffer of size MAX_DATA_BUFFER_LEN (4096) bytes must be used to hold the data.
 
@@ -465,26 +471,31 @@ NOTE: This will set Transfer-Encoding as chunked in HTTP response object.
 
 11.3 Set Data in response object.
 ---------------------------------
-Call this API in loop unless done flag is set to 1.
+Keep on calling SetData API until return status is changed to REST_ENGINE_IO_COMPLETED from
+REST_ENGINE_MORE_IO_REQUIRED or error has occured
 
 char        AllData[100000]; /**** Just for example, buffer holding entire data *****/
-uint32_t    done = 0;
+uint32_t    bytesWritten = 0;
 char        buffer[4096] = {0};
 uint32_t    nWrite = 0;
 uint32_t    index = 0;
 
 bytesLeft = strlen(AllData);
 
-while(done != 1)
+do
 {
     nWrite = (bytesLeft > 4096) ? 4096: bytesLeft;
     memcpy(buffer, (AllData + index), nWrite);
-    dwError = VmRESTSetData( pRESTHandle, ppResponse, buffer, nWrite, &done);
-    BAIL_ON_VMREST_ERROR(dwError);
-    index = index + nWrite;
-    bytesLeft = bytesLeft - nWrite;
+    dwError = VmRESTSetData( pRESTHandle, ppResponse, buffer, nWrite, &bytesWritten);
+    index = index + bytesWritten;
+    bytesLeft = bytesLeft - bytesWritten;
     memset(buffer, '\0', 4097);
-}
+
+}while(dwError == REST_ENGINE_MORE_IO_REQUIRED);
+
+/**** Check for Error code ****/
+BAIL_ON_VMREST_ERROR(dwError);
+
 NOTE: Call to this API is must to send the response back to client. If client has nothing to send, 
 call this api with 0 data length.
 

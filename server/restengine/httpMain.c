@@ -25,7 +25,7 @@ VmHTTPInit(
     if (!pRESTHandle)
     {
         VMREST_LOG_DEBUG(pRESTHandle,"%s","Invalid REST Handler");
-        dwError = REST_ENGINE_INVALID_HANDLER;
+        dwError = REST_ERROR_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -121,7 +121,7 @@ VmHTTPRegisterHandler(
 
     if (!pHandler || !pRESTHandle)
     {
-        dwError = REST_ENGINE_INVALID_REST_PROCESSER;
+        dwError = REST_ERROR_INVALID_REST_PROCESSER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
     pRESTHandle->pHttpHandler = pHandler;
@@ -141,7 +141,7 @@ VmHTTPUnRegisterHandler(
 
     if (pRESTHandle == NULL)
     {
-        dwError = REST_ENGINE_INVALID_REST_PROCESSER;
+        dwError = REST_ERROR_INVALID_REST_PROCESSER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 

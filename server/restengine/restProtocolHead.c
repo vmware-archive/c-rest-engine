@@ -205,7 +205,7 @@ VmRestEngineInitEndPointRegistration(
     if (!pRESTHandle)
     {
         VMREST_LOG_DEBUG(pRESTHandle,"%s","Invalid REST handler");
-        dwError = REST_ENGINE_INVALID_HANDLER;
+        dwError = REST_ERROR_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);    
 
@@ -314,7 +314,7 @@ VmRestEngineAddEndpoint(
                   );
     if(dwError != NOT_FOUND)
     {
-        dwError = REST_ENGINE_ENDPOINT_EXISTS;
+        dwError = REST_ERROR_ENDPOINT_EXISTS;
     }
     else
     {
@@ -345,7 +345,7 @@ VmRestEngineAddEndpoint(
     }
     else
     {
-        dwError = REST_ENGINE_ENDPOINT_BAD_URI;
+        dwError = REST_ERROR_ENDPOINT_BAD_URI;
         BAIL_ON_VMREST_ERROR(dwError);
     }
 

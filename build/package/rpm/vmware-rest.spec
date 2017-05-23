@@ -1,7 +1,7 @@
 Name:    vmware-rest
 Summary: VMware REST Library
 Version: 1.0.0
-Release: 2
+Release: 3
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware
@@ -45,12 +45,15 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %exclude %{_sbindir}/*
+%{_sbindir}/*
 %{_includedir}/vmrest.h
 %{_lib64dir}/librestengine.*
 
 # %doc ChangeLog README COPYING
 
 %changelog
+*   Mon May 22 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.0-3
+-   Get/Set data API signature change.
 *   Fri May 19 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.0-2
 -   Fixing ESX crash issue.
 *   Fri May 12 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.0-1
