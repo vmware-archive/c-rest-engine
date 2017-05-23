@@ -41,7 +41,7 @@ VmRESTGetSockPackagePosix(
 
     if (!ppSockPackagePosix)
     {
-        dwError = REST_ENGINE_NO_MEMORY;
+        dwError = REST_ERROR_NO_MEMORY;
         BAIL_ON_VMREST_ERROR(dwError);
     }
 

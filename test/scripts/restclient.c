@@ -62,7 +62,7 @@ getExpectedResult(
     else if (strcmp(testID, "TEST 5") == 0)
     {
         strcpy(input, "GET /v1/pkg?x=y HTTP/1.1\r\nHost: SITE\r\nConnection: Keep-Alive\r\nContent-Length: 20\r\n\r\nThis");
-        strcpy(expected, "HTTP/1.1 411 Length Required\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+        strcpy(expected, "HTTP/1.1 408 Request Timeout\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
     }
     else if (strcmp(testID, "TEST 6") == 0)
     {
@@ -76,8 +76,8 @@ getExpectedResult(
     }
     else if (strcmp(testID, "TEST 8") == 0)
     {
-        strcpy(input, "GET /v1/pkg?x=y HTTP/1.1\r\nHost: SITE\r\nContent-Length: 28\r\n\r\nThis is payload with \r\ndfdf\r\n");
-        strcpy(expected, "HTTP/1.1 411 Length Required\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+        strcpy(input, "GET /v1/pkg?x=y HTTP/1.1\r\nHost: SITE\r\nContent-Length: 25\r\n\r\nThis is payload with CRLF\r\n");
+        strcpy(expected, "HTTP/1.1 200 OK\r\nConnection:close\r\nContent-Length:25\r\n\r\nThis is payload with CRLF");
     }
     else if (strcmp(testID, "TEST 9") == 0)
     {

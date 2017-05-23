@@ -364,7 +364,7 @@ VmRESTParseAndPopulateConfigFile(
 
     if (!configFile)
     {
-        dwError = REST_ENGINE_MISSING_CONFIG;
+        dwError = REST_ERROR_MISSING_CONFIG;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -376,7 +376,7 @@ VmRESTParseAndPopulateConfigFile(
          );
     if (fp == NULL)
     {
-        dwError = REST_ENGINE_BAD_CONFIG_FILE_PATH;
+        dwError = REST_ERROR_BAD_CONFIG_FILE_PATH;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -479,7 +479,7 @@ VmRESTValidateConfig(
 
     if ((portLen == 0) || (portLen > MAX_SERVER_PORT_LEN))
     {
-        dwError = REST_ENGINE_INVALID_CONFIG_PORT;
+        dwError = REST_ERROR_INVALID_CONFIG_PORT;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -499,14 +499,14 @@ VmRESTValidateConfig(
 
         if (keyLen == 0 || keyLen > MAX_PATH_LEN || certLen == 0 || certLen > MAX_PATH_LEN)
         {
-            dwError = REST_ENGINE_INVALID_CONFIG_SSL_CERT;
+            dwError = REST_ERROR_INVALID_CONFIG_SSL_CERT;
         }
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
     if (atoi(portNo) <= 0 || atoi(portNo) > MAX_PORT_NUMBER)
     {
-        dwError = REST_ENGINE_INVALID_CONFIG_PORT;
+        dwError = REST_ERROR_INVALID_CONFIG_PORT;
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
@@ -514,7 +514,7 @@ VmRESTValidateConfig(
     { 
         if((atoi(pRESTConfig->client_count) == 0) || (atoi(pRESTConfig->client_count) > MAX_CLIENT_CNT))
         {
-            dwError = REST_ENGINE_INVALID_CONFIG_CLT_CNT;
+            dwError = REST_ERROR_INVALID_CONFIG_CLT_CNT;
             BAIL_ON_VMREST_ERROR(dwError);
         }
     }
@@ -523,7 +523,7 @@ VmRESTValidateConfig(
     {
         if((atoi(pRESTConfig->worker_thread_count) == 0) || (atoi(pRESTConfig->worker_thread_count) > MAX_WORKER_THR_CNT))
         {
-            dwError = REST_ENGINE_INVALID_CONFIG_WKR_THR_CNT;
+            dwError = REST_ERROR_INVALID_CONFIG_WKR_THR_CNT;
             BAIL_ON_VMREST_ERROR(dwError);
         }
     }
@@ -545,7 +545,7 @@ VmRESTCopyConfig(
 
     if (!pConfig || !ppRESTConfig)
     {
-        dwError = REST_ENGINE_MISSING_CONFIG;
+        dwError = REST_ERROR_MISSING_CONFIG;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 

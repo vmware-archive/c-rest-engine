@@ -140,7 +140,7 @@ VmRESTSSLThreadLockInit(
                                            );
     if (gSSLThreadLock == NULL)
     {
-        dwError = REST_ENGINE_NO_MEMORY;
+        dwError = REST_ERROR_NO_MEMORY;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -270,7 +270,7 @@ VmSockPosixOpenServer(
     if (!pRESTHandle)
     {
         VMREST_LOG_DEBUG(pRESTHandle,"Invalid REST Handler");
-        dwError = REST_ENGINE_INVALID_HANDLER;
+        dwError = REST_ERROR_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -1182,7 +1182,7 @@ VmSockPosixCloseSocket(
     if (!pRESTHandle)
     {
         VMREST_LOG_ERROR(pRESTHandle,"Invalid REST Handler");
-        dwError = REST_ENGINE_INVALID_HANDLER;
+        dwError = REST_ERROR_INVALID_HANDLER;
     }
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 

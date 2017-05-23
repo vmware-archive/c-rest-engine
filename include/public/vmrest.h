@@ -25,6 +25,37 @@
 #define VMREST_API
 #endif
 
+/**** REST ENGINE ERROR CODES ****/
+#define     REST_ENGINE_SUCCESS                            0
+#define     REST_ENGINE_FAILURE                            1
+#define     REST_ERROR_MISSING_CONFIG                      100
+#define     REST_ERROR_INVALID_CONFIG                      101
+#define     REST_ERROR_NO_MEMORY                           102
+#define     REST_ERROR_INVALID_REST_PROCESSER              103
+#define     REST_ERROR_ENDPOINT_EXISTS                     104
+#define     REST_ERROR_ENDPOINT_BAD_URI                    105
+#define     REST_ERROR_INVALID_CONFIG_PORT                 106
+#define     REST_ERROR_INVALID_CONFIG_SSL_CERT             107
+#define     REST_ERROR_INVALID_CONFIG_CLT_CNT              108
+#define     REST_ERROR_INVALID_CONFIG_WKR_THR_CNT          109
+#define     REST_ERROR_BAD_CONFIG_FILE_PATH                110
+#define     REST_ERROR_PREV_INSTANCE_NOT_CLEAN             111
+#define     REST_ERROR_INVALID_HANDLER                     112
+#define     REST_ENGINE_MORE_IO_REQUIRED                   7001
+#define     REST_ENGINE_IO_COMPLETED                       0
+
+
+
+
+/**** REST ENGINE CONFIG PARAMS ****/
+#define     MAX_DATA_BUFFER_LEN                             4096
+#define     MAX_PATH_LEN                                    128
+#define     MAX_SERVER_PORT_LEN                             7
+#define     MAX_CLIENT_ALLOWED_LEN                          6
+#define     MAX_WORKER_COUNT_LEN                            6
+#define     MAX_LINE_LEN                                    256
+#define     MAX_STATUS_LENGTH                               6
+
 typedef struct _VMREST_HANDLE* PVMREST_HANDLE;
 
 typedef struct _VM_REST_HTTP_REQUEST_PACKET*  PREST_REQUEST;
@@ -254,8 +285,9 @@ VmRESTSetHttpHeader(
  * @param[in]                        Handle to Library instance.
  * @param[in]                        Reference to HTTP Request object.
  * @param[out]                       Pre allocated Data buffer.
- * @param[out]                       Identier to denote no more data to read.
- * @return                           Returns 0 for success
+ * @param[out]                       Actual bytes returned in buffer.
+ * @return                           Returns REST_ENGINE_IO_COMPLETED for success,
+                                     REST_ENGINE_MORE_IO_REQUIRED or Error codes.
  */
 VMREST_API 
 uint32_t
@@ -263,7 +295,7 @@ VmRESTGetData(
     PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     char*                            pBuffer,
-    uint32_t*                        done
+    uint32_t*                        bytesRead
     );
 
 /*
@@ -374,8 +406,9 @@ VmRESTSetFailureResponse(
  * @param[in]                        Reference to HTTP Response object.
  * @param[in]                        Payload data.
  * @param[in]                        Payload data length.
- * @param[in]                        Identifier to denote all data chunks sent.
- * @return                           Returns 0 for success
+ * @param[in]                        Actual bytes written.
+ * @return                           Returns REST_ENGINE_IO_COMPLETED for success,
+                                     REST_ENGINE_MORE_IO_REQUIRED or Error codes.
  */
 VMREST_API 
 uint32_t
@@ -384,7 +417,7 @@ VmRESTSetData(
     PREST_RESPONSE*                  ppResponse,
     char const*                      buffer,
     uint32_t                         dataLen,
-    uint32_t*                        done
+    uint32_t*                        bytesWritten
     );
 
 /**
@@ -465,7 +498,9 @@ VmRESTSetHttpReasonPhrase(
  * @param[in]                        Handle to Library instance.
  * @param[in]                        Reference to HTTP Request object.
  * @param[out]                       Payload buffer(must be allocated by caller).
- * @return Returns 0 for success
+ * @param[out]                       Actual bytes read in buffer.
+ * @return                           Returns REST_ENGINE_IO_COMPLETED for success,
+                                     REST_ENGINE_MORE_IO_REQUIRED or Error codes.
  */
 VMREST_API 
 uint32_t
@@ -473,7 +508,7 @@ VmRESTGetHttpPayload(
     PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     char*                            response,
-    uint32_t*                        done
+    uint32_t*                        bytesRead
     );
 
 
@@ -484,7 +519,9 @@ VmRESTGetHttpPayload(
  * @param[in]                        Reference to HTTP Response object.
  * @param[in]                        Payload data.
  * @param[in]                        Payload data length.
- * @param[out]                       Status after all data chunks sent.
+ * @param[out]                       Actual bytes written in buffer.
+ * @param[out]                       Returns REST_ENGINE_IO_COMPLETED for success,
+                                     REST_ENGINE_MORE_IO_REQUIRED or Error codes.
  * @return Returns 0 for success
  */
 VMREST_API 
@@ -494,7 +531,7 @@ VmRESTSetHttpPayload(
     PREST_RESPONSE*                  ppResponse,
     char const*                      buffer,
     uint32_t                         dataLen,
-    uint32_t*                        done
+    uint32_t*                        bytesWritten
     );
 
 #endif /* __VMREST_H__ */

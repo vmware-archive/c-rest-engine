@@ -51,7 +51,7 @@ VmRESTInit(
 
     if (!ppRESTHandle)
     {
-        dwError = REST_ENGINE_INVALID_HANDLER;
+        dwError = REST_ERROR_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -124,7 +124,7 @@ VmRESTRegisterHandler(
 
     if (!pHandler || !pRESTHandle)
     {
-        dwError = REST_ENGINE_INVALID_REST_PROCESSER;
+        dwError = REST_ERROR_INVALID_REST_PROCESSER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -252,7 +252,7 @@ VmRESTStop(
 
     if (!pRESTHandle)
     {  
-        dwError = REST_ENGINE_INVALID_HANDLER;
+        dwError = REST_ERROR_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -287,7 +287,7 @@ VmRESTGetData(
     PVMREST_HANDLE                   pRESTHandle,
     PREST_REQUEST                    pRequest,
     char*                            pBuffer,
-    uint32_t*                        done
+    uint32_t*                        bytesRead
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -296,14 +296,10 @@ VmRESTGetData(
                   pRESTHandle,
                   pRequest,
                   pBuffer,
-                  done
+                  bytesRead
                   );
-    BAIL_ON_VMREST_ERROR(dwError);
                   
-cleanup:
     return dwError;
-error:
-    goto cleanup;
 }
 
 uint32_t
@@ -312,7 +308,7 @@ VmRESTSetData(
     PREST_RESPONSE*                  ppResponse,
     char const*                      buffer,
     uint32_t                         dataLen,
-    uint32_t*                        done
+    uint32_t*                        bytesWritten
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -322,14 +318,10 @@ VmRESTSetData(
                   ppResponse,
                   buffer,
                   dataLen,
-                  done
+                  bytesWritten
                   );
-    BAIL_ON_VMREST_ERROR(dwError);
 
-cleanup:
     return dwError;
-error:
-    goto cleanup;
 
 }
 

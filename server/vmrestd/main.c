@@ -120,65 +120,32 @@ VmHandleEchoData1(
     uint32_t                         paramsCount
     )
 {
-    uint32_t                         dwError = 0;
-    uint32_t                         done = 0;
+    uint32_t                         dwError = REST_ENGINE_MORE_IO_REQUIRED;
     char                             AllData[MAX_IN_MEM_PAYLOAD_LEN] = {0};
     char                             buffer[4097] = {0};
     int                              nRead = 0;
     int                              nWrite = 0;
+    uint32_t                         bytesRW = 0;
     uint32_t                         bytesLeft = 0;
     char                             size[10] = {0};
     int                              resLength = 0;
     uint32_t                         index = 0;
-   // char*                            key = NULL;
-   // char*                            value = NULL;
-
-    memset(buffer, '\0', 4097);
+    
     memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
     memset(size, '\0', 10);
 
-    done = 0;
-    //write(1,"\nParams.....:", 14);
-  /*  while (done < paramsCount)
-    {
-        dwError = VmRESTGetParamsByIndex(
-                      pRequest,
-                      paramsCount,
-                      (done +1),
-                      &key,
-                      &value
-                      );
-        BAIL_ON_VMREST_ERROR(dwError);
-        //write(1,"\nParams.....:", 14);
-        write(1,key, strlen(key));
-        write(1,":", 1);
-        write(1,value, strlen(value));
-        write(1,"\n", 1);
-        if (key)
-        {
-            free(key);
-            key = NULL;
-        }
-        if (value)
-        {
-            free(value);
-            value = NULL;
-        }
-        done++;
-    }
-    done = 0;
-    */
-    while(done != 1)
+    bytesRW = 0;
+    
+    while(dwError == REST_ENGINE_MORE_IO_REQUIRED)
     {
         dwError = VmRESTGetData(
                       pRESTHandle,
                       pRequest,
                       buffer,
-                      &done
+                      &bytesRW
                       );
-        BAIL_ON_VMREST_ERROR(dwError);
 
-        nRead = strlen(buffer);
+        nRead = bytesRW; //strlen(buffer);
 
         if (nRead > 0)
         {
@@ -190,13 +157,14 @@ VmHandleEchoData1(
             else
             {
                 dwError = 500;
+                BAIL_ON_VMREST_ERROR(dwError);
             }
-            BAIL_ON_VMREST_ERROR(dwError);
 
         }
         memset(buffer, '\0', 4097);
         nRead = 0;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTSetSuccessResponse(
                   pRequest,
@@ -230,7 +198,6 @@ VmHandleEchoData1(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    done = 0;
     index = 0;
     bytesLeft = resLength;
 
@@ -242,7 +209,8 @@ VmHandleEchoData1(
 
     memset(buffer, '\0', 4097);
 
-    while(done != 1)
+    dwError = REST_ENGINE_MORE_IO_REQUIRED;
+    while(dwError == REST_ENGINE_MORE_IO_REQUIRED)
     {
         nWrite = (bytesLeft > 4096) ? 4096: bytesLeft;
         memcpy(buffer, (AllData + index), nWrite);
@@ -252,14 +220,14 @@ VmHandleEchoData1(
                   ppResponse,
                   buffer,
                   nWrite,
-                  &done
+                  &bytesRW
                   );
-        BAIL_ON_VMREST_ERROR(dwError);
-        index = index + nWrite;
-        bytesLeft = bytesLeft - nWrite;
+        index = index + bytesRW;
+        bytesLeft = bytesLeft - bytesRW;
         memset(buffer, '\0', 4097);
 
     }
+    BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     return dwError;
@@ -279,7 +247,6 @@ VmHandleEchoData(
     )
 {
     uint32_t                         dwError = 0;
-    uint32_t                         done = 0;
     char                             AllData[MAX_IN_MEM_PAYLOAD_LEN] = {0};
     char                             buffer[4097] = {0};
     int                              nRead = 0;
@@ -288,57 +255,24 @@ VmHandleEchoData(
     char                             size[10] = {0};    
     int                              resLength = 0;
     uint32_t                         index = 0;
-   // char*                            key = NULL;
-   // char*                            value = NULL;
+    uint32_t                         bytesRW = 0;
 
     memset(buffer, '\0', 4097);
     memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
     memset(size, '\0', 10);
 
-    done = 0;
-    //write(1,"\nParams.....:", 14);
-  /*  while (done < paramsCount)
-    {
-        dwError = VmRESTGetParamsByIndex(
-                      pRequest,
-                      paramsCount,
-                      (done +1),
-                      &key,
-                      &value
-                      );
-        BAIL_ON_VMREST_ERROR(dwError);
-        //write(1,"\nParams.....:", 14);
-        write(1,key, strlen(key));
-        write(1,":", 1);
-        write(1,value, strlen(value));
-        write(1,"\n", 1);
-        if (key)
-        {
-            free(key);
-            key = NULL;
-        }
-        if (value)
-        {
-            free(value);
-            value = NULL;
-        }
-        done++;
-    }
-    done = 0;
-    */
+    dwError = REST_ENGINE_MORE_IO_REQUIRED;    
 
-
-    while(done != 1)
+    while(dwError == REST_ENGINE_MORE_IO_REQUIRED)
     {
         dwError = VmRESTGetData(
                       pRESTHandle,
                       pRequest,
                       buffer,
-                      &done
+                      &bytesRW
                       );
-        BAIL_ON_VMREST_ERROR(dwError);
 
-        nRead = strlen(buffer);        
+        nRead = bytesRW;        
 
         if (nRead > 0)
         {
@@ -350,13 +284,14 @@ VmHandleEchoData(
             else
             {
                 dwError = 500;
+                 BAIL_ON_VMREST_ERROR(dwError);
             }
-            BAIL_ON_VMREST_ERROR(dwError);
 
         }
         memset(buffer, '\0', 4097);
         nRead = 0;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTSetSuccessResponse(
                   pRequest,
@@ -390,7 +325,6 @@ VmHandleEchoData(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    done = 0;
     index = 0;
     bytesLeft = resLength;
 
@@ -402,7 +336,8 @@ VmHandleEchoData(
 
     memset(buffer, '\0', 4097);
 
-    while(done != 1)
+    dwError = REST_ENGINE_MORE_IO_REQUIRED;
+    while(dwError == REST_ENGINE_MORE_IO_REQUIRED)
     {
         nWrite = (bytesLeft > 4096) ? 4096: bytesLeft;
         memcpy(buffer, (AllData + index), nWrite); 
@@ -412,14 +347,14 @@ VmHandleEchoData(
                   ppResponse,
                   buffer,
                   nWrite,
-                  &done
+                  &bytesRW
                   );
-        BAIL_ON_VMREST_ERROR(dwError);
         index = index + nWrite;
         bytesLeft = bytesLeft - nWrite;
         memset(buffer, '\0', 4097);
         
     }
+    BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
     return dwError;

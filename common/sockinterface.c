@@ -115,7 +115,7 @@ VmRESTInitProtocolServer(
     if (! pRESTHandle || !( pRESTHandle->pRESTConfig))
     {
         VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid REST config");
-        dwError = REST_ENGINE_INVALID_HANDLER;
+        dwError = REST_ERROR_INVALID_HANDLER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
