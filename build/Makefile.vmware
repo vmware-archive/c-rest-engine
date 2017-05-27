@@ -16,8 +16,8 @@ include $(MAKEROOT)/mk/defs-localdefs.mk
 CUSTOM = true
 TARGET = custom
 PKGDIR=$(CURDIR)/stage
-RPMPKG=vmware-rest
-RPMSPEC=vmware-rest.spec
+RPMPKG=c-rest-engine
+RPMSPEC=c-rest-engine.spec
 
 CLEANMORE = \
     build         \

@@ -48,7 +48,7 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/ltmain.sh \
     $(SRCROOT)/missing
 
-PKG_SPEC=vmware-rest.spec
+PKG_SPEC=c-rest-engine.spec
 
 .PHONY: all package
 
