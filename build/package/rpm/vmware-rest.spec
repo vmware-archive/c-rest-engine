@@ -1,7 +1,7 @@
 Name:    vmware-rest
 Summary: VMware REST Library
-Version: 1.0.0
-Release: 3
+Version: 1.0.1
+Release: 1
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware
@@ -51,6 +51,8 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 # %doc ChangeLog README COPYING
 
 %changelog
+*   Fri May 26 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.1-1
+-   Updating the spec version.
 *   Mon May 22 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.0-3
 -   Get/Set data API signature change.
 *   Fri May 19 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.0-2
