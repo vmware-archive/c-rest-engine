@@ -125,7 +125,7 @@ AC_CONFIG_FILES([Makefile
                  tools/Makefile
                  tools/rest-cli/Makefile
                  test/Makefile
-                 build/package/rpm/vmware-rest.spec
+                 build/package/rpm/c-rest-engine.spec
                 ])
 AC_OUTPUT
 

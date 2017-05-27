@@ -72,7 +72,7 @@ distribution.
 
 4.  As part of a successful build, the following RPMs should be created in the
 
-    1.  c-rest-engine/build/rpmbuild/RPMS/x86_64/vmware-rest-<version>.x86_64.rpm
+    1.  c-rest-engine/build/rpmbuild/RPMS/x86_64/c-rest-engine-<version>-<release>.x86_64.rpm
 
 Installation
 ------------
@@ -81,13 +81,13 @@ Installation
 
 Use RPM install command to install the above generated RPM.
 
-"rpm -ivh trident/build/rpmbuild/RPMS/x86_64/vmware-rest-<version>.x86_64.rpm"
+"rpm -ivh trident/build/rpmbuild/RPMS/x86_64/c-rest-engine-<version>.x86_64.rpm"
 
 The installed libraries will go in following folder 
 "/usr/lib64/"
 
 NOTE: If previous version of same RPM is already installed please delete it
-using the following command "rpm -e vmware-rest"
+using the following command "rpm -e c-rest-engine"
 
 2. Using package manager on Photon OS Linux distribution.
 
