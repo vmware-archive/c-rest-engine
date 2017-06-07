@@ -429,7 +429,6 @@ VmRESTGetHttpPayload(
         {
             memcpy(res,localAppBuffer,bRead);
             pRequest->dataRemaining = pRequest->dataRemaining - bRead;
-            dwError = REST_ENGINE_MORE_IO_REQUIRED;
             *bytesRead = bRead;
             
             /**** Read the /r/n succeeding the chunk if current chunk ended ****/
@@ -445,6 +444,7 @@ VmRESTGetHttpPayload(
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
             }
+             dwError = REST_ENGINE_MORE_IO_REQUIRED;
         }
     }
     else
