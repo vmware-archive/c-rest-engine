@@ -111,6 +111,7 @@ VmRestEngineHandler(
     if (paramsCount > 0)
     {
         dwError = VmRestParseParams(
+                      pRESTHandle,
                       pRequest->requestLine->uri,
                       paramsCount,
                       pRequest
@@ -554,6 +555,7 @@ error:
 
 uint32_t
 VmRestParseParams(
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            pRequestURI,
     uint32_t                         paramsCount,
     PREST_REQUEST                    pRequest
@@ -616,10 +618,11 @@ VmRestParseParams(
                 }
                 else
                 {
-                    dwError = VMREST_HTTP_INVALID_PARAMS;
+                    dwError = REQUEST_ENTITY_TOO_LARGE;
                 }
                 BAIL_ON_VMREST_ERROR(dwError);
 
+                key = NULL;
                 key = strchr(value, '&');
                 res= pRequest->paramArray[i].value;
                 if (key)
@@ -632,13 +635,20 @@ VmRestParseParams(
                     }
                     else
                     {
-                        dwError = VMREST_HTTP_INVALID_PARAMS;
+                        dwError = REQUEST_ENTITY_TOO_LARGE;
                     }
                     BAIL_ON_VMREST_ERROR(dwError);
                 }
                 else
                 {
-                    strncpy(res, (value +1), (MAX_KEY_VAL_PARAM_LEN -1));
+                    if ((*(value +1) != '\0') && (strlen(value+1) < MAX_KEY_VAL_PARAM_LEN))
+                    {
+                        strncpy(res, (value +1), (MAX_KEY_VAL_PARAM_LEN -1));
+                    }
+                    else
+                    {
+                        dwError = REQUEST_ENTITY_TOO_LARGE;
+                    }
                 }    
             }
             else

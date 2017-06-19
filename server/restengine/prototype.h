@@ -332,6 +332,7 @@ VmRestGetParamsCountInReqURI(
 
 uint32_t
 VmRestParseParams(
+    PVMREST_HANDLE                   pRESTHandle,
     char*                            pRequestURI,
     uint32_t                         paramsCount,
     PREST_REQUEST                    pRequest

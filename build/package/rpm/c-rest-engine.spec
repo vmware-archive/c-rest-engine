@@ -1,7 +1,7 @@
 Name:          c-rest-engine
 Summary:       Minimal http(s) server library
 Version:       1.0.1
-Release:       3%{?dist}
+Release:       4%{?dist}
 Group:         Applications/System
 Vendor:        VMware, Inc.
 License:       Apache 2.0
@@ -58,12 +58,15 @@ find %{buildroot} -name '*.la' -delete
 %defattr(-,root,root)
 %{_lib64dir}/*.so.*
 %exclude %{_sbindir}/vmrestd
+#%{_sbindir}/vmrestd
 
 %files devel
 %{_includedir}/vmrest.h
 %{_lib64dir}/*.so
 
 %changelog
+*   Thu Jun 16 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.1-4
+-   Relaxing maximum URI length.
 *   Thu Jun 08 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.1-3
 -   Fixing file upload.
 *   Wed Jun 07 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.1-2

@@ -18,7 +18,7 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 /* HTTP protocol header defines */
 
 #define MAX_METHOD_LEN             32
-#define MAX_URI_LEN                512
+#define MAX_URI_LEN                10240
 #define MAX_VERSION_LEN            32
 #define MAX_STATUS_LEN              4
 #define MAX_REA_PHRASE_LEN         32
@@ -26,11 +26,11 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define HTTP_CHUNKED_DATA_LEN       7
 #define HTTP_MIN_CHUNK_DATA_LEN     3
 
-#define MAX_KEY_VAL_PARAM_LEN      128
-#define MAX_URL_PARAMS_ARR_SIZE    10
+#define MAX_KEY_VAL_PARAM_LEN      1024
+#define MAX_URL_PARAMS_ARR_SIZE    5
 #define MAX_EXTRA_CRLF_BUF_SIZE    10
 #define MAX_DATA_BUFFER_LEN        4096
-#define MAX_REQ_LIN_LEN            8192
+#define MAX_REQ_LIN_LEN            11264
 
 #define MAX_HTTP_HEADER_ATTR_LEN   64
 #define MAX_HTTP_HEADER_VAL_LEN    8192
