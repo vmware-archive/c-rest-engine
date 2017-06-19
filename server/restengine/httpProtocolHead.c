@@ -108,7 +108,7 @@ VmRESTHTTPGetReqURI(
     char*                            secondSpace = NULL;
     size_t                           uriLen = 0;
 
-    if (lineLen > MAX_REQ_LIN_LEN || !line || !result  || (*resStatus != OK))
+    if (!line || !result  || (*resStatus != OK))
     {
        dwError =  VMREST_HTTP_INVALID_PARAMS;
        *resStatus = BAD_REQUEST;
@@ -313,10 +313,17 @@ VmRESTParseHTTPReqLine(
     char                             URI[MAX_URI_LEN]={0};
     char                             version[MAX_VERSION_LEN] = {0};
 
-    if (lineLen > MAX_REQ_LIN_LEN || !line  || !pReqPacket || (*resStatus != OK) || lineNo == 0)
+    if (!line  || !pReqPacket || (*resStatus != OK) || lineNo == 0)
     {
        dwError =  VMREST_HTTP_INVALID_PARAMS;
        *resStatus = BAD_REQUEST;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (lineLen > MAX_REQ_LIN_LEN)
+    {
+        dwError = REQUEST_URI_TOO_LARGE;
+        *resStatus = REQUEST_URI_TOO_LARGE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -1379,6 +1386,14 @@ error:
                                      &pResPacket,
                                      "405",
                                      "Method Not Allowed"
+                                     );
+                }
+                else if (dwError == REQUEST_ENTITY_TOO_LARGE)
+                {
+                    tempStatus = VmRESTSetFailureResponse(
+                                     &pResPacket,
+                                     "413",
+                                     "Entity too Long"
                                      );
                 }
                 else if (dwError == REQUEST_URI_TOO_LARGE)
