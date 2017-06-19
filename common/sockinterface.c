@@ -731,7 +731,7 @@ VmsockPosixGetXBytes(
                              pRESTHandle,
                             pSocket,
                             pIoBuffer);
-		VMREST_LOG_DEBUG(pRESTHandle,"SockRead(), dwError = %u, dataRead %u", dwError, pIoBuffer->dwBytesTransferred);
+	//VMREST_LOG_DEBUG(pRESTHandle,"SockRead(), dwError = %u, dataRead %u", dwError, pIoBuffer->dwBytesTransferred);
         if (dwError == ERROR_SUCCESS)
         {
             memset(pStreamBuffer->pData, '\0', MAX_DATA_BUFFER_LEN);
@@ -767,7 +767,7 @@ VmsockPosixGetXBytes(
         pStreamBuffer->dataProcessed = remainingBytes;
         *bytesRead = dataAvailableInCache + remainingBytes;
 
-        VMREST_LOG_DEBUG(pRESTHandle,"dataAvailableInCache %u, remainingBytes %u, appBuffersize %u", dataAvailableInCache, remainingBytes, strlen(appBuffer));
+        //VMREST_LOG_DEBUG(pRESTHandle,"dataAvailableInCache %u, remainingBytes %u, appBuffersize %u", dataAvailableInCache, remainingBytes, strlen(appBuffer));
     }
 
     VmwSockSetStreamBuffer( pRESTHandle, pSocket, pStreamBuffer);
@@ -820,6 +820,44 @@ cleanup:
 error:
     goto cleanup;
 }
+
+uint32_t
+VmSockPosixDecrementProcessedBytes(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    uint32_t                         offset
+)
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    PVM_STREAM_BUFFER                pStreamBuffer = NULL;
+
+    if (offset > MAX_DATA_BUFFER_LEN)
+    {
+       VMREST_LOG_DEBUG(pRESTHandle,"%s","Invalid new Processed Data Index %u", offset);
+        dwError = VMREST_TRANSPORT_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    VmwSockGetStreamBuffer( pRESTHandle, pSocket, &pStreamBuffer);
+
+    if (!pStreamBuffer)
+    {
+        dwError = 500;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (pStreamBuffer->dataProcessed >= offset)
+    {
+        pStreamBuffer->dataProcessed = pStreamBuffer->dataProcessed - offset;
+    }
+    VmwSockSetStreamBuffer( pRESTHandle, pSocket, pStreamBuffer);
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
 
 uint32_t
 VmsockPosixWriteDataAtOnce(

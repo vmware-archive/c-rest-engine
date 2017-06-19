@@ -1,7 +1,7 @@
 Name:          c-rest-engine
 Summary:       Minimal http(s) server library
 Version:       1.0.1
-Release:       2%{?dist}
+Release:       3%{?dist}
 Group:         Applications/System
 Vendor:        VMware, Inc.
 License:       Apache 2.0
@@ -64,6 +64,8 @@ find %{buildroot} -name '*.la' -delete
 %{_lib64dir}/*.so
 
 %changelog
+*   Thu Jun 08 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.1-3
+-   Fixing file upload.
 *   Wed Jun 07 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.1-2
 -   Fixing chunk encoded packet issue in getData.
 *   Fri May 26 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.1-1

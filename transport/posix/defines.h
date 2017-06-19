@@ -43,7 +43,7 @@
 #ifndef CONTAINING_RECORD
 #define CONTAINING_RECORD(address, type, field) ((type *)( \
                                                   (PCHAR)(address) - \
-                                                  (uint64_t)(&((type *)0)->field)))
+                                                  (uint64_t)(uintptr_t)(&((type *)0)->field)))
 
 #endif
 

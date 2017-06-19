@@ -219,6 +219,7 @@ VmRESTGetHttpPayload(
     uint32_t                         chunkLen = 0;
     uint32_t                         bRead = 0;
     uint32_t                         readXBytes = 0;
+    uint32_t                         leftBytes = 0;
     uint32_t                         newChunk = 0;
     uint32_t                         extraRead = 0;
     uint32_t                         tryCnt = 0;
@@ -324,7 +325,7 @@ VmRESTGetHttpPayload(
             readXBytes = MAX_DATA_BUFFER_LEN;
             newChunk = 0;
         }
-        else if (dataRemaining < MAX_DATA_BUFFER_LEN)
+        else if (dataRemaining <= MAX_DATA_BUFFER_LEN)
         {
             readXBytes = dataRemaining;
             newChunk = 0;
@@ -335,6 +336,7 @@ VmRESTGetHttpPayload(
         /**** If Expect:100-continue was received, re-attempt read considering RTT delay ****/
         do
         {
+            
             dwError = VmsockPosixGetXBytes(
                           pRESTHandle,
                           readXBytes,
@@ -367,7 +369,7 @@ VmRESTGetHttpPayload(
                           );
             BAIL_ON_VMREST_ERROR(dwError);
             pRequest->dataRemaining = chunkLen;
-            VMREST_LOG_DEBUG(pRESTHandle,"Chunk Len = %u", chunkLen);
+            VMREST_LOG_DEBUG(pRESTHandle,"Chunk Len = %u, bRead %u, chunk Len bytes %u ,data remaining %u", chunkLen,bRead,chunkLenBytes,pRequest->dataRemaining);
             if (chunkLen == 0)
             {
                 *bytesRead = 0;
@@ -377,37 +379,55 @@ VmRESTGetHttpPayload(
             {
                 /**** Copy the extra data from last read if it exists ****/
                 extraRead = bRead - chunkLenBytes;
-                if (extraRead > 0)
+                if (extraRead >= pRequest->dataRemaining)
+                {
+                    leftBytes = extraRead - pRequest->dataRemaining;
+                    memcpy(res, (localAppBuffer + chunkLenBytes), pRequest->dataRemaining);
+                    res = res + pRequest->dataRemaining;
+                    *bytesRead = pRequest->dataRemaining;
+                    pRequest->dataRemaining = 0;
+                    if (leftBytes > 0)
+                    {
+                        dwError = VmSockPosixDecrementProcessedBytes(
+                                      pRESTHandle,
+                                      pRequest->pSocket,
+                                      leftBytes
+                                      );
+                        BAIL_ON_VMREST_ERROR(dwError);
+                    }
+
+                }
+                else if (extraRead < pRequest->dataRemaining)
                 {
                     memcpy(res, (localAppBuffer + chunkLenBytes), extraRead);
                     res = res + extraRead;
                     pRequest->dataRemaining = pRequest->dataRemaining - extraRead;
                     *bytesRead = extraRead;
-                }
 
-                memset(localAppBuffer,'\0',MAX_DATA_BUFFER_LEN);
+                    memset(localAppBuffer,'\0',MAX_DATA_BUFFER_LEN);
 
-                if (pRequest->dataRemaining > (MAX_DATA_BUFFER_LEN - extraRead))
-                {
-                    readXBytes = MAX_DATA_BUFFER_LEN -extraRead;
-                }
-                else if (pRequest->dataRemaining <= (MAX_DATA_BUFFER_LEN - extraRead))
-                {
-                    readXBytes = pRequest->dataRemaining;
-                }
-                dwError = VmsockPosixGetXBytes(
-                              pRESTHandle,
-                              readXBytes,
-                              localAppBuffer,
-                              pRequest->pSocket,
-                              &bRead,
-                              1
-                              );
-                BAIL_ON_VMREST_ERROR(dwError);
+                    if (pRequest->dataRemaining > (MAX_DATA_BUFFER_LEN - extraRead))
+                    {
+                        readXBytes = MAX_DATA_BUFFER_LEN -extraRead;
+                    }
+                    else if (pRequest->dataRemaining <= (MAX_DATA_BUFFER_LEN - extraRead))
+                    {
+                        readXBytes = pRequest->dataRemaining;
+                    }
+                    dwError = VmsockPosixGetXBytes(
+                                  pRESTHandle,
+                                  readXBytes,
+                                  localAppBuffer,
+                                  pRequest->pSocket,
+                                  &bRead,
+                                  1
+                                  );
+                    BAIL_ON_VMREST_ERROR(dwError);
 
-                memcpy(res,localAppBuffer,bRead);
-                pRequest->dataRemaining = pRequest->dataRemaining - bRead;
-                *bytesRead = *bytesRead + bRead;
+                    memcpy(res,localAppBuffer,bRead);
+                    pRequest->dataRemaining = pRequest->dataRemaining - bRead;
+                    *bytesRead = *bytesRead + bRead;
+                }
 
                 /**** Read the /r/n succeeding the chunk ****/
                 if (pRequest->dataRemaining == 0)
@@ -444,7 +464,11 @@ VmRESTGetHttpPayload(
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
             }
-             dwError = REST_ENGINE_MORE_IO_REQUIRED;
+            dwError = REST_ENGINE_MORE_IO_REQUIRED;
+        }
+        else
+        { 
+            dwError = REST_ENGINE_MORE_IO_REQUIRED;
         }
     }
     else
