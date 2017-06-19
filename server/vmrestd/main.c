@@ -256,12 +256,15 @@ VmHandleEchoData(
     int                              resLength = 0;
     uint32_t                         index = 0;
     uint32_t                         bytesRW = 0;
+    FILE*                            fp = NULL;
 
     memset(buffer, '\0', 4097);
     memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
     memset(size, '\0', 10);
 
-    dwError = REST_ENGINE_MORE_IO_REQUIRED;    
+    dwError = REST_ENGINE_MORE_IO_REQUIRED;
+
+    fp = fopen("/tmp/image.vmdk","wb+");
 
     while(dwError == REST_ENGINE_MORE_IO_REQUIRED)
     {
@@ -272,8 +275,10 @@ VmHandleEchoData(
                       &bytesRW
                       );
 
-        nRead = bytesRW;        
+        nRead = bytesRW;
 
+        fwrite(buffer,1,nRead,fp);        
+#if 1
         if (nRead > 0)
         {
             if ((index + nRead)< MAX_IN_MEM_PAYLOAD_LEN)
@@ -288,10 +293,16 @@ VmHandleEchoData(
             }
 
         }
+#else
+        index++;
+#endif
+
         memset(buffer, '\0', 4097);
         nRead = 0;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+
+    fclose(fp);
 
     dwError = VmRESTSetSuccessResponse(
                   pRequest,

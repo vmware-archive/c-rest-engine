@@ -306,6 +306,13 @@ VmSockPosixAdjustProcessedBytes(
     );
 
 uint32_t
+VmSockPosixDecrementProcessedBytes(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    uint32_t                         offset
+    );
+
+uint32_t
 VmsockPosixWriteDataAtOnce(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,

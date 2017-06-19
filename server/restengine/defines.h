@@ -23,7 +23,7 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define MAX_STATUS_LEN              4
 #define MAX_REA_PHRASE_LEN         32
 #define HTTP_VER_LEN                8
-#define HTTP_CHUNKED_DATA_LEN       6
+#define HTTP_CHUNKED_DATA_LEN       7
 #define HTTP_MIN_CHUNK_DATA_LEN     3
 
 #define MAX_KEY_VAL_PARAM_LEN      128
