@@ -268,7 +268,7 @@ VmRESTShutdownProtocolServer(
     PVMREST_HANDLE                   pRESTHandle
     )
 {
-    if ( pRESTHandle)
+    if (pRESTHandle && pRESTHandle->pSockContext)
     {
          VmRESTSockContextFree( pRESTHandle,  pRESTHandle->pSockContext);
     }

@@ -637,9 +637,11 @@ VmSockPosixWaitForEvent(
     VM_SOCK_EVENT_TYPE               eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
     PVM_SOCKET                       pSocket = NULL;
     SSL*                             ssl = NULL;
-    uint32_t                         try = MAX_RETRY_ATTEMPTS;
     uint32_t                         cntRty = 0;
     uint32_t                         freeEventQueue = 0;
+    int                              maxTry = 1000;
+    uint32_t                         timerMs = 1;
+    int                              timeOutSec = 5;
 
     if (!pQueue || !ppSocket || !pEventType)
     {
@@ -725,21 +727,34 @@ VmSockPosixWaitForEvent(
                              ssl = SSL_new(pRESTHandle->pSSLInfo->sslContext);
                              SSL_set_fd(ssl,pSocket->fd);
 retry:
-                             if (SSL_accept(ssl) == -1)
+                             if ((SSL_accept(ssl) == -1) && (timeOutSec >= 0))
                              {
-                                 if (cntRty <= try )
+                                 if (timeOutSec >= 0)
                                  {
-                                     cntRty++;
-                                     goto retry;
+                                 cntRty++;
+#ifdef WIN32
+                                 Sleep(timerMs);
+#else
+                                 usleep((timerMs * 1000));
+#endif
+                                 if (cntRty >= maxTry)
+                                 {
+                                     timerMs = ((timerMs >= 1000) ? 1000 : (timerMs*10));
+                                     maxTry = ((maxTry <= 1) ? 1 : (maxTry/10));
+                                     timeOutSec--;
+                                     cntRty = 0;
                                  }
-                                 else
+                                 goto retry;
+                                 }
+ 
+                                 else if(timeOutSec <= 0)
                                  {
-                                     VMREST_LOG_ERROR(pRESTHandle,"SSL accept failed");
-                                     SSL_shutdown(ssl);
-                                     SSL_free(ssl);
-                                     close(pSocket->fd);
-                                     dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
-                                     BAIL_ON_VMREST_ERROR(dwError);
+                                 VMREST_LOG_ERROR(pRESTHandle,"SSL accept failed");
+                                  SSL_shutdown(ssl);
+                                  SSL_free(ssl);
+                                  close(pSocket->fd);
+                                  dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
+                                  BAIL_ON_VMREST_ERROR(dwError);
                                  }
                              }
                              pSocket->ssl = ssl;    
