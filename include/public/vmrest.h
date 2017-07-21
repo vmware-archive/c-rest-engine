@@ -50,11 +50,14 @@
 /**** REST ENGINE CONFIG PARAMS ****/
 #define     MAX_DATA_BUFFER_LEN                             4096
 #define     MAX_PATH_LEN                                    128
+#define     MAX_SSL_DATA_BUF_LEN                            64000
 #define     MAX_SERVER_PORT_LEN                             7
 #define     MAX_CLIENT_ALLOWED_LEN                          6
 #define     MAX_WORKER_COUNT_LEN                            6
 #define     MAX_LINE_LEN                                    256
 #define     MAX_STATUS_LENGTH                               6
+#define     SSL_DATA_TYPE_KEY                               1
+#define     SSL_DATA_TYPE_CERT                              2
 
 typedef struct _VMREST_HANDLE* PVMREST_HANDLE;
 
@@ -126,6 +129,24 @@ VmRESTInit(
     char const*                      file,
     PVMREST_HANDLE*                  ppRESTHandle
     );
+
+/*
+ * @brief Set SSL information from buffer
+ *
+ * @param[in]                        Rest engine Handle
+ * @param[in]                        Buffer holding SSL data.
+ * @param[in]                        Size of certificate buffer
+ * @param[in]                        ssl data type, SSL_DATA_TYPE_KEY or SSL_DATA_TYPE_CERT
+ * @return                           Returns 0 for success.
+ */
+VMREST_API
+uint32_t
+VmRESTSetSSLInfo(
+     PVMREST_HANDLE                   pRESTHandle,
+     char*                            pDataBuffer,
+     uint32_t                         bufferSize,
+     uint32_t                         sslDataType
+     );
 
 /**
  * @brief Starts the HTTP(S) listeners

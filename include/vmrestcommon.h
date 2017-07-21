@@ -228,6 +228,8 @@ typedef struct _SOCK_SSL_INFO
     SSL_CTX*                         sslContext;
     uint32_t                         isSecure;
     uint32_t                         isQueueInUse;
+    uint32_t                         isCertSet;
+    uint32_t                         isKeySet;
 
 } VM_SOCK_SSL_INFO, *PVM_SOCK_SSL_INFO;
 

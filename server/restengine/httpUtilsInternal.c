@@ -459,6 +459,7 @@ VmRESTFreeConfigFileStruct(
 
 uint32_t
 VmRESTValidateConfig(
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_REST_CONFIG                  pRESTConfig
     )
 {
@@ -491,17 +492,33 @@ VmRESTValidateConfig(
     if (lastPortChar == 'p' || lastPortChar == 'P')
     {
         portNo[portLen - 1] = '\0';
+
+        /**** No SSL context required, just set validation to 1 ****/
+        pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_NO_SSL_PLAIN;
+        pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_NO_SSL_PLAIN;
     }
     else
     {
         certLen = strlen(pRESTConfig->ssl_certificate);
         keyLen = strlen(pRESTConfig->ssl_key);
 
-        if (keyLen == 0 || keyLen > MAX_PATH_LEN || certLen == 0 || certLen > MAX_PATH_LEN)
+        if (keyLen == 0 || keyLen > MAX_PATH_LEN)
         {
-            dwError = REST_ERROR_INVALID_CONFIG_SSL_CERT;
+            pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_NOT_SET;
         }
-        BAIL_ON_VMREST_ERROR(dwError);
+        else
+        {
+            pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_FROM_CONFIG_FILE;
+        }
+
+        if (certLen == 0 || certLen > MAX_PATH_LEN)
+        {
+            pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_NOT_SET;
+        }
+        else
+        {
+            pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_FROM_CONFIG_FILE;
+        }
     }
 
     if (atoi(portNo) <= 0 || atoi(portNo) > MAX_PORT_NUMBER)
