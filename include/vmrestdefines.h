@@ -66,6 +66,11 @@
 #define ERROR_TRANSPORT_INVALID_PARAMS                  61040
 #define ERROR_TRANSPORT_VALIDATION_FAILED               61041
 
+#define SSL_INFO_NOT_SET                                0
+#define SSL_INFO_NO_SSL_PLAIN                           1
+#define SSL_INFO_FROM_CONFIG_FILE                       2
+#define SSL_INFO_FROM_BUFFER_API                        3
+
 
 #define TRUE                             1
 #define FALSE                            0

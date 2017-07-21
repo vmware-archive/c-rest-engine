@@ -224,6 +224,7 @@ VmRESTFreeConfigFileStruct(
 
 uint32_t
 VmRESTValidateConfig(
+    PVMREST_HANDLE                   pRESTHandle,
     PVM_REST_CONFIG                  pRESTConfig
     );
 

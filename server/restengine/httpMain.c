@@ -57,13 +57,6 @@ VmHTTPInit(
                           );
         }
         BAIL_ON_VMREST_ERROR(dwError);
- 
-
-        /**** Validate the config param ****/
-        dwError= VmRESTValidateConfig(
-                      pRESTHandle->pRESTConfig
-                      );
-        BAIL_ON_VMREST_ERROR(dwError);
     }
 
     /**** Init the debug log ****/
@@ -74,6 +67,7 @@ VmHTTPInit(
 
     /**** Validate the config param ****/
     dwError = VmRESTValidateConfig(
+                  pRESTHandle,
                   pRESTHandle->pRESTConfig
                   );
     BAIL_ON_VMREST_ERROR(dwError);

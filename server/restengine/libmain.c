@@ -89,6 +89,85 @@ error:
     goto cleanup;
 }
 
+uint32_t
+VmRESTSetSSLInfo(
+     PVMREST_HANDLE                   pRESTHandle,
+     char*                            pDataBuffer,
+     uint32_t                         bufferSize,
+     uint32_t                         sslDataType
+     )
+{
+     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+     char                             fileName[MAX_PATH_LEN] = {0};
+     FILE*                            fp = NULL;
+     int                              writtenBytes = 0;
+
+    if (!pRESTHandle || !pDataBuffer || (bufferSize == 0) || (bufferSize > MAX_SSL_DATA_BUF_LEN) || (sslDataType < SSL_DATA_TYPE_KEY) || (sslDataType > SSL_DATA_TYPE_CERT))
+    {
+        dwError = REST_ERROR_INVALID_HANDLER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (((pRESTHandle->pSSLInfo->isCertSet != SSL_INFO_NOT_SET) && (sslDataType == SSL_DATA_TYPE_CERT)))
+    {
+        goto cleanup;
+    }
+
+    if (((pRESTHandle->pSSLInfo->isKeySet != SSL_INFO_NOT_SET) && (sslDataType == SSL_DATA_TYPE_KEY)))
+    {
+        goto cleanup;
+    }
+    memset(fileName, '\0', MAX_PATH_LEN);
+
+    if (sslDataType == SSL_DATA_TYPE_KEY)
+    {
+        sprintf(fileName, "%s%p.pem","/tmp/key-", pRESTHandle);
+
+    }
+    else if (sslDataType == SSL_DATA_TYPE_CERT)
+    {
+        sprintf(fileName, "%s%p.pem","/tmp/cert-", pRESTHandle);
+    }
+
+    fp = fopen(fileName, "w+");
+
+    if (fp == NULL)
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"Unable to Open SSL file %s", fileName);
+        dwError = REST_ENGINE_FAILURE;
+    }
+
+    writtenBytes = fwrite(pDataBuffer, 1, bufferSize, fp);
+    
+    if (writtenBytes != bufferSize)
+    {
+        VMREST_LOG_WARNING(pRESTHandle,"Not all buffer bytes written to file, requested %u, written %d", bufferSize, writtenBytes);
+    }
+
+    fclose(fp);
+
+    if (sslDataType == SSL_DATA_TYPE_KEY)
+    {
+        memset(pRESTHandle->pRESTConfig->ssl_key, '\0', MAX_PATH_LEN);
+        strncpy(pRESTHandle->pRESTConfig->ssl_key, fileName,( MAX_PATH_LEN - 1));
+        pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_FROM_BUFFER_API;
+
+    }
+    else if (sslDataType == SSL_DATA_TYPE_CERT)
+    {
+        memset(pRESTHandle->pRESTConfig->ssl_certificate, '\0', MAX_PATH_LEN);
+        strncpy(pRESTHandle->pRESTConfig->ssl_certificate, fileName,( MAX_PATH_LEN - 1));
+        pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_FROM_BUFFER_API;
+    }
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+
+}
+
+
 #ifdef WIN32
 __declspec(dllexport)
 #endif
@@ -99,10 +178,34 @@ VmRESTStart(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    dwError = VmHTTPStart(
-                  pRESTHandle
-                  );
+    if (!pRESTHandle)
+    {
+        dwError = REST_ERROR_INVALID_REST_PROCESSER;
+    }
     BAIL_ON_VMREST_ERROR(dwError);
+
+    if (pRESTHandle->pSSLInfo->isCertSet >= 1 && pRESTHandle->pSSLInfo->isKeySet >= 1)
+    {
+        dwError = VmHTTPStart(
+                      pRESTHandle
+                      );
+    }
+    else
+    {
+        VMREST_LOG_ERROR(pRESTHandle, "Cannot Start Server due to missing SSL key or certificate");
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** delete the cert file if created by library ****/
+
+    if (pRESTHandle->pSSLInfo->isCertSet == SSL_INFO_FROM_BUFFER_API)
+    {
+        remove(pRESTHandle->pRESTConfig->ssl_certificate);
+    }
+    if (pRESTHandle->pSSLInfo->isKeySet == SSL_INFO_FROM_BUFFER_API)
+    {
+        remove(pRESTHandle->pRESTConfig->ssl_key);
+    }
 
 cleanup:
     return dwError;
