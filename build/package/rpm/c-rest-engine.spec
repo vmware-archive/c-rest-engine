@@ -65,7 +65,7 @@ find %{buildroot} -name '*.la' -delete
 %{_lib64dir}/*.so
 
 %changelog
-*   Mon Jun 19 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.2-2
+*   Thu Jul 20 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.2-2
 -   Providing API for set SSL info, Bug#1864924
 *   Mon Jun 19 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.2-1
 -   Updating to version 1.0.2
