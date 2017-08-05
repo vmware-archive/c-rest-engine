@@ -81,6 +81,18 @@ int main()
     dwError = VmRESTInit(NULL,configPath, &gpRESTHandle);
     dwError = VmRESTInit(NULL,configPath1, &gpRESTHandle1);
 
+// test set SSL info API
+#if 0 
+   char buffer[8092]= {0};
+   FILE *fp = fopen("/root/mycert.pem","r");
+
+   dwError = fread(buffer, 1, 8092, fp);
+   VmRESTSetSSLInfo(gpRESTHandle, buffer, dwError, SSL_DATA_TYPE_KEY);
+   VmRESTSetSSLInfo(gpRESTHandle, buffer, dwError, SSL_DATA_TYPE_CERT);
+
+
+#endif
+
     VmRESTRegisterHandler(gpRESTHandle, "/v1/pkg", &gVmRestHandlers, NULL);
     VmRESTRegisterHandler(gpRESTHandle1, "/v1/blah", &gVmRestHandlers1, NULL);
 

@@ -100,7 +100,7 @@ VmRESTSetSSLInfo(
      uint32_t                         dwError = REST_ENGINE_SUCCESS;
      char                             fileName[MAX_PATH_LEN] = {0};
      FILE*                            fp = NULL;
-     int                              writtenBytes = 0;
+     uint32_t                         writtenBytes = 0;
 
     if (!pRESTHandle || !pDataBuffer || (bufferSize == 0) || (bufferSize > MAX_SSL_DATA_BUF_LEN) || (sslDataType < SSL_DATA_TYPE_KEY) || (sslDataType > SSL_DATA_TYPE_CERT))
     {
@@ -117,31 +117,30 @@ VmRESTSetSSLInfo(
     {
         goto cleanup;
     }
-    memset(fileName, '\0', MAX_PATH_LEN);
 
     if (sslDataType == SSL_DATA_TYPE_KEY)
     {
-        sprintf(fileName, "%s%p.pem","/tmp/key-", pRESTHandle);
+        snprintf(fileName, (MAX_PATH_LEN - 1),"%s%s.pem", "/tmp/key-port-", pRESTHandle->pRESTConfig->server_port);
 
     }
     else if (sslDataType == SSL_DATA_TYPE_CERT)
     {
-        sprintf(fileName, "%s%p.pem","/tmp/cert-", pRESTHandle);
+        snprintf(fileName, (MAX_PATH_LEN - 1), "%s%s.pem", "/tmp/cert-port-", pRESTHandle->pRESTConfig->server_port);
     }
 
     fp = fopen(fileName, "w+");
-
     if (fp == NULL)
     {
         VMREST_LOG_ERROR(pRESTHandle,"Unable to Open SSL file %s", fileName);
         dwError = REST_ENGINE_FAILURE;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     writtenBytes = fwrite(pDataBuffer, 1, bufferSize, fp);
     
     if (writtenBytes != bufferSize)
     {
-        VMREST_LOG_WARNING(pRESTHandle,"Not all buffer bytes written to file, requested %u, written %d", bufferSize, writtenBytes);
+        VMREST_LOG_WARNING(pRESTHandle,"Not all buffer bytes written to file, requested %u, written %u", bufferSize, writtenBytes);
     }
 
     fclose(fp);
