@@ -110,13 +110,15 @@ VmRESTSetSSLInfo(
 
     if (((pRESTHandle->pSSLInfo->isCertSet != SSL_INFO_NOT_SET) && (sslDataType == SSL_DATA_TYPE_CERT)))
     {
-        goto cleanup;
+        dwError = REST_ENGINE_SSL_CONFIG_FILE;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     if (((pRESTHandle->pSSLInfo->isKeySet != SSL_INFO_NOT_SET) && (sslDataType == SSL_DATA_TYPE_KEY)))
     {
-        goto cleanup;
+        dwError = REST_ENGINE_SSL_CONFIG_FILE;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     if (sslDataType == SSL_DATA_TYPE_KEY)
     {
@@ -137,13 +139,12 @@ VmRESTSetSSLInfo(
     BAIL_ON_VMREST_ERROR(dwError);
 
     writtenBytes = fwrite(pDataBuffer, 1, bufferSize, fp);
+    fclose(fp);
     
     if (writtenBytes != bufferSize)
     {
         VMREST_LOG_WARNING(pRESTHandle,"Not all buffer bytes written to file, requested %u, written %u", bufferSize, writtenBytes);
     }
-
-    fclose(fp);
 
     if (sslDataType == SSL_DATA_TYPE_KEY)
     {

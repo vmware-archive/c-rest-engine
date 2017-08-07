@@ -41,6 +41,7 @@
 #define     REST_ERROR_BAD_CONFIG_FILE_PATH                110
 #define     REST_ERROR_PREV_INSTANCE_NOT_CLEAN             111
 #define     REST_ERROR_INVALID_HANDLER                     112
+#define     REST_ENGINE_SSL_CONFIG_FILE                    113
 #define     REST_ENGINE_MORE_IO_REQUIRED                   7001
 #define     REST_ENGINE_IO_COMPLETED                       0
 
