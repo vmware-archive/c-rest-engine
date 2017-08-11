@@ -15,6 +15,6 @@
 
 int                                  gSSLisedInstaceCount = INVALID;
 pthread_mutex_t*                     gSSLThreadLock = NULL;
-pthread_mutex_t                      gGlobalMutex;
+pthread_mutex_t                      gGlobalMutex = PTHREAD_MUTEX_INITIALIZER;
 
 

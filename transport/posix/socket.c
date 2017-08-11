@@ -266,15 +266,6 @@ VmSockPosixOpenServer(
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
-
-    if (!pRESTHandle)
-    {
-        VMREST_LOG_DEBUG(pRESTHandle,"Invalid REST Handler");
-        dwError = REST_ERROR_INVALID_HANDLER;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-
     union
     {
 #ifdef AF_INET6
@@ -293,6 +284,12 @@ VmSockPosixOpenServer(
     int                              fd = -1;
     PVM_SOCKET                       pSocket = NULL;
     PVM_SOCK_SSL_INFO                pSSLInfo = NULL;
+
+    if (!pRESTHandle)
+    {
+        dwError = REST_ERROR_INVALID_HANDLER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     if (dwFlags & VM_SOCK_CREATE_FLAGS_IPV6)
     {
@@ -324,11 +321,6 @@ VmSockPosixOpenServer(
     /**** Check if connection is over SSL ****/
     if(dwFlags & VM_SOCK_IS_SSL)
     {
-        if (gSSLisedInstaceCount == INVALID)
-        {
-            pthread_mutex_init(&gGlobalMutex, NULL);
-            gSSLisedInstaceCount = 0;
-        }
         SSL_library_init();
         dwError = VmRESTSecureSocket(
                       pRESTHandle,
@@ -337,15 +329,16 @@ VmSockPosixOpenServer(
                       );
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
         pSSLInfo->isSecure = 1;
+        
         pthread_mutex_lock(&gGlobalMutex);
-        if (gSSLisedInstaceCount == 0)
+        if (gSSLisedInstaceCount == INVALID)
         {
+            gSSLisedInstaceCount = 0;
             dwError = VmRESTSSLThreadLockInit();
-            gSSLisedInstaceCount++;
         }
+        gSSLisedInstaceCount++;
         pthread_mutex_unlock(&gGlobalMutex);
         BAIL_ON_VMREST_ERROR(dwError);
-        
     }
     else
     {
@@ -727,34 +720,33 @@ VmSockPosixWaitForEvent(
                              ssl = SSL_new(pRESTHandle->pSSLInfo->sslContext);
                              SSL_set_fd(ssl,pSocket->fd);
 retry:
-                             if ((SSL_accept(ssl) == -1) && (timeOutSec >= 0))
+                             if ( SSL_accept(ssl) == -1 )
                              {
                                  if (timeOutSec >= 0)
                                  {
-                                 cntRty++;
+                                     cntRty++;
 #ifdef WIN32
-                                 Sleep(timerMs);
+                                     Sleep(timerMs);
 #else
-                                 usleep((timerMs * 1000));
+                                     usleep((timerMs * 1000));
 #endif
-                                 if (cntRty >= maxTry)
-                                 {
-                                     timerMs = ((timerMs >= 1000) ? 1000 : (timerMs*10));
-                                     maxTry = ((maxTry <= 1) ? 1 : (maxTry/10));
-                                     timeOutSec--;
-                                     cntRty = 0;
+                                     if (cntRty >= maxTry)
+                                     {
+                                         timerMs = ((timerMs >= 1000) ? 1000 : (timerMs*10));
+                                         maxTry = ((maxTry <= 1) ? 1 : (maxTry/10));
+                                         timeOutSec--;
+                                         cntRty = 0;
+                                     }
+                                     goto retry;
                                  }
-                                 goto retry;
-                                 }
- 
-                                 else if(timeOutSec <= 0)
+                                 else if(timeOutSec < 0)
                                  {
-                                 VMREST_LOG_ERROR(pRESTHandle,"SSL accept failed");
-                                  SSL_shutdown(ssl);
-                                  SSL_free(ssl);
-                                  close(pSocket->fd);
-                                  dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
-                                  BAIL_ON_VMREST_ERROR(dwError);
+                                     VMREST_LOG_ERROR(pRESTHandle,"SSL accept failed");
+                                     SSL_shutdown(ssl);
+                                     SSL_free(ssl);
+                                     close(pSocket->fd);
+                                     dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
+                                     BAIL_ON_VMREST_ERROR(dwError);
                                  }
                              }
                              pSocket->ssl = ssl;    

@@ -484,7 +484,7 @@ VmRESTValidateConfig(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    strncpy(portNo, pRESTConfig->server_port,MAX_SERVER_PORT_LEN);
+    strncpy(portNo, pRESTConfig->server_port,(MAX_SERVER_PORT_LEN -1));
 
     lastPortChar = VmRESTUtilsGetLastChar(
                        pRESTConfig->server_port

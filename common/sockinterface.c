@@ -125,7 +125,7 @@ VmRESTInitProtocolServer(
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** Init SSL if configured ****/
-    if (( pRESTHandle->pRESTConfig->server_port != NULL) && (strlen( pRESTHandle->pRESTConfig->server_port) == 0))
+    if (strlen( pRESTHandle->pRESTConfig->server_port) == 0)
     {
         VMREST_LOG_ERROR(pRESTHandle,"%s","REST Engine config server port missing");
         dwError = 111;  /** Fix this **/
@@ -259,6 +259,11 @@ cleanup:
     return dwError;
 
 error:
+    if (pThreadData != NULL)
+    {
+        VmRESTFreeMemory(pThreadData);
+        pThreadData = NULL;
+    }
 
     goto cleanup;
 }
@@ -282,15 +287,21 @@ VmRESTSockWorkerThreadProc(
 {
     DWORD                            dwError = 0;
     PVM_WORKER_THREAD_DATA           pWorkerData = (PVM_WORKER_THREAD_DATA)pData;
-    PVMREST_HANDLE                   pRESTHandle = pWorkerData-> pRESTHandle;
-    PVMREST_SOCK_CONTEXT             pSockContext = pWorkerData->pSockContext;
+    PVMREST_HANDLE                   pRESTHandle = NULL;
+    PVMREST_SOCK_CONTEXT             pSockContext = NULL;
     PVM_SOCKET                       pSocket = NULL;
     PVM_SOCK_IO_BUFFER               pIoBuffer = NULL;
 
     if (pWorkerData != NULL)
     {
+        pRESTHandle = pWorkerData-> pRESTHandle;
+        pSockContext = pWorkerData->pSockContext;
         VmRESTFreeMemory(pWorkerData);
         pWorkerData = NULL;
+    }
+    else
+    {
+        return NULL;
     }
 
     for(;;)
@@ -298,7 +309,7 @@ VmRESTSockWorkerThreadProc(
         VM_SOCK_EVENT_TYPE eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
 
         dwError = VmwSockWaitForEvent(
-                         pRESTHandle,
+                        pRESTHandle,
                         pSockContext->pEventQueue,
                         -1,
                         &pSocket,

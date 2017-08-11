@@ -56,8 +56,8 @@ VmRESTLogTerminate(
     if (pRESTHandle && pRESTHandle->logFile != NULL)
     {
        fclose(pRESTHandle->logFile);
+       pRESTHandle->logFile = NULL;
     }
-    pRESTHandle->logFile = NULL;
 }
 
 void

@@ -133,7 +133,7 @@ VmHandleEchoData1(
     )
 {
     uint32_t                         dwError = REST_ENGINE_MORE_IO_REQUIRED;
-    char                             AllData[MAX_IN_MEM_PAYLOAD_LEN] = {0};
+    char*                            AllData = NULL;
     char                             buffer[4097] = {0};
     int                              nRead = 0;
     int                              nWrite = 0;
@@ -143,8 +143,10 @@ VmHandleEchoData1(
     int                              resLength = 0;
     uint32_t                         index = 0;
     
-    memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
     memset(size, '\0', 10);
+
+    AllData = malloc(MAX_IN_MEM_PAYLOAD_LEN);
+    memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
 
     bytesRW = 0;
     
@@ -242,6 +244,12 @@ VmHandleEchoData1(
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
+    if (AllData != NULL)
+    {
+        free(AllData);
+        AllData = NULL;
+    }
+
     return dwError;
 error:
     goto cleanup;
@@ -259,7 +267,7 @@ VmHandleEchoData(
     )
 {
     uint32_t                         dwError = 0;
-    char                             AllData[MAX_IN_MEM_PAYLOAD_LEN] = {0};
+    char*                            AllData = NULL;
     char                             buffer[4097] = {0};
     int                              nRead = 0;
     int                              nWrite = 0;
@@ -271,8 +279,10 @@ VmHandleEchoData(
     FILE*                            fp = NULL;
 
     memset(buffer, '\0', 4097);
-    memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
     memset(size, '\0', 10);
+
+    AllData = malloc(MAX_IN_MEM_PAYLOAD_LEN);
+    memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
 
     dwError = REST_ENGINE_MORE_IO_REQUIRED;
 
@@ -315,6 +325,7 @@ VmHandleEchoData(
     BAIL_ON_VMREST_ERROR(dwError);
 
     fclose(fp);
+    fp = NULL;
 
     dwError = VmRESTSetSuccessResponse(
                   pRequest,
@@ -380,8 +391,20 @@ VmHandleEchoData(
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
+    if (AllData != NULL)
+    {
+        free(AllData);
+        AllData = NULL;
+    }
+
     return dwError;
 error:
+
+    if (fp != NULL)
+    {
+        fclose(fp);
+        fp = NULL;
+    }
     goto cleanup;
 }
 
