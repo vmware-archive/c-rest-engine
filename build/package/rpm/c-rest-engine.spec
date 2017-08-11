@@ -1,7 +1,7 @@
 Name:          c-rest-engine
 Summary:       Minimal http(s) server library
 Version:       1.0.3
-Release:       2%{?dist}
+Release:       3%{?dist}
 Group:         Applications/System
 Vendor:        VMware, Inc.
 License:       Apache 2.0
@@ -65,6 +65,8 @@ find %{buildroot} -name '*.la' -delete
 %{_lib64dir}/*.so
 
 %changelog
+*   Fri Aug 11 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.3-3
+-   Fixing all known coverity bugs.
 *   Fri Aug 04 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.3-2
 -   Applying security fixes for set SSL info.
 *   Thu Jul 20 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.2-2

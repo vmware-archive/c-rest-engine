@@ -20,10 +20,9 @@ VmRestEngineHandler(
     PREST_RESPONSE*                  ppResponse
     )
 {
-    char                             httpPayload[MAX_DATA_BUFFER_LEN] = {0};
     char                             httpMethod[MAX_METHOD_LEN] = {0};
-    char                             httpURI[MAX_URI_LEN] = {0};
-    char                             endPointURI[MAX_URI_LEN] = {0};
+    char*                            httpURI = NULL;
+    char*                            endPointURI = NULL;
     char*                            ptr = NULL;
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         paramsCount = 0;
@@ -31,12 +30,19 @@ VmRestEngineHandler(
 
     VMREST_LOG_DEBUG(pRESTHandle,"%s","Internal Handler called");
 
-    /**** 1. Init all the funcition variables *****/
+    /**** 1. Allocate the memory of holding URI *****/
 
-    memset(httpPayload, '\0', MAX_DATA_BUFFER_LEN);
-    memset(httpMethod, '\0', MAX_METHOD_LEN);
-    memset(httpURI, '\0', MAX_URI_LEN);
-    memset(endPointURI, '\0', MAX_URI_LEN);
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (void**)&endPointURI
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (void**)&httpURI
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
 
     /**** 2. Get the method name ****/
 
@@ -191,6 +197,16 @@ VmRestEngineHandler(
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
+    if (endPointURI != NULL)
+    {
+        VmRESTFreeMemory(endPointURI);
+        endPointURI = NULL;
+    }
+    if (httpURI != NULL)
+    {
+        VmRESTFreeMemory(httpURI);
+        httpURI = NULL;
+    }
     return dwError;
 error:
     goto cleanup;
@@ -926,8 +942,8 @@ VmRESTGetWildCardCount(
     uint32_t*                        wildCardCount
     )
 {
-    char                             httpURI[MAX_URI_LEN] = {0};
-    char                             endPointURI[MAX_URI_LEN] = {0};
+    char*                            httpURI = NULL;
+    char*                            endPointURI = NULL;
     char*                            ptr = NULL;
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         count = 0;
@@ -941,8 +957,17 @@ VmRESTGetWildCardCount(
     BAIL_ON_VMREST_ERROR(dwError);
     *wildCardCount = 0;
 
-    memset(httpURI, '\0', MAX_URI_LEN);
-    memset(endPointURI, '\0', MAX_URI_LEN);
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (void**)&endPointURI
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (void**)&httpURI
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTGetHttpURI(
                   pRequest,
@@ -989,6 +1014,17 @@ VmRESTGetWildCardCount(
     *wildCardCount = count;
 
 cleanup:
+    if (endPointURI != NULL)
+    {
+        VmRESTFreeMemory(endPointURI);
+        endPointURI = NULL;
+    }
+    if (httpURI != NULL)
+    {
+        VmRESTFreeMemory(httpURI);
+        httpURI = NULL;
+    }
+
     return dwError;
 error:
     if (wildCardCount != NULL)
@@ -1010,8 +1046,8 @@ VmRESTGetWildCardByIndex(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     uint32_t                         count = 0;
     uint32_t                         preSlashIndex = 0;
-    char                             httpURI[MAX_URI_LEN] = {0};
-    char                             endPointURI[MAX_URI_LEN] = {0};
+    char*                            httpURI = NULL;
+    char*                            endPointURI = NULL;
     char*                            ptr = NULL;
     char*                            pszWildCard = NULL;
     PREST_ENDPOINT                   pEndPoint = NULL;
@@ -1021,6 +1057,18 @@ VmRESTGetWildCardByIndex(
         VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid Params");
         dwError = VMREST_HTTP_INVALID_PARAMS;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (void**)&endPointURI
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (void**)&httpURI
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTGetWildCardCount(
@@ -1097,6 +1145,16 @@ VmRESTGetWildCardByIndex(
 
 
 cleanup:
+    if (endPointURI != NULL)
+    {
+        VmRESTFreeMemory(endPointURI);
+        endPointURI = NULL;
+    }
+    if (httpURI != NULL)
+    {
+        VmRESTFreeMemory(httpURI);
+        httpURI = NULL;
+    }
     return dwError;
 error:
     if (pszWildCard)

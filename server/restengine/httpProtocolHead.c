@@ -234,13 +234,19 @@ VmRESTHTTPPopulateHeader(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            buffer = NULL;
-    char                             local[MAX_REQ_LIN_LEN] = {0};
+    char*                            local = NULL;
     char                             attribute[MAX_HTTP_HEADER_ATTR_LEN] = {0};
     char                             value[MAX_HTTP_HEADER_VAL_LEN] = {0};
     char*                            temp = NULL;
     uint32_t                         i = 0;
     size_t                           attrLen = 0;
     size_t                           valLen  = 0;
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_REQ_LIN_LEN,
+                  (void**)&local
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
 
     buffer = line;
     temp = local;
@@ -263,7 +269,7 @@ VmRESTHTTPPopulateHeader(
             *temp = '\0';
             strncpy(attribute,local,(MAX_HTTP_HEADER_ATTR_LEN - 1));
             attrLen = strlen(attribute);
-            memset(local,'\0', sizeof(local));
+            memset(local,'\0', MAX_REQ_LIN_LEN);
             temp = local;
             continue;
         }
@@ -293,6 +299,12 @@ VmRESTHTTPPopulateHeader(
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
+    if (local != NULL)
+    {
+        VmRESTFreeMemory(local);
+        local = NULL;
+    }
+
     return dwError;
 error:
     goto cleanup;
@@ -310,7 +322,7 @@ VmRESTParseHTTPReqLine(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char                             method[MAX_METHOD_LEN] = {0};
-    char                             URI[MAX_URI_LEN]={0};
+    char*                            URI = NULL;
     char                             version[MAX_VERSION_LEN] = {0};
 
     if (!line  || !pReqPacket || (*resStatus != OK) || lineNo == 0)
@@ -318,6 +330,12 @@ VmRESTParseHTTPReqLine(
        dwError =  VMREST_HTTP_INVALID_PARAMS;
        *resStatus = BAD_REQUEST;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (PVOID*)&URI
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
     if (lineLen > MAX_REQ_LIN_LEN)
@@ -337,7 +355,7 @@ VmRESTParseHTTPReqLine(
                       resStatus
                       );
         BAIL_ON_VMREST_ERROR(dwError);
-        strcpy(pReqPacket->requestLine->method, method);
+        strncpy(pReqPacket->requestLine->method, method, (MAX_METHOD_LEN - 1));
 
         dwError = VmRESTHTTPGetReqURI(
                       line,
@@ -346,7 +364,7 @@ VmRESTParseHTTPReqLine(
                       resStatus
                       );
         BAIL_ON_VMREST_ERROR(dwError);
-        strcpy(pReqPacket->requestLine->uri, URI);
+        strncpy(pReqPacket->requestLine->uri, URI, (MAX_URI_LEN - 1));
 
         dwError = VmRESTHTTPGetReqVersion(
                       line,
@@ -355,7 +373,7 @@ VmRESTParseHTTPReqLine(
                       resStatus
                       );
         BAIL_ON_VMREST_ERROR(dwError);
-        strcpy(pReqPacket->requestLine->version, version);
+        strncpy(pReqPacket->requestLine->version, version, (MAX_VERSION_LEN - 1));
     }
     else
     {
@@ -370,6 +388,11 @@ VmRESTParseHTTPReqLine(
     }
 
 cleanup:
+    if (URI != NULL)
+    {
+        VmRESTFreeMemory(URI);
+        URI = NULL;
+    }
     return dwError;
 error:
     goto cleanup;
@@ -388,9 +411,9 @@ VmRESTParseAndPopulateHTTPHeaders(
     uint32_t                         bytesRead = 0;
     uint32_t                         lineNo = 0;
     size_t                           lineLen = 0;
-    char                             local[MAX_REQ_LIN_LEN]={0};
+    char*                            local = NULL;
     char*                            temp = buffer;
-    char*                            line = local;
+    char*                            line = NULL;
     char                             appBuffer[MAX_DATA_BUFFER_LEN]={0};
     uint32_t                         bytesReadInBuffer = 0;
     uint32_t                         skipRead = 0;
@@ -403,6 +426,14 @@ VmRESTParseAndPopulateHTTPHeaders(
        *resStatus = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_REQ_LIN_LEN,
+                  (PVOID*)&local
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    line = local;
     
     while(1)
     {
@@ -496,6 +527,11 @@ VmRESTParseAndPopulateHTTPHeaders(
         }
     }
 cleanup:
+    if (local != NULL)
+    {
+        VmRESTFreeMemory(local);
+        local = NULL;
+    }
     return dwError;
 error:
     goto cleanup;
@@ -1087,8 +1123,8 @@ VmRESTProcessIncomingData(
     char*                            transferEncoding = NULL;
     char*                            expect = NULL;
     uint32_t                         done = 0;
-    char                             httpURI[MAX_URI_LEN] = {0};
-    char                             endPointURI[MAX_URI_LEN] = {0};
+    char*                            httpURI = NULL;
+    char*                            endPointURI = NULL;
     char*                            ptr = NULL;
     PREST_ENDPOINT                   pEndPoint = NULL;
 
@@ -1108,6 +1144,18 @@ VmRESTProcessIncomingData(
 
     dwError = VmRESTAllocateHTTPResponsePacket(
                   &pResPacket
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (PVOID*)&httpURI
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_URI_LEN,
+                  (PVOID*)&endPointURI
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -1308,6 +1356,19 @@ cleanup:
         /**** Error response is already sent to client, return success ****/
         dwError = REST_ENGINE_SUCCESS;
     }
+
+    if (httpURI != NULL)
+    {
+        VmRESTFreeMemory(httpURI);
+        httpURI = NULL;
+    }
+
+    if (endPointURI != NULL)
+    {
+        VmRESTFreeMemory(endPointURI);
+        endPointURI = NULL;
+    }
+
     return dwError;
 error:
     VMREST_LOG_ERROR(pRESTHandle,"Something failed, dwError = %u", dwError);

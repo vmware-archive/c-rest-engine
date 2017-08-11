@@ -177,6 +177,7 @@ VmRESTStart(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    int                              ret = 0;
 
     if (!pRESTHandle)
     {
@@ -200,11 +201,23 @@ VmRESTStart(
 
     if (pRESTHandle->pSSLInfo->isCertSet == SSL_INFO_FROM_BUFFER_API)
     {
-        remove(pRESTHandle->pRESTConfig->ssl_certificate);
+        if ((ret = remove(pRESTHandle->pRESTConfig->ssl_certificate)) == -1)
+        {
+            VMREST_LOG_ERROR(pRESTHandle, "remove() syscall failed for temp certificate file ()");
+            dwError = REST_ENGINE_FAILURE;
+        }
+        BAIL_ON_VMREST_ERROR(dwError);
     }
+    ret = 0;
+
     if (pRESTHandle->pSSLInfo->isKeySet == SSL_INFO_FROM_BUFFER_API)
     {
-        remove(pRESTHandle->pRESTConfig->ssl_key);
+        if ((ret = remove(pRESTHandle->pRESTConfig->ssl_key)) == -1)
+        {
+            VMREST_LOG_ERROR(pRESTHandle, "remove temp file failed ()");
+            dwError = REST_ENGINE_FAILURE;
+        }
+        BAIL_ON_VMREST_ERROR(dwError);
     }
 
 cleanup:
