@@ -661,11 +661,17 @@ VmRestParseParams(
                     {
                         strncpy(res, (value +1), (MAX_KEY_VAL_PARAM_LEN -1));
                     }
+                    else if ((*(value +1) == '\0'))
+                    {
+                        VMREST_LOG_DEBUG(pRESTHandle, "Missing value in key-value pair");
+                        memset(res, '\0', MAX_KEY_VAL_PARAM_LEN);
+                    }
                     else
                     {
+                        VMREST_LOG_ERROR(pRESTHandle, "Value too large");
                         dwError = REQUEST_ENTITY_TOO_LARGE;
                     }
-                }    
+                } 
             }
             else
             {
