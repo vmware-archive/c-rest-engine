@@ -418,6 +418,7 @@ VmRESTParseAndPopulateHTTPHeaders(
     uint32_t                         bytesReadInBuffer = 0;
     uint32_t                         skipRead = 0;
     uint32_t                         extraBytes = 0;
+    uint32_t                         prevExtraBytes = 0;
 
     if (!buffer || !pReqPacket || (*resStatus != OK) || (packetLen <= 4))
     {
@@ -448,11 +449,12 @@ VmRESTParseAndPopulateHTTPHeaders(
 
             if (!skipRead)
             {
+                prevExtraBytes = extraBytes;
                 extraBytes = packetLen - bytesRead;
                 dwError = VmSockPosixAdjustProcessedBytes(
                               pRESTHandle,
                               pReqPacket->pSocket,
-                              bytesRead
+                              (bytesRead - prevExtraBytes)
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
                 memset(appBuffer, '\0', MAX_DATA_BUFFER_LEN);
@@ -503,7 +505,7 @@ VmRESTParseAndPopulateHTTPHeaders(
                 dwError = VmSockPosixAdjustProcessedBytes(
                               pRESTHandle,
                               pReqPacket->pSocket,
-                              (bytesRead - extraBytes)
+                              (bytesRead - extraBytes - prevExtraBytes)
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
                 break;
