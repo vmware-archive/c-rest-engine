@@ -413,13 +413,19 @@ VmRESTParseAndPopulateHTTPHeaders(
     size_t                           lineLen = 0;
     char*                            local = NULL;
     char*                            temp = buffer;
-    char*                            line = NULL;
     char                             appBuffer[MAX_DATA_BUFFER_LEN]={0};
     uint32_t                         bytesReadInBuffer = 0;
-    uint32_t                         skipRead = 0;
-    uint32_t                         extraBytes = 0;
+    char*                            temp2 = NULL;
+    char*                            newBuf = NULL;
+    char                             prevBuffer = NULL;
+    char                             prevBufferTemp = NULL;
+    uint32_t                         prevBufLen = 0;
+    uint32_t                         ptrDiff = 0;
+    uint32_t                         bufLen = packetLen;
+    uint32_t                         first = 0;
 
-    if (!buffer || !pReqPacket || (*resStatus != OK) || (packetLen <= 4))
+
+    if (!buffer || !pReqPacket || (*resStatus != OK))
     {
        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
        dwError =  BAD_REQUEST;
@@ -427,65 +433,50 @@ VmRESTParseAndPopulateHTTPHeaders(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+    /**** Allocate all memory for buffers ****/
     dwError = VmRESTAllocateMemory(
                   MAX_REQ_LIN_LEN,
                   (PVOID*)&local
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    line = local;
-    
-    while(1)
+    dwError = VmRESTAllocateMemory(
+                  MAX_REQ_LIN_LEN,
+                  (PVOID*)&prevBuffer
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_REQ_LIN_LEN,
+                  (PVOID*)&prevBufferTemp
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    while(temp != NULL)
     {
-        if (bytesRead >= (packetLen - 4))
+        temp2 = strstr(temp, "\r\n");
+        if (temp2 != NULL)
         {
-
-            if (temp && (strcmp(temp,"\r\n\r\n") == 0))
+            ptrDiff = temp2 - temp;
+            VMREST_LOG_DEBUG(pRESTHandle,"ptr diff %u",ptrDiff);
+            if( ptrDiff == 0)
             {
-                skipRead = 1;
-            }
-            /**** More socket read required to process the headers ****/
-
-            if (!skipRead)
-            {
-                extraBytes = packetLen - bytesRead;
+                /**** This is the end of all HTTP headers ****/
                 dwError = VmSockPosixAdjustProcessedBytes(
                               pRESTHandle,
                               pReqPacket->pSocket,
-                              bytesRead
+                              (bytesRead - prevBufLen + 2)
                               );
                 BAIL_ON_VMREST_ERROR(dwError);
-                memset(appBuffer, '\0', MAX_DATA_BUFFER_LEN);
-
-                dwError = VmsockPosixGetXBytes(
-                              pRESTHandle,
-                              MAX_DATA_BUFFER_LEN,
-                              appBuffer,
-                              pReqPacket->pSocket,
-                              &bytesReadInBuffer,
-                              1
-                              );
-                BAIL_ON_VMREST_ERROR(dwError);
-                temp = appBuffer;
-                bytesRead = 0;
-                packetLen = bytesReadInBuffer;
-
-                if ((packetLen <= 4) && (strcmp(appBuffer, "\r\n\r\n") != 0))
-                {
-                    skipRead = 1;
-                    VMREST_LOG_ERROR(pRESTHandle,"%s","Bad HTTP request detected");
-                    dwError =  VMREST_HTTP_VALIDATION_FAILED;
-                    *resStatus = BAD_REQUEST;
-                }
-                BAIL_ON_VMREST_ERROR(dwError);
+                VMREST_LOG_DEBUG(pRESTHandle,"Finished headers parsing with bytesRead %u", bytesRead);
+                break;
             }
-        }
-        if((*temp == '\r') && (*(temp+1) == '\n'))
-        {
+
+            strncpy(local, temp, ptrDiff);
             lineNo++;
-            *line = '\0';
             lineLen = strlen(local);
-            /* call handler function with reqLine */
+
+            /**** Found a new line, process it and store in HTTP request pcaket ****/
             dwError = VmRESTParseHTTPReqLine(
                           lineNo,
                           local,
@@ -494,49 +485,76 @@ VmRESTParseAndPopulateHTTPHeaders(
                           resStatus
                           );
             BAIL_ON_VMREST_ERROR(dwError);
-            bytesRead = bytesRead + 2;
-            if((*(temp+2) == '\r') && (*(temp+3) == '\n'))
-            {
-                bytesRead = bytesRead + 2;
-                VMREST_LOG_DEBUG(pRESTHandle,"Finished headers parsing with bytesRead %u", bytesRead);
-                /**** All headers processed : data starts from here ***/
-                dwError = VmSockPosixAdjustProcessedBytes(
-                              pRESTHandle,
-                              pReqPacket->pSocket,
-                              (bytesRead - extraBytes)
-                              );
-                BAIL_ON_VMREST_ERROR(dwError);
-                break;
-            }
-            temp = temp + 2;
             memset(local, '\0', MAX_REQ_LIN_LEN);
-            line = local;
-            continue;
+            bytesRead = bytesRead + ptrDiff + 2;
+            temp = temp2 + 2;
+            temp2 = NULL;
+            first = 1;
         }
-        if ((line - local) < MAX_REQ_LIN_LEN )
+        else /**** temp2 == NULL ****/
         {
-            *line = *temp;
-            temp++;
-            line++;
-            bytesRead++;
-        }
-        else
-        {
-            dwError = REQUEST_HEADER_FIELD_TOO_LARGE;
+            /**** more socket reads will be required to process the headers ****/
+            memset(appBuffer, '\0', MAX_DATA_BUFFER_LEN);
+            if (first == 1)
+            {
+                /**** temp still might be pointing to data in prevBuffer, copy buffer to tempbuffer before memseting it ****/
+                memset(prevBufferTemp, '\0', MAX_REQ_LIN_LEN);
+                strncpy(prevBufferTemp, temp, bufLen - bytesRead);
+                temp  = prevBufferTemp;
+                memset(prevBuffer, '\0', MAX_REQ_LIN_LEN);
+                first = 0;
+            }
+
+            strncpy(prevBuffer, temp, bufLen - bytesRead);
+            VMREST_LOG_DEBUG(pRESTHandle,"Requesting read from socket layer, still processing headers .....");
+            dwError = VmsockPosixGetXBytes(
+                          pRESTHandle,
+                          MAX_DATA_BUFFER_LEN,
+                          appBuffer,
+                          pReqPacket->pSocket,
+                          &bytesReadInBuffer,
+                          1
+                          );
             BAIL_ON_VMREST_ERROR(dwError);
+            prevBufLen = strlen(prevBuffer);
+
+            if ( prevBufLen < MAX_REQ_LIN_LEN )
+            {
+                newBuf = strncat(prevBuffer, appBuffer, (bytesReadInBuffer + prevBufLen));
+            }
+            else
+            {
+                dwError = REQUEST_URI_TOO_LARGE;
+                VMREST_LOG_ERROR(pRESTHandle,"%s","Too large URI");
+                BAIL_ON_VMREST_ERROR(dwError);
+            }
+            temp = newBuf;
+            bufLen = bytesReadInBuffer + prevBufLen;
+            bytesRead = 0;
         }
     }
+
 cleanup:
     if (local != NULL)
     {
         VmRESTFreeMemory(local);
         local = NULL;
     }
+    if (prevBuffer != NULL)
+    {
+        VmRESTFreeMemory(prevBuffer);
+        prevBuffer = NULL;
+    }
+    if (prevBufferTemp != NULL)
+    {
+        VmRESTFreeMemory(prevBufferTemp);
+        prevBufferTemp = NULL;
+    }
+
     return dwError;
 error:
     goto cleanup;
 }
-
 uint32_t
 VMRESTWriteChunkedMessageInResponseStream(
     char*                            src,
