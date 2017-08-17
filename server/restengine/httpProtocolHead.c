@@ -398,6 +398,160 @@ error:
     goto cleanup;
 }
 
+
+uint32_t
+VmRESTParseAndPopulateHTTPHeaders(
+    PVMREST_HANDLE                   pRESTHandle,
+    char*                            buffer,
+    uint32_t                         packetLen,
+    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
+    uint32_t*                        resStatus
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    uint32_t                         bytesRead = 0;
+    uint32_t                         lineNo = 0;
+    size_t                           lineLen = 0;
+    char*                            local = NULL;
+    char*                            temp = buffer;
+    //char*                            line = NULL;
+    char                             appBuffer[MAX_DATA_BUFFER_LEN]={0};
+    uint32_t                         bytesReadInBuffer = 0;
+    //uint32_t                         skipRead = 0;
+    //uint32_t                         extraBytes = 0;
+    //uint32_t                         prevExtraBytes = 0;
+    char*                            temp2 = NULL;
+    char*                            newBuf = NULL;
+    char                             prevBuffer[MAX_REQ_LIN_LEN] = {0};
+    char                             prevBufferTemp[MAX_REQ_LIN_LEN] = {0};
+    uint32_t                         prevBufLen = 0;
+    uint32_t                         ptrDiff = 0;
+    uint32_t                         bufLen = packetLen;
+    uint32_t                         first = 0;
+
+
+    if (!buffer || !pReqPacket || (*resStatus != OK) || (packetLen <= 4))
+    {
+       VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
+       dwError =  BAD_REQUEST;
+       *resStatus = BAD_REQUEST;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_REQ_LIN_LEN,
+                  (PVOID*)&local
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+   // line = local;
+
+    VMREST_LOG_DEBUG(pRESTHandle,"%s","KK Starting ....");
+
+    while(temp != NULL)
+    {
+        temp2 = strstr(temp, "\r\n");
+        if (temp2 != NULL)
+        {
+            ptrDiff = temp2 - temp;
+            VMREST_LOG_DEBUG(pRESTHandle,"ptr diff %u",ptrDiff);
+            if( ptrDiff == 0)
+            {
+                //bytesRead += 4;
+                dwError = VmSockPosixAdjustProcessedBytes(
+                              pRESTHandle,
+                              pReqPacket->pSocket,
+                              (bytesRead - prevBufLen + 2)
+                              );
+                BAIL_ON_VMREST_ERROR(dwError);
+                VMREST_LOG_DEBUG(pRESTHandle,"Finished headers parsing with bytesRead %u", bytesRead);
+                break;
+            }
+
+            strncpy(local, temp, ptrDiff);
+            lineNo++;
+            lineLen = strlen(local);  /* FIX THIS ptrDif should be equal linelen */
+
+            /* call handler function with reqLine */
+            VMREST_LOG_DEBUG(pRESTHandle,"%s","KK2 ...");
+            dwError = VmRESTParseHTTPReqLine(
+                          lineNo,
+                          local,
+                          (uint32_t)lineLen,
+                          pReqPacket,
+                          resStatus
+                          );
+            BAIL_ON_VMREST_ERROR(dwError);
+            VMREST_LOG_DEBUG(pRESTHandle,"KK3 ... line =\n%s\n", local);
+            memset(local, '\0', MAX_REQ_LIN_LEN);
+            bytesRead = bytesRead + ptrDiff + 2;
+            temp = temp2 + 2;
+            temp2 = NULL;
+            first = 1;
+        }
+        else /* temp2 == NULL */
+        {
+           // memset(prevBuffer, '\0', MAX_REQ_LIN_LEN);
+            memset(appBuffer, '\0', MAX_DATA_BUFFER_LEN);
+            if (first == 1)
+            {
+                memset(prevBufferTemp, '\0', MAX_REQ_LIN_LEN);
+                strncpy(prevBufferTemp, temp, bufLen - bytesRead);
+                temp  = prevBufferTemp;
+                memset(prevBuffer, '\0', MAX_REQ_LIN_LEN);
+                first = 0;
+            }
+
+            strncpy(prevBuffer, temp, bufLen - bytesRead);
+            VMREST_LOG_DEBUG(pRESTHandle,"Socket read ....");
+            dwError = VmsockPosixGetXBytes(
+                          pRESTHandle,
+                          MAX_DATA_BUFFER_LEN,
+                          appBuffer,
+                          pReqPacket->pSocket,
+                          &bytesReadInBuffer,
+                          1
+                          );
+            BAIL_ON_VMREST_ERROR(dwError);
+            prevBufLen = strlen(prevBuffer);
+            VMREST_LOG_DEBUG(pRESTHandle,"KK5");
+
+            if ( prevBufLen < MAX_REQ_LIN_LEN )
+            {
+                newBuf = strncat(prevBuffer, appBuffer, (bytesReadInBuffer + prevBufLen));
+            }
+            else
+            {
+                dwError = REQUEST_URI_TOO_LARGE;
+                VMREST_LOG_ERROR(pRESTHandle,"%s","Too large URI");
+                BAIL_ON_VMREST_ERROR(dwError);
+            }
+
+            temp = newBuf;
+            bufLen = bytesReadInBuffer + prevBufLen;
+            bytesRead = 0;
+        }
+
+    }
+
+
+
+
+cleanup:
+    if (local != NULL)
+    {
+        VmRESTFreeMemory(local);
+        local = NULL;
+    }
+    return dwError;
+error:
+    goto cleanup;
+}
+
+
+
+
+#if 0
 uint32_t
 VmRESTParseAndPopulateHTTPHeaders(
     PVMREST_HANDLE                   pRESTHandle,
@@ -536,6 +690,8 @@ cleanup:
 error:
     goto cleanup;
 }
+
+#endif
 
 uint32_t
 VMRESTWriteChunkedMessageInResponseStream(
