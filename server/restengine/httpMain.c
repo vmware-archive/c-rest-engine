@@ -29,7 +29,7 @@ VmHTTPInit(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    pRESTHandle->debugLogLevel = VMREST_LOG_LEVEL_DEBUG;
+    pRESTHandle->debugLogLevel = VMREST_LOG_LEVEL_ERROR;
 
     if (pConfig != NULL)
     {
