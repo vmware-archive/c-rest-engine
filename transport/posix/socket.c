@@ -321,24 +321,30 @@ VmSockPosixOpenServer(
     /**** Check if connection is over SSL ****/
     if(dwFlags & VM_SOCK_IS_SSL)
     {
-        SSL_library_init();
-        dwError = VmRESTSecureSocket(
-                      pRESTHandle,
-                      sslCert,
-                      sslKey
-                      );
-        BAIL_ON_POSIX_SOCK_ERROR(dwError);
-        pSSLInfo->isSecure = 1;
-        
-        pthread_mutex_lock(&gGlobalMutex);
-        if (gSSLisedInstaceCount == INVALID)
+        if (sslCert == NULL && sslKey == NULL)
         {
-            gSSLisedInstaceCount = 0;
-            dwError = VmRESTSSLThreadLockInit();
+            pRESTHandle->pSSLInfo->sslContext = pRESTHandle->pRESTConfig->pSSLContext;
         }
-        gSSLisedInstaceCount++;
-        pthread_mutex_unlock(&gGlobalMutex);
-        BAIL_ON_VMREST_ERROR(dwError);
+        else
+        {
+            SSL_library_init();
+            dwError = VmRESTSecureSocket(
+                          pRESTHandle,
+                          sslCert,
+                          sslKey
+                          );
+            BAIL_ON_POSIX_SOCK_ERROR(dwError);
+            pthread_mutex_lock(&gGlobalMutex);
+            if (gSSLisedInstaceCount == INVALID)
+            {
+                gSSLisedInstaceCount = 0;
+                dwError = VmRESTSSLThreadLockInit();
+            }
+            gSSLisedInstaceCount++;
+            pthread_mutex_unlock(&gGlobalMutex);
+            BAIL_ON_VMREST_ERROR(dwError);
+        }
+        pSSLInfo->isSecure = 1;
     }
     else
     {
@@ -818,26 +824,35 @@ cleanup:
         VmSockPosixFreeEventQueue(pQueue);
         pRESTHandle->pSSLInfo->isQueueInUse = 0;
 
-        if (pRESTHandle->pSSLInfo->sslContext)
+        /**** Free SSL context only when it is allocated and managed by library ****/
+        if((pRESTHandle->pSSLInfo->isSecure == 1) && ((pRESTHandle->pSSLInfo->isCertSet == SSL_INFO_FROM_CONFIG_FILE) || (pRESTHandle->pSSLInfo->isCertSet == SSL_INFO_FROM_BUFFER_API)))
         {
-            VmRESTFreeMemory(pRESTHandle->pSSLInfo->sslContext);
+            if (pRESTHandle->pSSLInfo->sslContext)
+            {
+                VmRESTFreeMemory(pRESTHandle->pSSLInfo->sslContext);
+                pRESTHandle->pSSLInfo->sslContext = NULL;
+            }
+            pthread_mutex_lock(&gGlobalMutex);
+            gSSLisedInstaceCount--;
+            if (gSSLisedInstaceCount == 0)
+            {
+                VmRESTSSLThreadLockShutdown();
+                gSSLThreadLock = NULL;
+                destroyGlobalMutex = TRUE;
+                gSSLisedInstaceCount = INVALID;
+            }
+            pthread_mutex_unlock(&gGlobalMutex);
+            if (destroyGlobalMutex)
+            {
+                pthread_mutex_destroy(&gGlobalMutex);
+            }
+        }
+        else
+        {
+            /**** Don't free context as it was passed by application ****/
             pRESTHandle->pSSLInfo->sslContext = NULL;
         }
-
-        pthread_mutex_lock(&gGlobalMutex);
-        gSSLisedInstaceCount--;
-        if (gSSLisedInstaceCount == 0)
-        {
-            VmRESTSSLThreadLockShutdown();
-            gSSLThreadLock = NULL;
-            destroyGlobalMutex = TRUE;
-            gSSLisedInstaceCount = INVALID;
-        }
-        pthread_mutex_unlock(&gGlobalMutex);
-        if (destroyGlobalMutex)
-        {
-            pthread_mutex_destroy(&gGlobalMutex);
-        }
+        
     }
 
     return dwError;
