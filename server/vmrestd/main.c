@@ -13,6 +13,8 @@
 
 #include "includes.h"
 
+//#define USE_APP_CTX 1
+
 #ifdef WIN32
 #include "..\transport\win\includes.h"
 char* configPath = "c:\\tmp\\restconfig.txt";
@@ -57,6 +59,12 @@ void sig_handler(int signo)
 int main()
 {
     uint32_t                         dwError = 0;
+#ifdef USE_APP_CTX
+    PREST_CONF                       pConfig = NULL;
+    PREST_CONF                       pConfig1 = NULL;
+    SSL_CTX*                         sslCtx = NULL;
+    SSL_CTX*                         sslCtx1 = NULL;
+#endif
     //uint32_t                         cnt = 0;
 
 #ifndef WIN32
@@ -78,8 +86,40 @@ int main()
     gVmRestHandlers1.pfnHandleOthers = &VmHandleEchoData1;
 
 
+
+#ifdef USE_APP_CTX
+    
+    dwError = VmTESTInitSSL("/root/mycert.pem", "/root/mycert.pem", &sslCtx);
+
+    dwError = VmTESTInitSSL("/root/mycert.pem", "/root/mycert.pem", &sslCtx1);
+
+    pConfig = (PREST_CONF)malloc(sizeof(REST_CONF));
+    pConfig->pSSLCertificate = NULL;
+    pConfig->pSSLKey = NULL;
+    pConfig->pServerPort = "81";
+    pConfig->pDebugLogFile = "/tmp/restServer.log";
+    pConfig->pClientCount = "5";
+    pConfig->pMaxWorkerThread = "5";
+    pConfig->pSSLContext = sslCtx;
+
+    pConfig1 = (PREST_CONF)malloc(sizeof(REST_CONF));
+    pConfig1->pSSLCertificate = NULL;
+    pConfig1->pSSLKey = NULL;
+    pConfig1->pServerPort = "82";
+    pConfig1->pDebugLogFile = "/tmp/restServer1.log";
+    pConfig1->pClientCount = "5";
+    pConfig1->pMaxWorkerThread = "5";
+    pConfig1->pSSLContext = sslCtx1;
+
+
+    dwError = VmRESTInit(pConfig, NULL, &gpRESTHandle);
+    dwError = VmRESTInit(pConfig1, NULL, &gpRESTHandle1);
+
+#else
     dwError = VmRESTInit(NULL,configPath, &gpRESTHandle);
     dwError = VmRESTInit(NULL,configPath1, &gpRESTHandle1);
+
+#endif
 
 // test set SSL info API
 #if 0 
@@ -100,14 +140,14 @@ int main()
     VmRESTStart(gpRESTHandle1);
 
 
-    while(1 ) //cnt < 10)
+    while(1)  //cnt < 10)
     {
 #ifdef WIN32
         Sleep(1000);
 #else
 		sleep(1);
 #endif
-       // cnt++;
+        //cnt++;
     }
 
     dwError = VmRESTStop(gpRESTHandle);
@@ -119,6 +159,10 @@ int main()
     VmRESTShutdown(gpRESTHandle);
     VmRESTShutdown(gpRESTHandle1);
 
+#ifdef USE_APP_CTX
+    VmRESTShutdownSSL(sslCtx);
+    VmRESTShutdownSSL(sslCtx1);
+#endif
 
 return dwError;
 

@@ -185,7 +185,7 @@ VmRESTStart(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (pRESTHandle->pSSLInfo->isCertSet >= 1 && pRESTHandle->pSSLInfo->isKeySet >= 1)
+    if ((pRESTHandle->pSSLInfo->isCertSet >= SSL_INFO_NO_SSL_PLAIN) && (pRESTHandle->pSSLInfo->isKeySet >= SSL_INFO_NO_SSL_PLAIN))
     {
         dwError = VmHTTPStart(
                       pRESTHandle
