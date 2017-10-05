@@ -1,7 +1,8 @@
 sbin_PROGRAMS = vmrestd
 
 vmrestd_SOURCES = \
-    main.c
+    main.c \
+    ssl-context.c
 
 vmrestd_CPPFLAGS = \
     -I$(top_srcdir)/include \

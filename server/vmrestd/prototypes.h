@@ -27,3 +27,15 @@ VmHandleEchoData1(
     uint32_t                         paramsCount
     );
 
+uint32_t
+VmTESTInitSSL(
+    char*                            sslKey,
+    char*                            sslCert,
+    SSL_CTX**                        ppSSLCtx
+    );
+
+void
+VmRESTShutdownSSL(
+    SSL_CTX*                         sslCtx
+    );
+
