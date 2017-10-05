@@ -70,11 +70,11 @@
 #define SSL_INFO_NO_SSL_PLAIN                           1
 #define SSL_INFO_FROM_CONFIG_FILE                       2
 #define SSL_INFO_FROM_BUFFER_API                        3
+#define SSL_INFO_USE_APP_CONTEXT                        4
 
 
 #define TRUE                             1
 #define FALSE                            0
-
 
 #ifndef WIN32
 #define ERROR_SUCCESS                    0
@@ -136,7 +136,7 @@ extern "C" {
         }
 
 #ifndef IsNullOrEmptyString
-#define IsNullOrEmptyString(str) (!(str) || !*(str))
+#define IsNullOrEmptyString(str) (!(str) || !(*str))
 #endif
 
 #ifndef VMREST_SAFE_STRING
