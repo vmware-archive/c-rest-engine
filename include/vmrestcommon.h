@@ -243,7 +243,6 @@ typedef struct _REST_CONFIG
     char                             debug_log_file[MAX_PATH_LEN];
     char                             client_count[MAX_CLIENT_ALLOWED_LEN];
     char                             worker_thread_count[MAX_WORKER_COUNT_LEN];
-    SSL_CTX*                         pSSLContext;
 } VM_REST_CONFIG, *PVM_REST_CONFIG;
 
 typedef struct _REST_ENG_GLOBALS *PREST_ENG_GLOBALS;

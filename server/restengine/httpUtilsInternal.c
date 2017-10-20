@@ -431,9 +431,6 @@ VmRESTParseAndPopulateConfigFile(
         strcpy(pRESTConfig->client_count, DEFAULT_CLIENT_CNT);
     }
 
-    /**** WARNING :: Cannot pass SSL context from file - Use key/cert params and init SSL ****/
-    pRESTConfig->pSSLContext = NULL;
-
 
 cleanup:
     if (fp)
@@ -502,33 +499,25 @@ VmRESTValidateConfig(
     }
     else
     {
-        if (pRESTConfig->pSSLContext != NULL)
+        certLen = strlen(pRESTConfig->ssl_certificate);
+        keyLen = strlen(pRESTConfig->ssl_key);
+
+        if (keyLen == 0 || keyLen > MAX_PATH_LEN)
         {
-            pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_USE_APP_CONTEXT;
-            pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_USE_APP_CONTEXT;
+            pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_NOT_SET;
         }
         else
         {
-            certLen = strlen(pRESTConfig->ssl_certificate);
-            keyLen = strlen(pRESTConfig->ssl_key);
+            pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_FROM_CONFIG_FILE;
+        }
 
-            if (keyLen == 0 || keyLen > MAX_PATH_LEN)
-            {
-                pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_NOT_SET;
-            }
-            else
-            {
-                pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_FROM_CONFIG_FILE;
-            }
-
-            if (certLen == 0 || certLen > MAX_PATH_LEN)
-            {
-                pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_NOT_SET;
-            }
-            else
-            {
-                pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_FROM_CONFIG_FILE;
-            }
+        if (certLen == 0 || certLen > MAX_PATH_LEN)
+        {
+            pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_NOT_SET;
+        }
+        else
+        {
+            pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_FROM_CONFIG_FILE;
         }
     }
 
@@ -579,22 +568,14 @@ VmRESTCopyConfig(
 
     pRESTConfig = *ppRESTConfig;
 
-    if (pConfig->pSSLContext != NULL)
+    if (pConfig->pSSLCertificate)
     {
-        pRESTConfig->pSSLContext = pConfig->pSSLContext;
+        strncpy(pRESTConfig->ssl_certificate, pConfig->pSSLCertificate,( MAX_PATH_LEN - 1));
     }
-    else
+    if (pConfig->pSSLKey)
     {
-        if (pConfig->pSSLCertificate)
-        {
-            strncpy(pRESTConfig->ssl_certificate, pConfig->pSSLCertificate,( MAX_PATH_LEN - 1));
-        }
-        if (pConfig->pSSLKey)
-        {
-            strncpy(pRESTConfig->ssl_key, pConfig->pSSLKey, (MAX_PATH_LEN - 1));
-        }
+        strncpy(pRESTConfig->ssl_key, pConfig->pSSLKey, (MAX_PATH_LEN - 1));
     }
-
     if (pConfig->pServerPort)
     {
         strncpy(pRESTConfig->server_port, pConfig->pServerPort, (MAX_SERVER_PORT_LEN - 1));
