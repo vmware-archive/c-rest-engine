@@ -32,6 +32,7 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define MAX_EXTRA_CRLF_BUF_SIZE    10
 #define MAX_DATA_BUFFER_LEN        4096
 #define MAX_REQ_LIN_LEN            11264
+#define MAX_CLIENT_IP_ADDR_LEN     46
 
 #define MAX_HTTP_HEADER_ATTR_LEN   64
 #define MAX_HTTP_HEADER_VAL_LEN    8192

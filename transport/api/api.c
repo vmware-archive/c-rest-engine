@@ -300,3 +300,20 @@ VmwSockSetStreamBuffer(
 {
      pRESTHandle->pPackage->pfnSetStreamBuffer(pRESTHandle,pSocket,pStreamBuffer);
 }
+
+DWORD
+VmwSockGetPeerInfo(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    char*                            pIpAddress,
+    uint32_t                         nLen,
+    int*                             pPortNo
+    )
+{
+     DWORD                            dwError = REST_ENGINE_SUCCESS;
+
+     dwError = pRESTHandle->pPackage->pfnGetPeerInfo(pRESTHandle, pSocket, pIpAddress, nLen, pPortNo);
+
+     return dwError;
+}
+

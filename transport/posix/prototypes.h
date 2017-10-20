@@ -131,3 +131,12 @@ VmRESTFreeSockPackagePosix(
     PVM_SOCK_PACKAGE                 pSockPackagePosix
     );
 
+DWORD
+VmSockPosixGetPeerInfo(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    char*                            pIpAddress,
+    uint32_t                         nLen,
+    int*                             pPortNo
+    );
+
