@@ -26,6 +26,7 @@
 #include <openssl/crypto.h>
 #include <vmrestcommon.h>
 #include <vmrest.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include "extern.h"

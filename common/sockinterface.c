@@ -926,3 +926,33 @@ cleanup:
 error:
     goto cleanup;
 }
+
+uint32_t
+VmRESTCommonGetPeerInfo(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    char*                            pIpAddress,
+    uint32_t                         nLen,
+    int*                             pPortNo
+    )
+{
+    DWORD                            dwError = REST_ENGINE_SUCCESS;
+
+    dwError = VmwSockGetPeerInfo(
+                  pRESTHandle,
+                  pSocket,
+                  pIpAddress,
+                  nLen,
+                  pPortNo
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+

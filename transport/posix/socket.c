@@ -1618,3 +1618,69 @@ VmSockPosixSetStreamBuffer(
         pSocket->pStreamBuffer = NULL;
     }
 }
+
+DWORD
+VmSockPosixGetPeerInfo(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    char*                            pIpAddress,
+    uint32_t                         nLen,
+    int*                             pPortNo
+    )
+{
+    DWORD                            dwError = REST_ENGINE_SUCCESS;
+    socklen_t                        len = 0;
+    struct sockaddr_storage          addr = {0};
+    int                              ret = 0;
+    struct sockaddr_in*              pIpV4 = NULL;
+    struct sockaddr_in6*             pIpV6 = NULL;
+
+    if (!pRESTHandle || !pSocket || !pIpAddress || !pPortNo || (nLen < INET6_ADDRSTRLEN))
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
+        dwError = ERROR_INVALID_PARAMETER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    len = sizeof(addr);
+
+    ret = getpeername(pSocket->fd, (struct sockaddr*)&addr, &len);
+
+    if (ret < 0)
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
+        dwError = errno;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (addr.ss_family == AF_INET)
+    {
+        pIpV4 = (struct sockaddr_in *)&addr;
+        *pPortNo = ntohs(pIpV4->sin_port);
+        inet_ntop(AF_INET, &pIpV4->sin_addr, pIpAddress, INET6_ADDRSTRLEN);
+    }
+    else
+    {
+        pIpV6 = (struct sockaddr_in6 *)&addr;
+        *pPortNo = ntohs(pIpV6->sin6_port);
+        inet_ntop(AF_INET6, &pIpV6->sin6_addr, pIpAddress, INET6_ADDRSTRLEN);
+    }
+
+
+cleanup:
+
+    return dwError;
+
+error:
+    if (pIpAddress)
+    {
+        pIpAddress = NULL;
+    }
+    if (pPortNo)
+    {
+        pPortNo = NULL;
+    }
+
+    goto cleanup;
+
+}
