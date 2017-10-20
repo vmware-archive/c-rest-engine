@@ -61,6 +61,7 @@ VmRESTGetSockPackagePosix(
     pSockPackagePosix->pfnReleaseIoBuffer = &VmSockPosixFreeIoBuffer;
     pSockPackagePosix->pfnGetStreamBuffer = &VmSockPosixGetStreamBuffer;
     pSockPackagePosix->pfnSetStreamBuffer = &VmSockPosixSetStreamBuffer;
+    pSockPackagePosix->pfnGetPeerInfo = &VmSockPosixGetPeerInfo;
 
 cleanup:
 

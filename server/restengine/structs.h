@@ -75,7 +75,8 @@ typedef struct _VM_REST_HTTP_REQUEST_PACKET
     uint32_t                         dataRemaining;
     VM_REST_URL_PARAMS               paramArray[MAX_URL_PARAMS_ARR_SIZE];
     uint32_t                         dataNotRcvd; 
-
+    int                              clientPort;
+    char                             clientIP[MAX_CLIENT_IP_ADDR_LEN];
 }VM_REST_HTTP_REQUEST_PACKET, *PVM_REST_HTTP_REQUEST_PACKET;
 
 typedef struct _VM_REST_HTTP_RESPONSE_PACKET

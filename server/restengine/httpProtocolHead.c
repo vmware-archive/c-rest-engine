@@ -1193,6 +1193,19 @@ VmRESTProcessIncomingData(
     pReqPacket->dataNotRcvd = 0;
     memset(statusStng,'\0', MAX_STATUS_LENGTH);
 
+    /**** Peer IP and port info is available, store it in request object ****/
+    memset(pReqPacket->clientIP, '\0', MAX_CLIENT_IP_ADDR_LEN);
+    pReqPacket->clientPort = -1;
+
+    dwError = VmRESTCommonGetPeerInfo(
+                  pRESTHandle,
+                  pSocket,
+                  (pReqPacket->clientIP),
+                  MAX_CLIENT_IP_ADDR_LEN,
+                  &(pReqPacket->clientPort)
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
     /**** 2. Start parsing the request line ****/
 
     dwError = VmRESTParseAndPopulateHTTPHeaders(

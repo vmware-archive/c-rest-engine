@@ -325,6 +325,15 @@ VmwSockSetStreamBuffer(
     PVM_STREAM_BUFFER                pStreamBuffer
     );
 
+DWORD
+VmwSockGetPeerInfo(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    char*                            pIpAddress,
+    uint32_t                         nLen,
+    int*                             pPortNo
+    );
+
 typedef enum
 {
     VM_SOCK_PROTOCOL_UNKNOWN = 0,
@@ -432,6 +441,14 @@ typedef VOID(*PFN_SET_STREAM_BUFFER)(
                     PVM_STREAM_BUFFER   pStreamBuffer
                     );
 
+typedef DWORD(*PFN_GET_PEER_INFO)(
+                    PVMREST_HANDLE        pRESTHandle,
+                    PVM_SOCKET            pSocket,
+                    char*                 pIpAddress,
+                    uint32_t              nLen,
+                    int*                  pPortNo
+                    );
+
 typedef struct _VM_SOCK_PACKAGE
 {
     PFN_OPEN_SERVER_SOCKET              pfnOpenServerSocket;
@@ -448,4 +465,5 @@ typedef struct _VM_SOCK_PACKAGE
     PFN_RELEASE_IO_BUFFER               pfnReleaseIoBuffer;
     PFN_GET_STREAM_BUFFER               pfnGetStreamBuffer;
     PFN_SET_STREAM_BUFFER               pfnSetStreamBuffer;
+    PFN_GET_PEER_INFO                   pfnGetPeerInfo;
 } VM_SOCK_PACKAGE, *PVM_SOCK_PACKAGE;

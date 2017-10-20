@@ -1,7 +1,7 @@
 Name:          c-rest-engine
 Summary:       Minimal http(s) server library
 Version:       1.0.4
-Release:       2%{?dist}
+Release:       3%{?dist}
 Group:         Applications/System
 Vendor:        VMware, Inc.
 License:       Apache 2.0
@@ -65,6 +65,8 @@ find %{buildroot} -name '*.la' -delete
 %{_lib64dir}/*.so
 
 %changelog
+*   Thu Oct 19 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.4-3
+-   Adding getPeerInfo API.
 *   Fri Oct 06 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.4-2
 -   Support SSL context from application.
 *   Tue Sep 12 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.4-1
