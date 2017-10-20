@@ -153,24 +153,15 @@ VmRESTInitProtocolServer(
     else
     {
         VMREST_LOG_DEBUG(pRESTHandle,"%s","Server initing in encrypted wire connection mode");
-        if ((pRESTHandle->pRESTConfig->pSSLContext == NULL)  && ((IsNullOrEmptyString(pRESTHandle->pRESTConfig->ssl_certificate)) || (IsNullOrEmptyString(pRESTHandle->pRESTConfig->ssl_key))))
+        if (strlen( pRESTHandle->pRESTConfig->ssl_certificate) == 0 || strlen( pRESTHandle->pRESTConfig->ssl_key) == 0)
         {
             VMREST_LOG_ERROR(pRESTHandle,"%s", "Invalid SSL params");
             dwError =  REST_ERROR_INVALID_CONFIG;
         }
         BAIL_ON_VMREST_ERROR(dwError);
         dwFlags = dwFlags | VM_SOCK_IS_SSL;
-
-        if (pRESTHandle->pRESTConfig->pSSLContext != NULL)
-        {
-            sslCert = NULL;
-            sslKey = NULL;
-        }
-        else
-        {
-            sslCert =  pRESTHandle->pRESTConfig->ssl_certificate;
-            sslKey =   pRESTHandle->pRESTConfig->ssl_key;
-        }
+        sslCert =  pRESTHandle->pRESTConfig->ssl_certificate;
+        sslKey =   pRESTHandle->pRESTConfig->ssl_key;
     }
 
     /**** Handle IPv4 case ****/

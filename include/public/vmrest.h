@@ -10,9 +10,6 @@
 * terms and conditions of the subcomponent's license, as noted in the LICENSE file. 
 *
 */
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/crypto.h>
 
 #ifndef __VMREST_H__
 #define __VMREST_H__
@@ -69,6 +66,7 @@ typedef struct _VM_REST_HTTP_REQUEST_PACKET*  PREST_REQUEST;
 
 typedef struct _VM_REST_HTTP_RESPONSE_PACKET* PREST_RESPONSE;
 
+
 typedef uint32_t(
 *PFN_PROCESS_HTTP_REQUEST)(
     PVMREST_HANDLE                   pRESTHandle,
@@ -103,7 +101,6 @@ typedef struct _REST_CONF
     char*                            pDebugLogFile;
     char*                            pClientCount;
     char*                            pMaxWorkerThread;
-    SSL_CTX*                         pSSLContext;
 } REST_CONF, *PREST_CONF;
 
 typedef struct _REST_ENDPOINT

@@ -185,16 +185,16 @@ VmRESTStart(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((pRESTHandle->pSSLInfo->isCertSet < SSL_INFO_NO_SSL_PLAIN) || (pRESTHandle->pSSLInfo->isKeySet < SSL_INFO_NO_SSL_PLAIN))
+    if (pRESTHandle->pSSLInfo->isCertSet >= 1 && pRESTHandle->pSSLInfo->isKeySet >= 1)
     {
-        dwError = REST_ERROR_MISSING_CONFIG;
-        VMREST_LOG_ERROR(pRESTHandle, "Missing/Bad SSL key or Certificate");
+        dwError = VmHTTPStart(
+                      pRESTHandle
+                      );
     }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmHTTPStart(
-                  pRESTHandle
-                  );
+    else
+    {
+        VMREST_LOG_ERROR(pRESTHandle, "Cannot Start Server due to missing SSL key or certificate");
+    }
     BAIL_ON_VMREST_ERROR(dwError);
 
     /**** delete the cert file if created by library ****/
