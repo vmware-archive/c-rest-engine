@@ -120,6 +120,12 @@ VmRESTFreeHTTPRequestPacket(
             VmRESTFreeMiscQueue(pReqPacket->miscHeader);
         }
 
+        if (pReqPacket->pszPayload)
+        {
+            VmRESTFreeMemory(pReqPacket->pszPayload);
+            pReqPacket->pszPayload = NULL;
+        }
+
         pReqPacket->requestLine = NULL;
         pReqPacket->miscHeader = NULL;
 

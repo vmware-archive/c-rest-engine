@@ -42,7 +42,6 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 uint32_t
 VmRESTInit(
     PREST_CONF                       pConfig,
-    char const*                      file,
     PVMREST_HANDLE*                  ppRESTHandle
     )
 {
@@ -66,8 +65,7 @@ VmRESTInit(
 
     dwError = VmHTTPInit(
                   pRESTHandle,
-                  pConfig,
-                  file
+                  pConfig
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -122,12 +120,12 @@ VmRESTSetSSLInfo(
 
     if (sslDataType == SSL_DATA_TYPE_KEY)
     {
-        snprintf(fileName, (MAX_PATH_LEN - 1),"%s%s.pem", "/tmp/key-port-", pRESTHandle->pRESTConfig->server_port);
+        snprintf(fileName, (MAX_PATH_LEN - 1),"%s%u.pem", "/tmp/key-port-", pRESTHandle->pRESTConfig->serverPort);
 
     }
     else if (sslDataType == SSL_DATA_TYPE_CERT)
     {
-        snprintf(fileName, (MAX_PATH_LEN - 1), "%s%s.pem", "/tmp/cert-port-", pRESTHandle->pRESTConfig->server_port);
+        snprintf(fileName, (MAX_PATH_LEN - 1), "%s%u.pem", "/tmp/cert-port-", pRESTHandle->pRESTConfig->serverPort);
     }
 
     fp = fopen(fileName, "w+");
@@ -148,15 +146,15 @@ VmRESTSetSSLInfo(
 
     if (sslDataType == SSL_DATA_TYPE_KEY)
     {
-        memset(pRESTHandle->pRESTConfig->ssl_key, '\0', MAX_PATH_LEN);
-        strncpy(pRESTHandle->pRESTConfig->ssl_key, fileName,( MAX_PATH_LEN - 1));
+        memset(pRESTHandle->pRESTConfig->pszSSLKey, '\0', MAX_PATH_LEN);
+        strncpy(pRESTHandle->pRESTConfig->pszSSLKey, fileName,( MAX_PATH_LEN - 1));
         pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_FROM_BUFFER_API;
 
     }
     else if (sslDataType == SSL_DATA_TYPE_CERT)
     {
-        memset(pRESTHandle->pRESTConfig->ssl_certificate, '\0', MAX_PATH_LEN);
-        strncpy(pRESTHandle->pRESTConfig->ssl_certificate, fileName,( MAX_PATH_LEN - 1));
+        memset(pRESTHandle->pRESTConfig->pszSSLCertificate, '\0', MAX_PATH_LEN);
+        strncpy(pRESTHandle->pRESTConfig->pszSSLCertificate, fileName,( MAX_PATH_LEN - 1));
         pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_FROM_BUFFER_API;
     }
 
@@ -201,9 +199,9 @@ VmRESTStart(
 
     if (pRESTHandle->pSSLInfo->isCertSet == SSL_INFO_FROM_BUFFER_API)
     {
-        if ((ret = remove(pRESTHandle->pRESTConfig->ssl_certificate)) == -1)
+        if ((ret = remove(pRESTHandle->pRESTConfig->pszSSLCertificate)) == -1)
         {
-            VMREST_LOG_ERROR(pRESTHandle, "remove() syscall failed for temp certificate file ()");
+            VMREST_LOG_ERROR(pRESTHandle, "remove() syscall failed for temp certificate file (), ret %d", ret);
             dwError = REST_ENGINE_FAILURE;
         }
         BAIL_ON_VMREST_ERROR(dwError);
@@ -212,7 +210,7 @@ VmRESTStart(
 
     if (pRESTHandle->pSSLInfo->isKeySet == SSL_INFO_FROM_BUFFER_API)
     {
-        if ((ret = remove(pRESTHandle->pRESTConfig->ssl_key)) == -1)
+        if ((ret = remove(pRESTHandle->pRESTConfig->pszSSLKey)) == -1)
         {
             VMREST_LOG_ERROR(pRESTHandle, "remove temp file failed ()");
             dwError = REST_ENGINE_FAILURE;
@@ -361,7 +359,8 @@ error:
 
 uint32_t
 VmRESTStop(
-    PVMREST_HANDLE                   pRESTHandle
+    PVMREST_HANDLE                   pRESTHandle,
+    uint32_t                         waitSeconds
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -373,7 +372,8 @@ VmRESTStop(
     BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmHTTPStop(
-                  pRESTHandle
+                  pRESTHandle,
+                  waitSeconds
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -418,6 +418,47 @@ VmRESTGetData(
     return dwError;
 }
 
+/*** GetData Zero copy API ****/
+uint32_t
+VmRESTGetDataZC(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    char**                           ppBuffer,
+    uint32_t*                        nBytes
+    )
+{
+
+
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+
+    if (!pRESTHandle || !pRequest || !ppBuffer  || !nBytes)
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (pRequest->nPayload > 0)
+    {
+        *ppBuffer = pRequest->pszPayload;
+        *nBytes = pRequest->nPayload;
+    }
+    else if (pRequest->nPayload == 0)
+    {
+        *ppBuffer = NULL;
+        *nBytes = 0;
+    }
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+
+}
+
 uint32_t
 VmRESTSetData(
     PVMREST_HANDLE                   pRESTHandle,
@@ -435,6 +476,28 @@ VmRESTSetData(
                   buffer,
                   dataLen,
                   bytesWritten
+                  );
+
+    return dwError;
+
+}
+
+/**** SetData Zero Copy API ****/
+uint32_t
+VmRESTSetDataZC(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_RESPONSE*                  ppResponse,
+    char const*                      pBuffer,
+    uint32_t                         nBytes
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+
+    dwError = VmRESTSetHttpPayloadZeroCopy(
+                  pRESTHandle,
+                  ppResponse,
+                  pBuffer,
+                  nBytes
                   );
 
     return dwError;
@@ -604,4 +667,45 @@ cleanup:
     return dwError;
 error:
     goto cleanup;
+}
+
+uint32_t
+VmRESTGetConnectionInfo(
+    PREST_REQUEST                    pRequest,
+    char**                           ppszIpAddress,
+    int*                             pPort
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char*                            pszIpAddress = NULL;
+
+    if (!pRequest || !ppszIpAddress || !pPort)
+    {
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_CLIENT_IP_ADDR_LEN,
+                  (void **)&pszIpAddress
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    strncpy(pszIpAddress, pRequest->clientIP, (MAX_CLIENT_IP_ADDR_LEN - 1));
+
+    *pPort = pRequest->clientPort;
+    *ppszIpAddress = pszIpAddress;
+
+cleanup:
+
+    return dwError;
+
+error:
+    if (ppszIpAddress)
+    {
+        *ppszIpAddress = NULL;
+    }
+
+    goto cleanup;
+
 }
