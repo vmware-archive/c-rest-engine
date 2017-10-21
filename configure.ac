@@ -124,7 +124,6 @@ AC_CONFIG_FILES([Makefile
                  client/Makefile
                  tools/Makefile
                  tools/rest-cli/Makefile
-                 test/Makefile
                  build/package/rpm/c-rest-engine.spec
                 ])
 AC_OUTPUT

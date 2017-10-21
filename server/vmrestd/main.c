@@ -59,13 +59,11 @@ void sig_handler(int signo)
 int main()
 {
     uint32_t                         dwError = 0;
-#ifdef USE_APP_CTX
     PREST_CONF                       pConfig = NULL;
     PREST_CONF                       pConfig1 = NULL;
     SSL_CTX*                         sslCtx = NULL;
     SSL_CTX*                         sslCtx1 = NULL;
-#endif
-   // uint32_t                         cnt = 0;
+    //uint32_t                         cnt = 0;
 
 #ifndef WIN32
     signal(SIGPIPE, sig_handler);
@@ -92,34 +90,46 @@ int main()
     dwError = VmTESTInitSSL("/root/mycert.pem", "/root/mycert.pem", &sslCtx);
 
     dwError = VmTESTInitSSL("/root/mycert.pem", "/root/mycert.pem", &sslCtx1);
+#endif
 
     pConfig = (PREST_CONF)malloc(sizeof(REST_CONF));
-    pConfig->pSSLCertificate = NULL;
-    pConfig->pSSLKey = NULL;
-    pConfig->pServerPort = "81";
-    pConfig->pDebugLogFile = "/tmp/restServer.log";
-    pConfig->pClientCount = "5";
-    pConfig->pMaxWorkerThread = "5";
+    pConfig->serverPort = 81;
+    pConfig->connTimeoutSec = 0;
+    pConfig->maxDataPerConnMB = 0;
+    pConfig->nWorkerThr = 5;
+    pConfig->nClientCnt = 5;
+    pConfig->useSysLog = TRUE;
+    pConfig->pszSSLCertificate = NULL;
+    pConfig->isSecure = FALSE;
+    pConfig->pszSSLKey = NULL;
+    pConfig->pszDebugLogFile = NULL;
+    pConfig->debugLogLevel = VMREST_LOG_LEVEL_DEBUG;
+    pConfig->pszDaemonName = "VMREST-ECHOSERVER";
     pConfig->pSSLContext = sslCtx;
+    pConfig->pszSSLCipherList = NULL;
+    pConfig->SSLCtxOptionsFlag = 0;
+
 
     pConfig1 = (PREST_CONF)malloc(sizeof(REST_CONF));
-    pConfig1->pSSLCertificate = NULL;
-    pConfig1->pSSLKey = NULL;
-    pConfig1->pServerPort = "82";
-    pConfig1->pDebugLogFile = "/tmp/restServer1.log";
-    pConfig1->pClientCount = "5";
-    pConfig1->pMaxWorkerThread = "5";
+    pConfig1->serverPort = 82;
+    pConfig1->connTimeoutSec = 5;
+    pConfig1->maxDataPerConnMB = 10;
+    pConfig1->nWorkerThr = 5;
+    pConfig1->nClientCnt = 5;
+    pConfig1->useSysLog = FALSE;
+    pConfig1->pszSSLCertificate = "/root/mycert.pem";
+    pConfig1->isSecure = TRUE;
+    pConfig1->pszSSLKey = "/root/mycert.pem";
+    pConfig1->pszDebugLogFile = "/tmp/restServer1.log";
+    pConfig1->pszDaemonName = "VMREST-D";
+    pConfig1->debugLogLevel = VMREST_LOG_LEVEL_DEBUG;
     pConfig1->pSSLContext = sslCtx1;
+    pConfig1->pszSSLCipherList = NULL;
+    pConfig1->SSLCtxOptionsFlag = 0;
 
+    dwError = VmRESTInit(pConfig, &gpRESTHandle);
+    dwError = VmRESTInit(pConfig1, &gpRESTHandle1);
 
-    dwError = VmRESTInit(pConfig, NULL, &gpRESTHandle);
-    dwError = VmRESTInit(pConfig1, NULL, &gpRESTHandle1);
-
-#else
-    dwError = VmRESTInit(NULL,configPath, &gpRESTHandle);
-    dwError = VmRESTInit(NULL,configPath1, &gpRESTHandle1);
-
-#endif
 
 // test set SSL info API
 #if 0 
@@ -150,8 +160,8 @@ int main()
        // cnt++;
     }
 
-    dwError = VmRESTStop(gpRESTHandle);
-    dwError = VmRESTStop(gpRESTHandle1);
+    dwError = VmRESTStop(gpRESTHandle, 10);
+    dwError = VmRESTStop(gpRESTHandle1, 10);
 
     dwError = VmRESTUnRegisterHandler(gpRESTHandle,"/v1/pkg");
     dwError = VmRESTUnRegisterHandler(gpRESTHandle1,"/v1/blah");
@@ -193,7 +203,7 @@ VmHandleEchoData1(
     memset(AllData, '\0', MAX_IN_MEM_PAYLOAD_LEN);
 
     bytesRW = 0;
-    
+
     while(dwError == REST_ENGINE_MORE_IO_REQUIRED)
     {
         dwError = VmRESTGetData(
@@ -224,16 +234,17 @@ VmHandleEchoData1(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+    memset(buffer, '\0', 4097);
+
+    resLength = strlen(AllData);
+
     dwError = VmRESTSetSuccessResponse(
                   pRequest,
                   ppResponse
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    memset(buffer, '\0', 4097);
-
-    resLength = strlen(AllData);
-
+  
     if (resLength < 4096 )
     {
         dwError = VmRESTUtilsConvertInttoString(
@@ -287,8 +298,11 @@ VmHandleEchoData1(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+
+     
+
 cleanup:
-    if (AllData != NULL)
+   if (AllData != NULL)
     {
         free(AllData);
         AllData = NULL;
@@ -299,9 +313,50 @@ error:
     goto cleanup;
 }
 
+#if 1
+
+uint32_t
+VmHandleEchoData(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    PREST_RESPONSE*                  ppResponse,
+    uint32_t                         paramsCount
+    )
+{
+    uint32_t                         dwError = 0;
+    char*                            pszPayload = NULL;
+    uint32_t                         nPayloadLen = 0;
+
+    dwError = VmRESTGetDataZC(
+                 pRESTHandle,
+                 pRequest,
+                 &pszPayload,
+                 &nPayloadLen
+                 );
+    BAIL_ON_VMREST_ERROR(dwError);
 
 
+    dwError = VmRESTSetSuccessResponse(
+                  pRequest,
+                  ppResponse
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
 
+    dwError = VmRESTSetDataZC(
+              pRESTHandle,
+              ppResponse,
+              pszPayload,
+              nPayloadLen
+              );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+error:
+
+    return dwError;
+}
+
+
+#else
 uint32_t
 VmHandleEchoData(
     PVMREST_HANDLE                   pRESTHandle,
@@ -321,6 +376,8 @@ VmHandleEchoData(
     uint32_t                         index = 0;
     uint32_t                         bytesRW = 0;
     FILE*                            fp = NULL;
+    //char*                            ip = NULL;
+    //int                              port = 0;
 
     memset(buffer, '\0', 4097);
     memset(size, '\0', 10);
@@ -370,6 +427,19 @@ VmHandleEchoData(
 
     fclose(fp);
     fp = NULL;
+
+/*    dwError = VmRESTGetConnectionInfo(
+                  pRequest,
+                  &ip,
+                  &port
+                  );
+   BAIL_ON_VMREST_ERROR(dwError);
+
+   printf("\n IP Address:==%s==Port No %d", ip, port);
+   //write(1, ip, 46);
+   //write(1, &port, 4);
+
+  */                
 
     dwError = VmRESTSetSuccessResponse(
                   pRequest,
@@ -452,3 +522,5 @@ error:
     goto cleanup;
 }
 
+
+#endif

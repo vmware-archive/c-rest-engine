@@ -13,6 +13,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/crypto.h>
+#include <stdbool.h>
 
 #ifndef __VMREST_H__
 #define __VMREST_H__
@@ -45,6 +46,8 @@
 #define     REST_ERROR_PREV_INSTANCE_NOT_CLEAN             111
 #define     REST_ERROR_INVALID_HANDLER                     112
 #define     REST_ENGINE_SSL_CONFIG_FILE                    113
+#define     REST_ENGINE_NO_DEBUG_LOGGING                   114
+#define     REST_ENGINE_BAD_LOG_LEVEL                      115
 #define     REST_ENGINE_MORE_IO_REQUIRED                   7001
 #define     REST_ENGINE_IO_COMPLETED                       0
 
@@ -62,6 +65,15 @@
 #define     MAX_STATUS_LENGTH                               6
 #define     SSL_DATA_TYPE_KEY                               1
 #define     SSL_DATA_TYPE_CERT                              2
+#define     MAX_DEAMON_NAME_LEN                             20
+
+typedef enum
+{
+   VMREST_LOG_LEVEL_ERROR = 0,
+   VMREST_LOG_LEVEL_WARNING,
+   VMREST_LOG_LEVEL_INFO,
+   VMREST_LOG_LEVEL_DEBUG
+} VMREST_LOG_LEVEL;
 
 typedef struct _VMREST_HANDLE* PVMREST_HANDLE;
 
@@ -97,13 +109,21 @@ typedef struct _REST_PROCESSOR
 
 typedef struct _REST_CONF
 {
-    char*                            pSSLCertificate;
-    char*                            pSSLKey;
-    char*                            pServerPort;
-    char*                            pDebugLogFile;
-    char*                            pClientCount;
-    char*                            pMaxWorkerThread;
+    uint32_t                         serverPort;
+    uint32_t                         connTimeoutSec;
+    uint32_t                         maxDataPerConnMB;
     SSL_CTX*                         pSSLContext;
+    uint32_t                         nWorkerThr;
+    uint32_t                         nClientCnt;
+    long                             SSLCtxOptionsFlag;
+    char*                            pszSSLCertificate;
+    char*                            pszSSLKey;
+    char*                            pszSSLCipherList;
+    char*                            pszDebugLogFile;
+    char*                            pszDaemonName;
+    bool                             isSecure;
+    bool                             useSysLog;
+    VMREST_LOG_LEVEL                 debugLogLevel;
 } REST_CONF, *PREST_CONF;
 
 typedef struct _REST_ENDPOINT
@@ -117,11 +137,6 @@ typedef struct _REST_ENDPOINT
  * @brief Rest engine initialization
  *
  * @param[in]                        Rest engine configuration.
- *                                   For default behaviour call this with NULL
- *                                   to read config params from file.
- * @param[in]                        Config file Path.
- *                                   If this is NULL, restengine will try
- *                                   reading config from /root/restconfig.txt.
  * @param[out]                       Handle to Library instance.
  * @return                           Returns 0 for success.
  */
@@ -130,7 +145,6 @@ VMREST_API
 uint32_t
 VmRESTInit(
     PREST_CONF                       pConfig,
-    char const*                      file,
     PVMREST_HANDLE*                  ppRESTHandle
     );
 
@@ -248,6 +262,7 @@ VmRESTGetHttpMethod(
  * @brief Retrieve URI associated with request http object.
  *
  * @param[in]                        Reference to HTTP Request object.
+ * @param[in]                        Desired result in decoded (True) or encoded (FALSE) format.
  * @param[out]                       URI present in request object.(Freed by caller)
  * @return                           Returns 0 for success else error code.
  */
@@ -255,6 +270,7 @@ VMREST_API
 uint32_t
 VmRESTGetHttpURI(
     PREST_REQUEST                    pRequest,
+    bool                             bDecoded,
     char**                           ppResponse
     );
 
@@ -321,6 +337,25 @@ VmRESTGetData(
     PREST_REQUEST                    pRequest,
     char*                            pBuffer,
     uint32_t*                        bytesRead
+    );
+
+/*
+ * @brief Get Data received from client (Zero copy)
+ *
+ * @param[in]                        Handle to Library instance.
+ * @param[in]                        Reference to HTTP Request object.
+ * @param[out]                       Address pointing to buffer start.(DO NOT FREE AFTER USE)
+ * @param[out]                       Actual number of bytes in buffer.
+ * @return                           Returns REST_ENGINE_IO_COMPLETED for success,
+ *                                   or Error codes.
+ */
+VMREST_API
+uint32_t
+VmRESTGetDataZC(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    char**                           ppBuffer,
+    uint32_t*                        nBytes
     );
 
 /*
@@ -445,15 +480,42 @@ VmRESTSetData(
     uint32_t*                        bytesWritten
     );
 
+/*
+ * @brief Set data in one shot using zero memory copy. 
+ * Make sure VmRESTSetDataLength() is not used to set data length before call to this. 
+ * This API will set data length in HTTP response equals to nBytes. No restriction on
+ * on size of data
+ *        
+ *
+ * @param[in]                        Handle to Library instance.
+ * @param[in]                        Reference to HTTP Response object.
+ * @param[in]                        Payload data.(Application buffer, free if required)
+ * @param[in]                        Payload data length.
+ * @return                           Returns REST_ENGINE_IO_COMPLETED for success,
+ *                                   or Error codes.
+ * NOTE:                             This API will also set 
+ */
+
+VMREST_API
+uint32_t
+VmRESTSetDataZC(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_RESPONSE*                  ppResponse,
+    char const*                      pBuffer,
+    uint32_t                         nBytes
+    );
+
 /**
  * @brief Stop the REST Engine
  * @param[in]                        Handle to Library instance.
+ * @param[in]                        Time to wait for clean shutdown
  * @return                           Returns 0 for success
  */
 VMREST_API 
 uint32_t
 VmRESTStop(
-    PVMREST_HANDLE                   pRESTHandle
+    PVMREST_HANDLE                   pRESTHandle,
+    uint32_t                         waitSeconds
     );
 
 /*
@@ -536,7 +598,21 @@ VmRESTGetHttpPayload(
     uint32_t*                        bytesRead
     );
 
-
+/*
+ * @brief Get peer IP and port information.
+ *
+ * @param[in]                        Handle to Library instance.
+ * @param[out]                       IP address buffer(must be freed by caller).
+ * @param[out]                       Port number.
+ * @return                           Returns 0 success,
+ */
+VMREST_API
+uint32_t
+VmRESTGetConnectionInfo(
+    PREST_REQUEST                    pRequest,
+    char**                           ppszIpAddress,
+    int*                             pPort
+    );
 /*
  * @brief Set payload in HTTP response object.
  *
