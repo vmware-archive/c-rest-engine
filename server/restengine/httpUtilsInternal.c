@@ -323,16 +323,14 @@ uint32_t
 VmRESTSetHttpRequestHeader(
     PVM_REST_HTTP_REQUEST_PACKET     pRequest,
     char*                            header,
-    char*                            value,
-    uint32_t*                        resStatus
+    char*                            value
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (!pRequest || !header || !value || (*resStatus != OK))
+    if (!pRequest || !header || !value)
     {
         dwError =  VMREST_HTTP_INVALID_PARAMS;
-        *resStatus = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -486,6 +484,8 @@ VmRESTValidateConfig(
         dwError = REST_ERROR_INVALID_CONFIG_PORT;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+ 
+    VMREST_LOG_DEBUG(pRESTHandle, "Port %s, Key %s, Cert %s", pRESTConfig->server_port, pRESTConfig->ssl_key, pRESTConfig->ssl_certificate);
 
     strncpy(portNo, pRESTConfig->server_port,(MAX_SERVER_PORT_LEN -1));
 
@@ -511,6 +511,8 @@ VmRESTValidateConfig(
         {
             certLen = strlen(pRESTConfig->ssl_certificate);
             keyLen = strlen(pRESTConfig->ssl_key);
+
+            VMREST_LOG_DEBUG(pRESTHandle, "certLen %u, keylen %u", certLen, keyLen);
 
             if (keyLen == 0 || keyLen > MAX_PATH_LEN)
             {
@@ -557,6 +559,8 @@ VmRESTValidateConfig(
     }
     
 cleanup:
+
+    VMREST_LOG_DEBUG(pRESTHandle, "SSL cert %u, key %u, port %d", certLen, keyLen, atoi(portNo));
     return dwError;
 error:
     goto cleanup;
@@ -782,6 +786,7 @@ error:
 uint32_t
 VmRESTGetChunkSize(
     char*                            lineStart,
+    uint32_t                         nLineLen,
     uint32_t*                        skipBytes,
     uint32_t*                        chunkSize
     )
@@ -800,10 +805,24 @@ VmRESTGetChunkSize(
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+
+    if (nLineLen < HTTP_CHUNK_DATA_MIN_LEN)
+    {
+        dwError = REST_ENGINE_MORE_IO_REQUIRED;
+    }
+    else if (nLineLen == HTTP_CHUNK_DATA_MIN_LEN)
+    {
+        if (!(strncmp(lineStart, "0\r\n", HTTP_CHUNK_DATA_MIN_LEN) == 0))
+        {
+            dwError = REST_ENGINE_MORE_IO_REQUIRED;
+        }
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     memset(local,'\0', HTTP_CHUNKED_DATA_LEN);
     temp = lineStart;
     line = local;
-    while ((count < (HTTP_CHUNKED_DATA_LEN - 1)) && (*temp != '\0'))
+    while ((count < (HTTP_CHUNKED_DATA_LEN - 1)) && (count < (nLineLen - 1)) && (*temp != '\0'))
     {
          if(*temp == '\r' && *(temp + 1) == '\n')
          {
