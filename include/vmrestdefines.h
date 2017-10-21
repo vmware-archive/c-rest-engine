@@ -76,6 +76,9 @@
 #define TRUE                             1
 #define FALSE                            0
 
+#define INVALID                          -1
+
+
 #ifndef WIN32
 #define ERROR_SUCCESS                    0
 #define ERROR_INVALID_PARAMETER          101

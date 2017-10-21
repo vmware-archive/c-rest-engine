@@ -60,3 +60,46 @@ VmRESTFreeMemory(
 
 }
 
+uint32_t
+VmRESTReallocateMemory(
+    void*                            pMemory,
+    void**                           ppNewMemory,
+    size_t                           dwSize
+    )
+{
+    uint32_t                         dwError = 0;
+    void*                            pNewMemory = NULL;
+
+    if (!ppNewMemory)
+    {
+        dwError = EINVAL;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    if (pMemory)
+    {
+        pNewMemory = realloc(pMemory, dwSize);
+    }
+    else
+    {
+        dwError = VmRESTAllocateMemory(dwSize, &pNewMemory);
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    if (!pNewMemory)
+    {
+        dwError = ENOMEM;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+    *ppNewMemory = pNewMemory;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
