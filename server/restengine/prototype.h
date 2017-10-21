@@ -13,6 +13,7 @@
 
 /***************** httpProtocolHead.c *************/
 
+#if 0
 uint32_t
 VmRESTHTTPGetReqMethod(
     char*                            line,
@@ -63,12 +64,54 @@ VmRESTParseAndPopulateHTTPHeaders(
     uint32_t*                        resStatus
     );
 
+#endif
+
+BOOLEAN
+VmRESTIsValidHTTPMethod(
+    char*                            pszMethod
+    );
+
+BOOLEAN
+VmRESTIsValidHTTPVesion(
+   char*                             pszVersion
+   );
+
 uint32_t
-VmRESTParseAndPopulateRawHTTPMessage(
-    char*                            buffer,
-    uint32_t                         packetLen,
-    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
-    uint32_t*                        resStatus
+VmRESTSetPayloadType(
+    PREST_REQUEST                    pRequest
+    );
+
+uint32_t
+VmRESTHandleExpect(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest
+    );
+
+uint32_t
+VmRESTProcessRequestLine(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    char*                            pszBuffer,
+    uint32_t                         nBytes,
+    uint32_t*                        nProcessed
+    );
+
+uint32_t
+VmRESTProcessHeaders(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    char*                            pszBuffer,
+    uint32_t                         nBytes,
+    uint32_t*                        nProcessed
+    );
+
+uint32_t
+VmRESTProcessPayload(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    char*                            pszBuffer,
+    uint32_t                         nBytes,
+    uint32_t*                        nProcessed
     );
 
 uint32_t
@@ -207,8 +250,7 @@ uint32_t
 VmRESTSetHttpRequestHeader(
     PVM_REST_HTTP_REQUEST_PACKET     pRequest,
     char*                            header,
-    char*                            value,
-    uint32_t*                        resStatus
+    char*                            value
     );
 
 uint32_t
@@ -262,6 +304,7 @@ VmRESTGetHTTPMiscHeader(
 uint32_t
 VmRESTGetChunkSize(
     char*                            lineStart,
+    uint32_t                         nLineLen,
     uint32_t*                        skipBytes,
     uint32_t*                        chunkSize
     );
