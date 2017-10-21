@@ -74,7 +74,15 @@ typedef struct _VM_REST_HTTP_REQUEST_PACKET
     PVM_SOCKET                       pSocket;
     uint32_t                         dataRemaining;
     VM_REST_URL_PARAMS               paramArray[MAX_URL_PARAMS_ARR_SIZE];
-    uint32_t                         dataNotRcvd; 
+    uint32_t                         dataNotRcvd;
+    VM_REST_PROCESSING_STATE         state;
+    PREST_RESPONSE                   pResponse;
+    HTTP_PAYLOAD_TYPE                payloadType;
+    uint32_t                         nPayload;
+    char*                            pszPayload;
+    int                              clientPort;
+    char                             clientIP[MAX_CLIENT_IP_ADDR_LEN];
+    uint32_t                         nBytesGetPayload;
 
 }VM_REST_HTTP_REQUEST_PACKET, *PVM_REST_HTTP_REQUEST_PACKET;
 
@@ -85,7 +93,7 @@ typedef struct _VM_REST_HTTP_RESPONSE_PACKET
     PMISC_HEADER_QUEUE               miscHeader;
     PVM_SOCKET                       pSocket;
     PVM_REST_HTTP_REQUEST_PACKET     requestPacket;
-    uint32_t                         headerSent;
+    BOOLEAN                          bHeaderSent;
 
 }VM_REST_HTTP_RESPONSE_PACKET, *PVM_REST_HTTP_RESPONSE_PACKET;
 
