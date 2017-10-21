@@ -16,52 +16,21 @@
 uint32_t
 VmHTTPInit(
     PVMREST_HANDLE                   pRESTHandle,
-    PREST_CONF                       pConfig,
-    char const*                      file
+    PREST_CONF                       pConfig
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (!pRESTHandle)
+    if (!pRESTHandle || !pConfig)
     {
-        VMREST_LOG_DEBUG(pRESTHandle,"%s","Invalid REST Handler");
-        dwError = REST_ERROR_INVALID_HANDLER;
+        VMREST_LOG_DEBUG(pRESTHandle,"%s","Invalid params");
+        dwError = REST_ERROR_INVALID_CONFIG;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    pRESTHandle->debugLogLevel = VMREST_LOG_LEVEL_ERROR;
-
-    if (pConfig != NULL)
-    {
-        dwError = VmRESTCopyConfig(
-                      pConfig,
-                      &(pRESTHandle->pRESTConfig)
-                      );
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-    else   // pconfig ==  NULL
-    {
-        if (file == NULL)
-        {
-            /**** Init the rest engine with default config ****/
-            dwError = VmRESTParseAndPopulateConfigFile(
-                          "/root/restconfig.txt",
-                          &(pRESTHandle->pRESTConfig)
-                          );
-        }
-        else
-        {
-            dwError = VmRESTParseAndPopulateConfigFile(
-                          file,
-                          &(pRESTHandle->pRESTConfig)
-                          );
-        }
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-    /**** Init the debug log ****/
-    dwError = VmRESTLogInitialize(
-                  pRESTHandle
+    dwError = VmRESTCopyConfig(
+                  pConfig,
+                  &(pRESTHandle->pRESTConfig)
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -69,6 +38,14 @@ VmHTTPInit(
     dwError = VmRESTValidateConfig(
                   pRESTHandle,
                   pRESTHandle->pRESTConfig
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    pRESTHandle->debugLogLevel = pRESTHandle->pRESTConfig->debugLogLevel;
+
+    /**** Init the debug log ****/
+    dwError = VmRESTLogInitialize(
+                  pRESTHandle
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -90,7 +67,7 @@ error:
 
 uint32_t
 VmHTTPStart(
-    PVMREST_HANDLE                  pRESTHandle
+    PVMREST_HANDLE                   pRESTHandle
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -149,13 +126,14 @@ error:
 
 uint32_t
 VmHTTPStop(
-    PVMREST_HANDLE                  pRESTHandle
+    PVMREST_HANDLE                   pRESTHandle,
+    uint32_t                         waitSecond
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
     VMREST_LOG_DEBUG(pRESTHandle,"%s","Shutting down rest engine ....");
-    VmRESTShutdownProtocolServer(pRESTHandle);
+    dwError = VmRESTShutdownProtocolServer(pRESTHandle, waitSecond);
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
