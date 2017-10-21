@@ -23,7 +23,8 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define MAX_STATUS_LEN              4
 #define MAX_REA_PHRASE_LEN         32
 #define HTTP_VER_LEN                8
-#define HTTP_CHUNKED_DATA_LEN       7
+#define HTTP_CHUNK_DATA_MIN_LEN     3
+#define HTTP_CHUNKED_DATA_LEN       8
 #define HTTP_MIN_CHUNK_DATA_LEN     3
 #define HTTP_CRLF_LEN               2
 
@@ -32,6 +33,7 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define MAX_EXTRA_CRLF_BUF_SIZE    10
 #define MAX_DATA_BUFFER_LEN        4096
 #define MAX_REQ_LIN_LEN            11264
+#define MAX_CLIENT_IP_ADDR_LEN     46
 
 #define MAX_HTTP_HEADER_ATTR_LEN   64
 #define MAX_HTTP_HEADER_VAL_LEN    8192
@@ -44,6 +46,22 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 #define MAX_READ_RETRIES           50000      
 #define MAX_PORT_NUMBER            65535
 #define ERROR_SYS_CALL_FAILED      5100
+
+typedef enum _HTTP_PAYLOAD_TYPE
+{
+    HTTP_PAYLOAD_TYPE_INVALID   = -1,
+    HTTP_PAYLOAD_CONTENT_LENGTH = 1,
+    HTTP_PAYLOAD_TRANSFER_ENCODING
+}HTTP_PAYLOAD_TYPE;
+
+typedef enum _VM_REST_PROCESSING_STATE
+{
+    PROCESS_INVALID              = -1,
+    PROCESS_REQUEST_LINE         = 1,
+    PROCESS_REQUEST_HEADERS,
+    PROCESS_REQUEST_PAYLOAD,
+    PROCESS_APPLICATION_CALLBACK
+}VM_REST_PROCESSING_STATE;
 
 typedef enum _HTTP_METHODS
 {
