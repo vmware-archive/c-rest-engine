@@ -54,13 +54,11 @@ VmRESTGetSockPackagePosix(
     pSockPackagePosix->pfnCloseEventQueue = &VmSockPosixCloseEventQueue;
     pSockPackagePosix->pfnRead = &VmSockPosixRead;
     pSockPackagePosix->pfnWrite = &VmSockPosixWrite;
-    pSockPackagePosix->pfnAcquireSocket = &VmSockPosixAcquireSocket;
     pSockPackagePosix->pfnReleaseSocket = &VmSockPosixReleaseSocket;
     pSockPackagePosix->pfnCloseSocket = &VmSockPosixCloseSocket;
-    pSockPackagePosix->pfnAllocateIoBuffer = &VmSockPosixAllocateIoBuffer;
-    pSockPackagePosix->pfnReleaseIoBuffer = &VmSockPosixFreeIoBuffer;
-    pSockPackagePosix->pfnGetStreamBuffer = &VmSockPosixGetStreamBuffer;
-    pSockPackagePosix->pfnSetStreamBuffer = &VmSockPosixSetStreamBuffer;
+    pSockPackagePosix->pfnGetRequestHandle = &VmSockPosixGetRequestHandle;
+    pSockPackagePosix->pfnSetRequestHandle = &VmSockPosixSetRequestHandle;
+    pSockPackagePosix->pfnGetPeerInfo = &VmSockPosixGetPeerInfo;
 
 cleanup:
 
