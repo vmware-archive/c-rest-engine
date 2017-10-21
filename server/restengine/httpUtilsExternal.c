@@ -62,6 +62,7 @@ error:
 uint32_t
 VmRESTGetHttpURI(
     PREST_REQUEST                    pRequest,
+    bool                             bDecoded,
     char**                           ppResponse
     )
 {
@@ -88,10 +89,17 @@ VmRESTGetHttpURI(
                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VmRESTDecodeEncodedURLString(
-       pRequest->requestLine->uri,
-       pHttpURI
-       );
+    if (bDecoded)
+    {
+        VmRESTDecodeEncodedURLString(
+            pRequest->requestLine->uri,
+            pHttpURI
+            );
+    }
+    else
+    {
+        strncpy(pHttpURI, pRequest->requestLine->uri, MAX_URI_LEN);
+    }
 
     *ppResponse = pHttpURI;
 
@@ -211,21 +219,8 @@ VmRESTGetHttpPayload(
     uint32_t*                        bytesRead
     )
 {
-
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         dataRemaining = 0;
-    char                             localAppBuffer[MAX_DATA_BUFFER_LEN] = {0};
-    uint32_t                         chunkLenBytes = 0;
-    uint32_t                         chunkLen = 0;
-    uint32_t                         bRead = 0;
-    uint32_t                         readXBytes = 0;
-    uint32_t                         leftBytes = 0;
-    uint32_t                         newChunk = 0;
-    uint32_t                         extraRead = 0;
-    uint32_t                         tryCnt = 0;
-    char*                            res = NULL;
-    char*                            contentLength = NULL;
-    char*                            transferEncoding = NULL;
+    uint32_t                         nBytes = 0;
 
     if (!pRequest || !response  || !bytesRead)
     {
@@ -235,266 +230,37 @@ VmRESTGetHttpPayload(
     BAIL_ON_VMREST_ERROR(dwError);
     *bytesRead = 0;
 
-    if (sizeof(response) > MAX_DATA_BUFFER_LEN)
+    if (pRequest->nBytesGetPayload <= pRequest->nPayload)
     {
-        VMREST_LOG_ERROR(pRESTHandle,"Response buffer size %u not large enough",sizeof(response));
-        dwError = VMREST_HTTP_INVALID_PARAMS;
+        nBytes = (((pRequest->nPayload - pRequest->nBytesGetPayload) >= MAX_DATA_BUFFER_LEN) ? MAX_DATA_BUFFER_LEN : (pRequest->nPayload - pRequest->nBytesGetPayload));
+        memcpy(response, (pRequest->pszPayload + pRequest->nBytesGetPayload), nBytes);
+        *bytesRead = nBytes;
+        pRequest->nBytesGetPayload += nBytes;
     }
-    BAIL_ON_VMREST_ERROR(dwError);
-    memset(localAppBuffer,'\0', MAX_DATA_BUFFER_LEN);
-
-    dwError = VmRESTGetHttpHeader(
-                  pRequest,
-                  "Content-Length",
-                  &contentLength
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    dwError = VmRESTGetHttpHeader(
-                  pRequest,
-                  "Transfer-Encoding",
-                  &transferEncoding
-                  );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    if (contentLength != NULL && strlen(contentLength) > 0)
+    
+    if (pRequest->nBytesGetPayload < pRequest->nPayload)
     {
-       /**** Content-Length based packets ****/
-
-        dataRemaining = pRequest->dataRemaining;
-        if ((dataRemaining > 0) && (dataRemaining <= MAX_DATA_BUFFER_LEN))
-        {
-            readXBytes = dataRemaining;
-        }
-        else if (dataRemaining > MAX_DATA_BUFFER_LEN)
-        {
-            readXBytes = MAX_DATA_BUFFER_LEN;
-        }
-
-        /**** If Expect:100-continue was received, re-attempt read considering RTT delay ****/
-        do
-        {
-            dwError = VmsockPosixGetXBytes(
-                      pRESTHandle,
-                      readXBytes,
-                      localAppBuffer,
-                      pRequest->pSocket,
-                      &bRead,
-                      1
-                      );
-            tryCnt++;
-        } while (dwError !=0 && pRequest->dataNotRcvd == 1 && tryCnt < MAX_READ_RETRIES);
-        BAIL_ON_VMREST_ERROR(dwError);
-
-        if (pRequest->dataNotRcvd == 1)
-        {
-            pRequest->dataNotRcvd = 0;
-        }
-
-        memcpy(response,localAppBuffer, bRead);
-        pRequest->dataRemaining = pRequest->dataRemaining - bRead;
-
-        *bytesRead = bRead;
-
-        if (pRequest->dataRemaining == 0)
-        {
-            dwError = REST_ENGINE_IO_COMPLETED;
-        }
-        else if(bRead == 0 && readXBytes != 0)
-        {
-            dwError = VMREST_HTTP_VALIDATION_FAILED;
-            VMREST_LOG_ERROR(pRESTHandle,"%s","No data available over socket to read");
-            BAIL_ON_VMREST_ERROR(dwError);
-        }
-        else if(pRequest->dataRemaining > 0)
-        {
-            dwError = REST_ENGINE_MORE_IO_REQUIRED;
-        }
+        dwError = REST_ENGINE_MORE_IO_REQUIRED;
     }
-    else if((transferEncoding != NULL) && (strcmp(transferEncoding,"chunked")) == 0)
+    else if (pRequest->nBytesGetPayload == pRequest->nPayload)
     {
-        res = response;
-        dataRemaining = pRequest->dataRemaining;
-        if (dataRemaining == 0)
-        {
-            readXBytes = HTTP_CHUNKED_DATA_LEN;
-            newChunk = 1;
-        }
-        else if (dataRemaining > MAX_DATA_BUFFER_LEN)
-        {
-            readXBytes = MAX_DATA_BUFFER_LEN;
-            newChunk = 0;
-        }
-        else if (dataRemaining <= MAX_DATA_BUFFER_LEN)
-        {
-            readXBytes = dataRemaining;
-            newChunk = 0;
-        }
-
-        /**** This is chunked encoded packet ****/
-
-        /**** If Expect:100-continue was received, re-attempt read considering RTT delay ****/
-        do
-        {
-            
-            dwError = VmsockPosixGetXBytes(
-                          pRESTHandle,
-                          readXBytes,
-                          localAppBuffer,
-                          pRequest->pSocket,
-                          &bRead,
-                          1
-                          );
-            tryCnt++;
-        } while (dwError == ERROR_SYS_CALL_FAILED && pRequest->dataNotRcvd == 1 && tryCnt < MAX_READ_RETRIES);
-
-        /**** Cross examine size if its last chuck ****/
-        if (dwError == ERROR_SYS_CALL_FAILED && bRead > 0 && bRead < HTTP_CHUNKED_DATA_LEN)
-        {
-            dwError = 0;
-        }
-        BAIL_ON_VMREST_ERROR(dwError);
-
-        if (pRequest->dataNotRcvd == 1)
-        {
-            pRequest->dataNotRcvd = 0;
-        }
-
-        if (newChunk)
-        {
-            dwError = VmRESTGetChunkSize(
-                          localAppBuffer,
-                          &chunkLenBytes,
-                          &chunkLen
-                          );
-            BAIL_ON_VMREST_ERROR(dwError);
-            pRequest->dataRemaining = chunkLen;
-            VMREST_LOG_DEBUG(pRESTHandle,"Chunk Len = %u, bRead %u, chunk Len bytes %u ,data remaining %u", chunkLen,bRead,chunkLenBytes,pRequest->dataRemaining);
-            if (chunkLen == 0)
-            {
-                *bytesRead = 0;
-                dwError =  REST_ENGINE_IO_COMPLETED;
-            }
-            else if (chunkLen > 0)
-            {
-                /**** Copy the extra data from last read if it exists ****/
-                extraRead = bRead - chunkLenBytes;
-                if (extraRead >= pRequest->dataRemaining)
-                {
-                    leftBytes = extraRead - pRequest->dataRemaining;
-                    memcpy(res, (localAppBuffer + chunkLenBytes), pRequest->dataRemaining);
-                    res = res + pRequest->dataRemaining;
-                    *bytesRead = pRequest->dataRemaining;
-                    pRequest->dataRemaining = 0;
-                    if (leftBytes > 0)
-                    {
-                        dwError = VmSockPosixDecrementProcessedBytes(
-                                      pRESTHandle,
-                                      pRequest->pSocket,
-                                      leftBytes
-                                      );
-                        BAIL_ON_VMREST_ERROR(dwError);
-                    }
-
-                }
-                else if (extraRead < pRequest->dataRemaining)
-                {
-                    memcpy(res, (localAppBuffer + chunkLenBytes), extraRead);
-                    res = res + extraRead;
-                    pRequest->dataRemaining = pRequest->dataRemaining - extraRead;
-                    *bytesRead = extraRead;
-
-                    memset(localAppBuffer,'\0',MAX_DATA_BUFFER_LEN);
-
-                    if (pRequest->dataRemaining > (MAX_DATA_BUFFER_LEN - extraRead))
-                    {
-                        readXBytes = MAX_DATA_BUFFER_LEN -extraRead;
-                    }
-                    else if (pRequest->dataRemaining <= (MAX_DATA_BUFFER_LEN - extraRead))
-                    {
-                        readXBytes = pRequest->dataRemaining;
-                    }
-                    dwError = VmsockPosixGetXBytes(
-                                  pRESTHandle,
-                                  readXBytes,
-                                  localAppBuffer,
-                                  pRequest->pSocket,
-                                  &bRead,
-                                  1
-                                  );
-                    BAIL_ON_VMREST_ERROR(dwError);
-
-                    memcpy(res,localAppBuffer,bRead);
-                    pRequest->dataRemaining = pRequest->dataRemaining - bRead;
-                    *bytesRead = *bytesRead + bRead;
-                }
-
-                /**** Read the /r/n succeeding the chunk ****/
-                if (pRequest->dataRemaining == 0)
-                {
-                     dwError = VmsockPosixGetXBytes(
-                                  pRESTHandle,
-                                  2,
-                                  localAppBuffer,
-                                  pRequest->pSocket,
-                                  &bRead,
-                                  0
-                                  );
-                    BAIL_ON_VMREST_ERROR(dwError);
-                }
-                dwError = REST_ENGINE_MORE_IO_REQUIRED;
-            }
-        }
-        else if (bRead > 0)  // not a new chunk
-        {
-            memcpy(res,localAppBuffer,bRead);
-            pRequest->dataRemaining = pRequest->dataRemaining - bRead;
-            *bytesRead = bRead;
-            
-            /**** Read the /r/n succeeding the chunk if current chunk ended ****/
-            if (pRequest->dataRemaining == 0)
-            {
-                dwError = VmsockPosixGetXBytes(
-                              pRESTHandle,
-                              2,
-                              localAppBuffer,
-                              pRequest->pSocket,
-                              &bRead,
-                              0
-                              );
-                BAIL_ON_VMREST_ERROR(dwError);
-            }
-            dwError = REST_ENGINE_MORE_IO_REQUIRED;
-        }
-        else
-        { 
-            dwError = REST_ENGINE_MORE_IO_REQUIRED;
-        }
+        dwError = REST_ENGINE_IO_COMPLETED;
     }
     else
     {
-        *bytesRead = 0;
-        dwError = REST_ENGINE_IO_COMPLETED;
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Error in payload length");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
     }
 
+    
+
 cleanup:
-    if (contentLength != NULL)
-    {
-        VmRESTFreeMemory(contentLength);
-    }
-    if (transferEncoding != NULL)
-    {
-        VmRESTFreeMemory(transferEncoding);
-    }
 
     return dwError;
 error:
-    response = NULL;
-    if (dwError == ERROR_SYS_CALL_FAILED)
-    {
-        dwError = REQUEST_TIMEOUT;
-    }
+
     goto cleanup;
+
 }
 
 uint32_t
@@ -537,6 +303,8 @@ VmRESTSetHttpPayload(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
+    VMREST_LOG_DEBUG(pRESTHandle,"%s","set called");
+
     /**** Either of Content-Length or chunked-Encoding header must be set ****/
     if ((contentLength != NULL) && (strlen(contentLength) > 0))
     {
@@ -558,7 +326,7 @@ VmRESTSetHttpPayload(
                       );
        VMREST_LOG_DEBUG(pRESTHandle,"Sending Header and Payload done, returned code %u", dwError);
        BAIL_ON_VMREST_ERROR(dwError);
-       pResponse->headerSent = 1;
+       pResponse->bHeaderSent = TRUE;
        *bytesWritten = contentLen;
        dwError = REST_ENGINE_IO_COMPLETED;
     }
@@ -572,7 +340,7 @@ VmRESTSetHttpPayload(
          BAIL_ON_VMREST_ERROR(dwError);
 
          memcpy(pResponse->messageBody->buffer, buffer, dataLen);
-         if (pResponse->headerSent == 0)
+         if (pResponse->bHeaderSent == FALSE)
          {
              /**** Send Header first ****/
              dwError = VmRESTSendHeader(
@@ -580,7 +348,7 @@ VmRESTSetHttpPayload(
                            ppResponse
                            );
              BAIL_ON_VMREST_ERROR(dwError);
-             pResponse->headerSent = 1;
+             pResponse->bHeaderSent = TRUE;
          }
          dwError = VmRESTSendChunkedPayload(
                        pRESTHandle,

@@ -19,41 +19,58 @@
 
 static const char *
 logLevelToTag(
-    int level
+    int                              level
+    );
+
+static 
+int
+logLevelToSysLogLevel(
+    int                              level
     );
 
 uint32_t
 VmRESTLogInitialize(
-    PVMREST_HANDLE    pRESTHandle
+    PVMREST_HANDLE                   pRESTHandle
     )
 {
-    uint32_t   dwError = 0;
-   
-    if (!pRESTHandle || !(pRESTHandle->pRESTConfig) || (strlen(pRESTHandle->pRESTConfig->debug_log_file) == 0))
-    {
-        dwError = 1;
-        BAIL_ON_VMREST_ERROR(dwError); 
-    }
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if ((pRESTHandle->logFile = fopen(pRESTHandle->pRESTConfig->debug_log_file, "a")) == NULL)
+    if (pRESTHandle->pRESTConfig->useSysLog)
     {
-        fprintf( stderr, "logFileName: \"%s\" open failed", pRESTHandle->pRESTConfig->debug_log_file);
-        dwError = 1;
-        BAIL_ON_VMREST_ERROR(dwError);
+        /**** Use syslog ****/
+        openlog(pRESTHandle->pRESTConfig->pszDaemonName, 0, LOG_DAEMON);
+        setlogmask(LOG_UPTO(logLevelToSysLogLevel(pRESTHandle->debugLogLevel)));
     }
+    else
+    {
+        if ((pRESTHandle->logFile = fopen(pRESTHandle->pRESTConfig->pszDebugLogFile, "a")) == NULL)
+        {
+            fprintf( stderr, "logFileName: \"%s\" open failed", pRESTHandle->pRESTConfig->pszDebugLogFile);
+            dwError = 1;
+            BAIL_ON_VMREST_ERROR(dwError);
+        }
+    }   
 
-cleanup: 
+cleanup:
+
     return dwError;
+
 error:
+
     goto cleanup;
+
 }
 
 void
 VmRESTLogTerminate(
-    PVMREST_HANDLE    pRESTHandle
+    PVMREST_HANDLE                   pRESTHandle
     )
 {
-    if (pRESTHandle && pRESTHandle->logFile != NULL)
+    if (pRESTHandle && pRESTHandle->pRESTConfig->useSysLog)
+    {
+        closelog();
+    }
+    else if (pRESTHandle && pRESTHandle->logFile != NULL)
     {
        fclose(pRESTHandle->logFile);
        pRESTHandle->logFile = NULL;
@@ -75,30 +92,23 @@ VmRESTLog(
 	
     va_list     va;
     const char* logLevelTag = "";
+    int sysLogLevel = 0;
 
     if (!pRESTHandle)
     {
         return;
     }
 
-
-#if 1
     if (level <= pRESTHandle->debugLogLevel)
     {
         va_start( va, fmt );
         vsnprintf( logMessage, sizeof(logMessage), fmt, va );
         logMessage[sizeof(logMessage)-1] = '\0';
         va_end( va );
-
         ltime = time(&ltime);
         logLevelTag = logLevelToTag(level);
-		//TODO: FIX COMPILE ISSUE 
-#ifndef WIN32
         localtime_r(&ltime, &mytm);
         snprintf(extraLogMessage, sizeof(extraLogMessage) - 1,
-#else
-        _snprintf(extraLogMessage, sizeof(extraLogMessage) - 1,
-#endif
                   "%4d%2d%2d%2d%2d%2d.%03ld:t@%lu:%-3.7s: ",
                   mytm.tm_year+1900,
                   mytm.tm_mon+1,
@@ -107,26 +117,22 @@ VmRESTLog(
                   mytm.tm_min,
                   mytm.tm_sec,
                   tspec.tv_nsec/NSECS_PER_MSEC,
-#ifndef WIN32
                   (unsigned long) pthread_self(),
-#else
-			      pthread_self(),
-#endif
                   logLevelTag? logLevelTag : "UNKNOWN");
 
-         if(pRESTHandle->logFile != NULL )
-         {
+        if (pRESTHandle->pRESTConfig->useSysLog)
+        {
+            sysLogLevel = logLevelToSysLogLevel(level);
+            snprintf(extraLogMessage, sizeof(extraLogMessage) - 1, "t@%lu: ", (unsigned long) pthread_self());
+            syslog(sysLogLevel, "%s: %s%s", logLevelToTag(level), extraLogMessage, logMessage);
+        }
+        else if (pRESTHandle->logFile != NULL)
+        {
             fprintf(pRESTHandle->logFile, "%s%s\n", extraLogMessage, logMessage);
             fflush( pRESTHandle->logFile );
-         }
-         else
-         {
-            fprintf(stderr, "%s%s\n", extraLogMessage, logMessage);
-            fflush( stderr );
-         }
+        }
     }
-#endif
-}  
+}
 
 static const char *
 logLevelToTag(
@@ -147,4 +153,24 @@ logLevelToTag(
             return "DEBUG";
    }
 }
+
+static int
+logLevelToSysLogLevel(
+   int level)
+{
+   switch( level )
+   {
+      case VMREST_LOG_LEVEL_ERROR:
+         return LOG_ERR;
+      case VMREST_LOG_LEVEL_WARNING:
+         return LOG_WARNING;
+      case VMREST_LOG_LEVEL_DEBUG:
+         return LOG_DEBUG;
+      case VMREST_LOG_LEVEL_INFO:
+         return LOG_INFO;
+      default:
+         return LOG_ERR;
+   }
+}
+
 
