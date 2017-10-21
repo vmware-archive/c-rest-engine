@@ -87,7 +87,7 @@ getExpectedResult(
     else if (strcmp(testID, "TEST 10") == 0)
     {
         strcpy(input, " ");
-        strcpy(expected, "HTTP/1.1 400 Bad Request\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+        strcpy(expected, "HTTP/1.1 408 Request Timeout\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
     }
     else if (strcmp(testID, "TEST 11") == 0)
     {
@@ -169,6 +169,7 @@ int main(int argc, char *argv[])
         }
         else
         {
+            printf("%s",buf);
             printf("\n%s FAILED\n", argv[3]);
         }
 

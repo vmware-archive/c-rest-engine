@@ -33,21 +33,6 @@ typedef enum
     VMREST_LOG_TYPE_SYSLOG
 } VMREST_LOG_TYPE;
 
-#ifndef _VMREST_LOG_LEVEL_DEFINED_
-#define _VMREST_LOG_LEVEL_DEFINED_
-typedef enum
-{
-   VMREST_LOG_LEVEL_EMERGENCY = 0,
-   VMREST_LOG_LEVEL_ALERT,
-   VMREST_LOG_LEVEL_CRITICAL,
-   VMREST_LOG_LEVEL_ERROR,
-   VMREST_LOG_LEVEL_WARNING,
-   VMREST_LOG_LEVEL_NOTICE,
-   VMREST_LOG_LEVEL_INFO,
-   VMREST_LOG_LEVEL_DEBUG
-} VMREST_LOG_LEVEL;
-#endif
-
 uint32_t
 VmRESTLogInitialize(
     PVMREST_HANDLE                   pRESTHandle
@@ -170,6 +155,22 @@ VmRESTFreeMemory(
  * @return Returns 1 for failure, 0 for success,
  */
 
+
+/*
+ * @brief Reallocate existing memory to new size
+ * @param[in]                        pointer to old memory.
+ * @param[out]                       pointer to hold new memory location
+ * @param[out]                       size of new memory
+ * @return Returns 1 for failure, 0 for success,
+ */
+uint32_t
+VmRESTReallocateMemory(
+    void*                            pMemory,
+    void**                           ppNewMemory,
+    size_t                           dwSize
+    );
+
+
 uint32_t
 VmRESTUtilsConvertInttoString(
     int                              num,
@@ -237,13 +238,21 @@ typedef struct _SOCK_SSL_INFO
 
 typedef struct _REST_CONFIG
 {
-    char                             ssl_certificate[MAX_PATH_LEN];
-    char                             ssl_key[MAX_PATH_LEN];
-    char                             server_port[MAX_SERVER_PORT_LEN];
-    char                             debug_log_file[MAX_PATH_LEN];
-    char                             client_count[MAX_CLIENT_ALLOWED_LEN];
-    char                             worker_thread_count[MAX_WORKER_COUNT_LEN];
+    uint32_t                         serverPort;
+    uint32_t                         connTimeoutSec;
+    uint32_t                         maxDataPerConnMB;
+    uint32_t                         nWorkerThr;
+    uint32_t                         nClientCnt;
+    long                             SSLCtxOptionsFlag;
+    bool                             isSecure;
+    bool                             useSysLog;
+    char                             pszSSLCertificate[MAX_PATH_LEN];
+    char                             pszSSLKey[MAX_PATH_LEN];
+    char                             pszDebugLogFile[MAX_PATH_LEN];
+    char                             pszDaemonName[MAX_DEAMON_NAME_LEN];
+    char                             pszSSLCipherList[VMREST_MAX_SSL_CIPHER_LIST_LEN];
     SSL_CTX*                         pSSLContext;
+    VMREST_LOG_LEVEL                 debugLogLevel;
 } VM_REST_CONFIG, *PVM_REST_CONFIG;
 
 typedef struct _REST_ENG_GLOBALS *PREST_ENG_GLOBALS;
@@ -286,37 +295,14 @@ VmRESTInitProtocolServer(
     PVMREST_HANDLE                   pRESTHandle
     );
 
-VOID
+DWORD
 VmRESTShutdownProtocolServer(
-    PVMREST_HANDLE                   pRESTHandle
-    );
-
-uint32_t
-VmsockPosixGetXBytes(
     PVMREST_HANDLE                   pRESTHandle,
-    uint32_t                         bytesRequested,
-    char*                            appBuffer,
-    PVM_SOCKET                       pSocket,
-    uint32_t*                        bytesRead,
-    uint8_t                          shouldBlock
+    uint32_t                         waitSecond
     );
 
 uint32_t
-VmSockPosixAdjustProcessedBytes(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    uint32_t                         dataSeen
-    );
-
-uint32_t
-VmSockPosixDecrementProcessedBytes(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket,
-    uint32_t                         offset
-    );
-
-uint32_t
-VmsockPosixWriteDataAtOnce(
+VmRESTCommonWriteDataAtOnce(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     char*                            buffer,
@@ -324,12 +310,42 @@ VmsockPosixWriteDataAtOnce(
     );
 
 uint32_t
-VmRESTProcessIncomingData(
+VmRESTCommonGetPeerInfo(
     PVMREST_HANDLE                   pRESTHandle,
-    char*                            buffer,
-    uint32_t                         byteRead,
-    PVM_SOCKET                       pSocket
+    PVM_SOCKET                       pSocket,
+    char*                            pIpAddress,
+    uint32_t                         nLen,
+    int*                             pPortNo
     );
+
+uint32_t
+VmRESTGetRequestHandle(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    PREST_REQUEST*                   ppRequest
+    );
+
+void
+VmRESTFreeRequestHandle(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest
+    );
+
+uint32_t
+VmRESTProcessBuffer(
+    PVMREST_HANDLE                   pRESTHandle,
+    char*                            pszBuffer,
+    uint32_t                         nBytes,
+    PREST_REQUEST                    pRequest,
+    uint32_t*                        nProcessed
+    );
+
+uint32_t
+VmRESTSendFailureResponse(
+     PVMREST_HANDLE                  pRESTHandle,
+     uint32_t                        errorCode,
+     PREST_REQUEST                   pRequest
+     );
 
 void
 VmRESTSetConfig(
