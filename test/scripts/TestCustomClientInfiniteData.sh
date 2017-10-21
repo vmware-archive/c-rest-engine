@@ -6,7 +6,7 @@ PORT="81"
 # Compile from source in the same directory
 gcc -o $TOPDIR/infiteData $TOPDIR/infiteData.c
 
-$TOPDIR/infiteData $IPADDR $PORT "4096" "TEST 1"
+$TOPDIR/infiteData $IPADDR $PORT "15000" "TEST 1"
 
 $TOPDIR/infiteData $IPADDR $PORT "1" "TEST 2"
 
