@@ -100,8 +100,7 @@ VmwSockWaitForEvent(
     PVM_SOCK_EVENT_QUEUE             pQueue,
     int                              iTimeoutMS,
     PVM_SOCKET*                      ppSocket,
-    PVM_SOCK_EVENT_TYPE              pEventType,
-    PVM_SOCK_IO_BUFFER*              ppIoEvent
+    PVM_SOCK_EVENT_TYPE              pEventType
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
@@ -117,8 +116,7 @@ VmwSockWaitForEvent(
                                     pQueue,
                                     iTimeoutMS,
                                     ppSocket,
-                                    pEventType,
-                                    ppIoEvent
+                                    pEventType
                                     );
 
 error:
@@ -126,33 +124,44 @@ error:
     return dwError;
 }
 
-VOID
+DWORD
 VmwSockCloseEventQueue(
     PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCK_EVENT_QUEUE             pQueue
+    PVM_SOCK_EVENT_QUEUE             pQueue,
+    uint32_t                         waitSecond
     )
 {
+    DWORD                            dwError = REST_ENGINE_SUCCESS;
+
     if (!pRESTHandle)
     {
-        return;
+        dwError = REST_ENGINE_FAILURE;
     }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     if (pQueue)
     {
-        pRESTHandle->pPackage->pfnCloseEventQueue(pRESTHandle,pQueue);
+        dwError = pRESTHandle->pPackage->pfnCloseEventQueue(pRESTHandle,pQueue,waitSecond);
     }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+error:
+
+    return dwError;
+
 }
 
 DWORD
 VmwSockRead(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
-    PVM_SOCK_IO_BUFFER               pIoBuffer
+    char**                           ppszBuffer,
+    uint32_t*                        nBufLen
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pSocket || !pIoBuffer || !pRESTHandle)
+    if (!pSocket || !ppszBuffer || !pRESTHandle)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
@@ -161,7 +170,8 @@ VmwSockRead(
     dwError = pRESTHandle->pPackage->pfnRead(
                             pRESTHandle,
                             pSocket,
-                            pIoBuffer);
+                            ppszBuffer,
+                            nBufLen);
 
 error:
 
@@ -172,14 +182,13 @@ DWORD
 VmwSockWrite(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
-    const struct sockaddr*           pClientAddress,
-    socklen_t                        addrLength,
-    PVM_SOCK_IO_BUFFER               pIoBuffer
+    char*                            pszBuffer,
+    uint32_t                         nBufLen
 )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!pSocket || !pIoBuffer || !pRESTHandle)
+    if (!pSocket || !pszBuffer || !pRESTHandle)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMSOCK_ERROR(dwError);
@@ -188,23 +197,13 @@ VmwSockWrite(
     dwError = pRESTHandle->pPackage->pfnWrite(
                             pRESTHandle,
                             pSocket,
-                            pClientAddress,
-                            addrLength,
-                            pIoBuffer);
+                            pszBuffer,
+                            nBufLen);
     BAIL_ON_VMSOCK_ERROR(dwError);
 
 error:
 
     return dwError;
-}
-
-PVM_SOCKET
-VmwSockAcquire(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket
-    )
-{
-    return pSocket ? pRESTHandle->pPackage->pfnAcquireSocket(pRESTHandle,pSocket) : NULL;
 }
 
 VOID
@@ -236,67 +235,49 @@ error:
 }
 
 DWORD
-VmwSockAllocateIoBuffer(
+VmwSockGetRequestHandle(
     PVMREST_HANDLE                   pRESTHandle,
-    VM_SOCK_EVENT_TYPE               eventType,
-    DWORD                            dwSize,
-    PVM_SOCK_IO_BUFFER*              ppIoBuffer
+    PVM_SOCKET                       pSocket,
+    PREST_REQUEST*                   ppRequest
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-    if (!ppIoBuffer || !pRESTHandle)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    dwError = pRESTHandle->pPackage->pfnAllocateIoBuffer(pRESTHandle, eventType, dwSize, ppIoBuffer);
-    BAIL_ON_VMSOCK_ERROR(dwError);
-
-error:
+    dwError =  pRESTHandle->pPackage->pfnGetRequestHandle(pRESTHandle,pSocket, ppRequest);
 
     return dwError;
 }
 
 DWORD
-VmwSockReleaseIoBuffer(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCK_IO_BUFFER               pIoBuffer
-    )
-{
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-
-    if (!pIoBuffer || !pRESTHandle)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMSOCK_ERROR(dwError);
-    }
-
-    pRESTHandle->pPackage->pfnReleaseIoBuffer(pRESTHandle, pIoBuffer);
-
-error:
-
-    return dwError;
-
-}
-
-VOID
-VmwSockGetStreamBuffer(
+VmwSockSetRequestHandle(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
-    PVM_STREAM_BUFFER*               ppStreamBuffer
+    PREST_REQUEST                    pRequest,
+    uint32_t                         nProcessed,
+    PVM_SOCK_EVENT_QUEUE             pQueue
     )
 {
-    pRESTHandle->pPackage->pfnGetStreamBuffer(pRESTHandle,pSocket,ppStreamBuffer);
+     DWORD                            dwError = REST_ENGINE_SUCCESS;
+
+     dwError = pRESTHandle->pPackage->pfnSetRequestHandle(pRESTHandle,pSocket,pRequest, nProcessed, pQueue);
+
+     return dwError;
 }
 
-VOID
-VmwSockSetStreamBuffer(
+DWORD
+VmwSockGetPeerInfo(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
-    PVM_STREAM_BUFFER                pStreamBuffer
+    char*                            pIpAddress,
+    uint32_t                         nLen,
+    int*                             pPortNo
     )
 {
-     pRESTHandle->pPackage->pfnSetStreamBuffer(pRESTHandle,pSocket,pStreamBuffer);
+     DWORD                            dwError = REST_ENGINE_SUCCESS;
+
+     dwError = pRESTHandle->pPackage->pfnGetPeerInfo(pRESTHandle, pSocket, pIpAddress, nLen, pPortNo);
+
+     return dwError;
 }
+
+
