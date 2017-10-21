@@ -13,62 +13,52 @@
 
 /***************** httpProtocolHead.c *************/
 
+BOOLEAN
+VmRESTIsValidHTTPMethod(
+    char*                            pszMethod
+    );
+
+BOOLEAN
+VmRESTIsValidHTTPVesion(
+   char*                             pszVersion
+   );
+
 uint32_t
-VmRESTHTTPGetReqMethod(
-    char*                            line,
-    uint32_t                         lineLen,
-    char*                            result,
-    uint32_t*                        resStatus
+VmRESTSetPayloadType(
+    PREST_REQUEST                    pRequest
     );
 
 uint32_t
-VmRESTHTTPGetReqURI(
-    char*                            line,
-    uint32_t                         lineLen,
-    char*                            result,
-    uint32_t*                        resStatus
-    );
-
-uint32_t
-VmRESTHTTPGetReqVersion(
-    char*                            line,
-    uint32_t                         lineLen,
-    char*                            result,
-    uint32_t*                        resStatus
-    );
-
-uint32_t
-VmRESTHTTPPopulateHeader(
-    char*                            line,
-    uint32_t                         lineLen,
-    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
-    uint32_t*                        resStatus
-    );
-
-uint32_t
-VmRESTParseHTTPReqLine(
-    uint32_t                         lineNo,
-    char*                            line,
-    uint32_t                         lineLen,
-    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
-    uint32_t*                        resStatus
-    );
-
-uint32_t
-VmRESTParseAndPopulateHTTPHeaders(
+VmRESTHandleExpect(
     PVMREST_HANDLE                   pRESTHandle,
-    char*                            buffer,
-    uint32_t                         packetLen,
-    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
-    uint32_t*                        resStatus
+    PREST_REQUEST                    pRequest
     );
 
 uint32_t
-VmRESTParseAndPopulateRawHTTPMessage(
-    char*                            buffer,
-    uint32_t                         packetLen,
-    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
-    uint32_t*                        resStatus
+VmRESTProcessRequestLine(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    char*                            pszBuffer,
+    uint32_t                         nBytes,
+    uint32_t*                        nProcessed
+    );
+
+uint32_t
+VmRESTProcessHeaders(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    char*                            pszBuffer,
+    uint32_t                         nBytes,
+    uint32_t*                        nProcessed
+    );
+
+uint32_t
+VmRESTProcessPayload(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    char*                            pszBuffer,
+    uint32_t                         nBytes,
+    uint32_t*                        nProcessed
     );
 
 uint32_t
@@ -127,14 +117,16 @@ VmRESTTriggerAppCb(
     );
 
 uint32_t
-VmRESTTestHTTPResponse(
-    PVM_REST_HTTP_REQUEST_PACKET     pReqPacket,
+VmRESTCloseClient(
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
     );
 
 uint32_t
-VmRESTCloseClient(
-    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
+VmRESTSetHttpPayloadZeroCopy(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_RESPONSE*                  ppResponse,
+    char const*                      pszBuffer,
+    uint32_t                         nBytes
     );
 
 /***************** httpAllocStruct.c  *************/
@@ -207,14 +199,7 @@ uint32_t
 VmRESTSetHttpRequestHeader(
     PVM_REST_HTTP_REQUEST_PACKET     pRequest,
     char*                            header,
-    char*                            value,
-    uint32_t*                        resStatus
-    );
-
-uint32_t
-VmRESTParseAndPopulateConfigFile(
-    char const*                      configFile,
-    VM_REST_CONFIG**                 ppRESTConfig
+    char*                            value
     );
 
 void
@@ -262,6 +247,7 @@ VmRESTGetHTTPMiscHeader(
 uint32_t
 VmRESTGetChunkSize(
     char*                            lineStart,
+    uint32_t                         nLineLen,
     uint32_t*                        skipBytes,
     uint32_t*                        chunkSize
     );
@@ -366,8 +352,7 @@ VmRESTCopyWCStringByIndex(
 uint32_t
 VmHTTPInit(
     PVMREST_HANDLE                   pRESTHandle,
-    PREST_CONF                       pConfig,
-    char const*                      file
+    PREST_CONF                       pConfig
     );
 
 uint32_t
@@ -388,7 +373,8 @@ VmHTTPUnRegisterHandler(
 
 uint32_t
 VmHTTPStop(
-    PVMREST_HANDLE                   pRESTHandle
+    PVMREST_HANDLE                   pRESTHandle,
+    uint32_t                         waitSecond
     );
 
 void
