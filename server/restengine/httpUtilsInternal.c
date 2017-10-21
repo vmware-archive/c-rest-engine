@@ -323,16 +323,14 @@ uint32_t
 VmRESTSetHttpRequestHeader(
     PVM_REST_HTTP_REQUEST_PACKET     pRequest,
     char*                            header,
-    char*                            value,
-    uint32_t*                        resStatus
+    char*                            value
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (!pRequest || !header || !value || (*resStatus != OK))
+    if (!pRequest || !header || !value)
     {
         dwError =  VMREST_HTTP_INVALID_PARAMS;
-        *resStatus = BAD_REQUEST;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -346,104 +344,6 @@ VmRESTSetHttpRequestHeader(
 cleanup:
     return dwError;
 error:
-    goto cleanup;
-}
-
-uint32_t
-VmRESTParseAndPopulateConfigFile(
-    char const*                      configFile,
-    VM_REST_CONFIG**                 ppRESTConfig
-    )
-{
-    uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    FILE*                            fp = NULL;
-    char                             word[MAX_LINE_LEN];
-    char*                            result = NULL;
-    VM_REST_CONFIG*                  pRESTConfig = NULL;
-    uint32_t                         resultLen = 0;
-
-    if (!configFile)
-    {
-        dwError = REST_ERROR_MISSING_CONFIG;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    pRESTConfig = *ppRESTConfig;
-
-    fp = fopen(
-             configFile,
-             "r"
-         );
-    if (fp == NULL)
-    {
-        dwError = REST_ERROR_BAD_CONFIG_FILE_PATH;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    memset(word,'\0', MAX_LINE_LEN);
-    while (fscanf(fp, "%255s", word) != EOF)
-    {
-        if (resultLen != 0 && result != NULL)
-        {
-            strncpy(result, word, resultLen);
-            resultLen = 0;
-            result = NULL;
-        }
-        if (strcmp (word, "SSL-Certificate") == 0)
-        {
-            result = pRESTConfig->ssl_certificate;
-            resultLen = MAX_PATH_LEN;
-        }
-        else if (strcmp(word, "SSL-Key") == 0)
-        {
-            result = pRESTConfig->ssl_key;
-            resultLen = MAX_PATH_LEN;
-        }
-        else if (strcmp(word, "Port") == 0)
-        {
-            result = pRESTConfig->server_port;
-            resultLen = MAX_SERVER_PORT_LEN;
-        }
-        else if (strcmp(word, "Log-File") == 0)
-        {
-            result = pRESTConfig->debug_log_file;
-            resultLen = MAX_PATH_LEN;
-        }
-        else if (strcmp(word, "Client-Count") == 0)
-        {
-            result = pRESTConfig->client_count;
-            resultLen = MAX_CLIENT_ALLOWED_LEN;
-        }
-        else if (strcmp(word, "Worker-Thread-Count") == 0)
-        {
-            result = pRESTConfig->worker_thread_count;
-            resultLen = MAX_WORKER_COUNT_LEN;
-        }
-    }
-
-    /**** Use default if thread count or client count missing ****/
-    if (strlen(pRESTConfig->worker_thread_count) == 0)
-    {
-        strcpy(pRESTConfig->worker_thread_count, DEFAULT_WORKER_THR_CNT);
-    }
-    if (strlen(pRESTConfig->client_count) == 0)
-    {
-        strcpy(pRESTConfig->client_count, DEFAULT_CLIENT_CNT);
-    }
-
-    /**** WARNING :: Cannot pass SSL context from file - Use key/cert params and init SSL ****/
-    pRESTConfig->pSSLContext = NULL;
-
-
-cleanup:
-    if (fp)
-    {
-        fclose(fp);
-        fp = NULL;
-    }
-    return dwError;
-error:
-
     goto cleanup;
 }
 
@@ -467,11 +367,6 @@ VmRESTValidateConfig(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    char                             lastPortChar = '\0';
-    size_t                           certLen = 0;
-    size_t                           keyLen = 0;
-    char                             portNo[MAX_SERVER_PORT_LEN] = {0};
-    size_t                           portLen = 0;
 
     if (!pRESTConfig)
     {
@@ -479,28 +374,13 @@ VmRESTValidateConfig(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    portLen = strlen(pRESTConfig->server_port);
-
-    if ((portLen == 0) || (portLen > MAX_SERVER_PORT_LEN))
+    if ((pRESTConfig->serverPort == 0) || (pRESTConfig->serverPort > MAX_PORT_NUMBER))
     {
         dwError = REST_ERROR_INVALID_CONFIG_PORT;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    strncpy(portNo, pRESTConfig->server_port,(MAX_SERVER_PORT_LEN -1));
-
-    lastPortChar = VmRESTUtilsGetLastChar(
-                       pRESTConfig->server_port
-                       );
-    if (lastPortChar == 'p' || lastPortChar == 'P')
-    {
-        portNo[portLen - 1] = '\0';
-
-        /**** No SSL context required, just set validation to 1 ****/
-        pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_NO_SSL_PLAIN;
-        pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_NO_SSL_PLAIN;
-    }
-    else
+    if (pRESTConfig->isSecure)
     {
         if (pRESTConfig->pSSLContext != NULL)
         {
@@ -509,19 +389,7 @@ VmRESTValidateConfig(
         }
         else
         {
-            certLen = strlen(pRESTConfig->ssl_certificate);
-            keyLen = strlen(pRESTConfig->ssl_key);
-
-            if (keyLen == 0 || keyLen > MAX_PATH_LEN)
-            {
-                pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_NOT_SET;
-            }
-            else
-            {
-                pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_FROM_CONFIG_FILE;
-            }
-
-            if (certLen == 0 || certLen > MAX_PATH_LEN)
+            if (IsNullOrEmptyString(pRESTConfig->pszSSLCertificate))
             {
                 pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_NOT_SET;
             }
@@ -529,37 +397,98 @@ VmRESTValidateConfig(
             {
                 pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_FROM_CONFIG_FILE;
             }
+
+            if (IsNullOrEmptyString(pRESTConfig->pszSSLKey))
+            {
+                pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_NOT_SET;
+            }
+            else
+            {
+                pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_FROM_CONFIG_FILE;
+            }
         }
     }
-
-    if (atoi(portNo) <= 0 || atoi(portNo) > MAX_PORT_NUMBER)
+    else
     {
-        dwError = REST_ERROR_INVALID_CONFIG_PORT;
-        BAIL_ON_VMREST_ERROR(dwError);
+        /**** No SSL context required, just set validation to PLAIN ****/
+        pRESTHandle->pSSLInfo->isKeySet = SSL_INFO_NO_SSL_PLAIN;
+        pRESTHandle->pSSLInfo->isCertSet = SSL_INFO_NO_SSL_PLAIN;
     }
 
-    if (strlen(pRESTConfig->client_count) > 0)
-    { 
-        if((atoi(pRESTConfig->client_count) == 0) || (atoi(pRESTConfig->client_count) > MAX_CLIENT_CNT))
-        {
-            dwError = REST_ERROR_INVALID_CONFIG_CLT_CNT;
-            BAIL_ON_VMREST_ERROR(dwError);
-        }
-    }
-
-    if ((strlen(pRESTConfig->worker_thread_count) > 0))
+    if (pRESTConfig->connTimeoutSec == 0)
     {
-        if((atoi(pRESTConfig->worker_thread_count) == 0) || (atoi(pRESTConfig->worker_thread_count) > MAX_WORKER_THR_CNT))
-        {
-            dwError = REST_ERROR_INVALID_CONFIG_WKR_THR_CNT;
-            BAIL_ON_VMREST_ERROR(dwError);
-        }
+        pRESTConfig->connTimeoutSec = VMREST_DEFAULT_CONN_TIMEOUT_SEC;
     }
+    else if (pRESTConfig->connTimeoutSec > VMREST_MAX_CONN_TIMEOUT_SEC)
+    {
+        pRESTConfig->connTimeoutSec = VMREST_MAX_CONN_TIMEOUT_SEC;
+    }
+
+    if (pRESTConfig->maxDataPerConnMB == 0)
+    {
+        pRESTConfig->maxDataPerConnMB = VMREST_MAX_CONN_PAYLOAD_LIMIT_MB;
+    }
+    else if (pRESTConfig->maxDataPerConnMB > VMREST_MAX_CONN_PAYLOAD_LIMIT_MB)
+    {
+        pRESTConfig->maxDataPerConnMB = VMREST_MAX_CONN_PAYLOAD_LIMIT_MB;
+    }
+
+    /**** convert MB to KB ****/
+    pRESTConfig->maxDataPerConnMB = (pRESTConfig->maxDataPerConnMB * 1024 * 1024);
+
+    if (pRESTConfig->nWorkerThr == 0)
+    {
+        pRESTConfig->nWorkerThr = VMREST_DEFAULT_WORKER_THR_COUNT;
+    }
+    else if (pRESTConfig->nWorkerThr > VMREST_MAX_WORKER_THR_COUNT)
+    {
+        pRESTConfig->nWorkerThr = VMREST_MAX_WORKER_THR_COUNT;
+    }
+
+    if (pRESTConfig->nClientCnt == 0)
+    {
+        pRESTConfig->nClientCnt = VMREST_DEFAULT_CLIENT_COUNT;
+    }
+    else if (pRESTConfig->nClientCnt > VMREST_MAX_CLIENT_COUNT)
+    {
+        pRESTConfig->nClientCnt = VMREST_MAX_CLIENT_COUNT;
+    }
+
+    if ((IsNullOrEmptyString(pRESTConfig->pszDebugLogFile) && !(pRESTConfig->useSysLog)))
+    {
+        dwError = REST_ENGINE_NO_DEBUG_LOGGING;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
     
+    if (!((pRESTConfig->debugLogLevel >= VMREST_LOG_LEVEL_ERROR) && (pRESTConfig->debugLogLevel <= VMREST_LOG_LEVEL_DEBUG)))
+    {
+        dwError = REST_ENGINE_BAD_LOG_LEVEL;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pRESTConfig->pszDaemonName))
+    {
+        strncpy(pRESTConfig->pszDaemonName, "VMREST-UNKOWN", (MAX_DEAMON_NAME_LEN - 1));
+    }
+
+    if (IsNullOrEmptyString(pRESTConfig->pszSSLCipherList))
+    {
+        strncpy(pRESTConfig->pszSSLCipherList, VMREST_DEFAULT_SSL_CIPHER_LIST, (VMREST_MAX_SSL_CIPHER_LIST_LEN - 1));
+    }
+
+    if (pRESTConfig->SSLCtxOptionsFlag == 0)
+    {
+        pRESTConfig->SSLCtxOptionsFlag = VMREST_DEFAULT_SSL_CTX_OPTION_FLAG;
+    }
+
 cleanup:
+
     return dwError;
+
 error:
+
     goto cleanup;
+
 }
 
 uint32_t
@@ -579,55 +508,48 @@ VmRESTCopyConfig(
 
     pRESTConfig = *ppRESTConfig;
 
-    if (pConfig->pSSLContext != NULL)
+    if (!(IsNullOrEmptyString(pConfig->pszSSLCertificate)))
     {
-        pRESTConfig->pSSLContext = pConfig->pSSLContext;
-    }
-    else
-    {
-        if (pConfig->pSSLCertificate)
-        {
-            strncpy(pRESTConfig->ssl_certificate, pConfig->pSSLCertificate,( MAX_PATH_LEN - 1));
-        }
-        if (pConfig->pSSLKey)
-        {
-            strncpy(pRESTConfig->ssl_key, pConfig->pSSLKey, (MAX_PATH_LEN - 1));
-        }
+        strncpy(pRESTConfig->pszSSLCertificate,pConfig->pszSSLCertificate,( MAX_PATH_LEN - 1));
     }
 
-    if (pConfig->pServerPort)
+    if (!(IsNullOrEmptyString(pConfig->pszSSLKey)))
     {
-        strncpy(pRESTConfig->server_port, pConfig->pServerPort, (MAX_SERVER_PORT_LEN - 1));
-    }
-    if (pConfig->pDebugLogFile)
-    {
-        strncpy(pRESTConfig->debug_log_file, pConfig->pDebugLogFile, (MAX_PATH_LEN - 1));
-    }
-    else
-    {
-        strncpy(pRESTConfig->debug_log_file,DEFAULT_DEBUG_FILE, (MAX_PATH_LEN - 1));
-    }
-    if (pConfig->pClientCount) 
-    {
-        strncpy(pRESTConfig->client_count, pConfig->pClientCount,(MAX_CLIENT_ALLOWED_LEN - 1));
-    }
-    else
-    {
-        strncpy(pRESTConfig->worker_thread_count, DEFAULT_WORKER_THR_CNT, (MAX_CLIENT_ALLOWED_LEN - 1));
+        strncpy(pRESTConfig->pszSSLKey, pConfig->pszSSLKey, (MAX_PATH_LEN - 1));
     }
 
-    if (pConfig->pMaxWorkerThread)
+    if (!(IsNullOrEmptyString(pConfig->pszDebugLogFile)))
     {
-        strncpy(pRESTConfig->worker_thread_count, pConfig->pMaxWorkerThread, (MAX_WORKER_COUNT_LEN - 1));
+        strncpy(pRESTConfig->pszDebugLogFile, pConfig->pszDebugLogFile, (MAX_DEAMON_NAME_LEN - 1));
     }
-    else
+
+    if (!(IsNullOrEmptyString(pConfig->pszDaemonName)))
     {
-        strncpy(pRESTConfig->client_count, DEFAULT_CLIENT_CNT, (MAX_WORKER_COUNT_LEN - 1));
+        strncpy(pRESTConfig->pszDaemonName, pConfig->pszDaemonName, (MAX_DEAMON_NAME_LEN - 1));
     }
+
+    if (!(IsNullOrEmptyString(pConfig->pszSSLCipherList)))
+    {
+        strncpy(pRESTConfig->pszSSLCipherList, pConfig->pszSSLCipherList, (VMREST_MAX_SSL_CIPHER_LIST_LEN - 1));
+    }
+
+    pRESTConfig->serverPort = pConfig->serverPort;
+    pRESTConfig->connTimeoutSec = pConfig->connTimeoutSec;
+    pRESTConfig->maxDataPerConnMB = pConfig->maxDataPerConnMB;
+    pRESTConfig->pSSLContext = pConfig->pSSLContext;
+    pRESTConfig->nWorkerThr = pConfig->nWorkerThr;
+    pRESTConfig->nClientCnt = pConfig->nClientCnt;
+    pRESTConfig->debugLogLevel = pConfig->debugLogLevel;
+    pRESTConfig->isSecure = pConfig->isSecure;
+    pRESTConfig->useSysLog = pConfig->useSysLog;
+    pRESTConfig->SSLCtxOptionsFlag = pConfig->SSLCtxOptionsFlag;
 
 cleanup:
+
     return dwError;
+
 error:
+
     goto cleanup;
 }
 
@@ -782,6 +704,7 @@ error:
 uint32_t
 VmRESTGetChunkSize(
     char*                            lineStart,
+    uint32_t                         nLineLen,
     uint32_t*                        skipBytes,
     uint32_t*                        chunkSize
     )
@@ -800,10 +723,24 @@ VmRESTGetChunkSize(
         dwError =  VMREST_HTTP_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+
+    if (nLineLen < HTTP_CHUNK_DATA_MIN_LEN)
+    {
+        dwError = REST_ENGINE_MORE_IO_REQUIRED;
+    }
+    else if (nLineLen == HTTP_CHUNK_DATA_MIN_LEN)
+    {
+        if (!(strncmp(lineStart, "0\r\n", HTTP_CHUNK_DATA_MIN_LEN) == 0))
+        {
+            dwError = REST_ENGINE_MORE_IO_REQUIRED;
+        }
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     memset(local,'\0', HTTP_CHUNKED_DATA_LEN);
     temp = lineStart;
     line = local;
-    while ((count < (HTTP_CHUNKED_DATA_LEN - 1)) && (*temp != '\0'))
+    while ((count < (HTTP_CHUNKED_DATA_LEN - 1)) && (count < (nLineLen - 1)) && (*temp != '\0'))
     {
          if(*temp == '\r' && *(temp + 1) == '\n')
          {
