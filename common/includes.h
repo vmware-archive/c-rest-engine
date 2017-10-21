@@ -30,5 +30,5 @@ typedef unsigned __int8 uint8_t;
 #include <vmrestdefines.h>
 #include <vmsock.h>
 #include <vmrestcommon.h>
-
+#include <syslog.h>
 
