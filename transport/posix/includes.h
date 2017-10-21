@@ -14,6 +14,7 @@
 #include <config.h>
 #include <vmrestsys.h>
 #include <sys/epoll.h>
+#include <sys/timerfd.h>
 #include <vmrestdefines.h>
 #include <vmsock.h>
 #include <vmrestcommon.h>
@@ -27,6 +28,7 @@
 #include <vmrestcommon.h>
 #include <vmrest.h>
 #include <fcntl.h>
+#include <arpa/inet.h>
 #include <sys/epoll.h>
 #include "extern.h"
 
