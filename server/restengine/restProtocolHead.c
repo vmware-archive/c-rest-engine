@@ -64,6 +64,7 @@ VmRestEngineHandler(
 
     dwError = VmRESTGetHttpURI(
                   pRequest,
+                  TRUE,
                   &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -133,6 +134,7 @@ VmRestEngineHandler(
         if (pEndPoint && pEndPoint->pHandler && pEndPoint->pHandler->pfnHandleRead)
         {
             dwError = pEndPoint->pHandler->pfnHandleRead(pRESTHandle, pRequest, ppResponse, paramsCount);
+            VMREST_LOG_DEBUG(pRESTHandle,"Callback, returned code %u", dwError);
         }
         else
         {
@@ -977,6 +979,7 @@ VmRESTGetWildCardCount(
 
     dwError = VmRESTGetHttpURI(
                   pRequest,
+                  TRUE,
                   &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1102,6 +1105,7 @@ VmRESTGetWildCardByIndex(
 
     dwError = VmRESTGetHttpURI(
                   pRequest,
+                  TRUE,
                   &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
