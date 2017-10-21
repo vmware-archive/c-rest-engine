@@ -64,6 +64,7 @@ VmRestEngineHandler(
 
     dwError = VmRESTGetHttpURI(
                   pRequest,
+                  TRUE,
                   &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -977,6 +978,7 @@ VmRESTGetWildCardCount(
 
     dwError = VmRESTGetHttpURI(
                   pRequest,
+                  TRUE,
                   &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
@@ -1102,6 +1104,7 @@ VmRESTGetWildCardByIndex(
 
     dwError = VmRESTGetHttpURI(
                   pRequest,
+                  TRUE,
                   &ptr
                   );
     BAIL_ON_VMREST_ERROR(dwError);
