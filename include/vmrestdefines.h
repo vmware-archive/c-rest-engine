@@ -72,9 +72,22 @@
 #define SSL_INFO_FROM_BUFFER_API                        3
 #define SSL_INFO_USE_APP_CONTEXT                        4
 
+#define VMREST_DEFAULT_WORKER_THR_COUNT                 5
+#define VMREST_DEFAULT_CLIENT_COUNT                     100
+#define VMREST_DEFAULT_CONN_TIMEOUT_SEC                 60
+#define VMREST_DEFAULT_CONN_PAYLOAD_LIMIT_MB            25
+
+#define VMREST_MAX_WORKER_THR_COUNT                     100
+#define VMREST_MAX_CLIENT_COUNT                         10000
+#define VMREST_MAX_CONN_TIMEOUT_SEC                     600
+#define VMREST_MAX_CONN_PAYLOAD_LIMIT_MB                50
+
 
 #define TRUE                             1
 #define FALSE                            0
+
+#define INVALID                          -1
+
 
 #ifndef WIN32
 #define ERROR_SUCCESS                    0
