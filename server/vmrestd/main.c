@@ -65,7 +65,7 @@ int main()
     SSL_CTX*                         sslCtx = NULL;
     SSL_CTX*                         sslCtx1 = NULL;
 #endif
-   // uint32_t                         cnt = 0;
+    //uint32_t                         cnt = 0;
 
 #ifndef WIN32
     signal(SIGPIPE, sig_handler);
@@ -321,6 +321,8 @@ VmHandleEchoData(
     uint32_t                         index = 0;
     uint32_t                         bytesRW = 0;
     FILE*                            fp = NULL;
+    //char*                            ip = NULL;
+    //int                              port = 0;
 
     memset(buffer, '\0', 4097);
     memset(size, '\0', 10);
@@ -370,6 +372,19 @@ VmHandleEchoData(
 
     fclose(fp);
     fp = NULL;
+
+/*    dwError = VmRESTGetConnectionInfo(
+                  pRequest,
+                  &ip,
+                  &port
+                  );
+   BAIL_ON_VMREST_ERROR(dwError);
+
+   printf("\n IP Address:==%s==Port No %d", ip, port);
+   //write(1, ip, 46);
+   //write(1, &port, 4);
+
+  */                
 
     dwError = VmRESTSetSuccessResponse(
                   pRequest,
