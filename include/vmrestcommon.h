@@ -170,6 +170,22 @@ VmRESTFreeMemory(
  * @return Returns 1 for failure, 0 for success,
  */
 
+
+/*
+ * @brief Reallocate existing memory to new size
+ * @param[in]                        pointer to old memory.
+ * @param[out]                       pointer to hold new memory location
+ * @param[out]                       size of new memory
+ * @return Returns 1 for failure, 0 for success,
+ */
+uint32_t
+VmRESTReallocateMemory(
+    void*                            pMemory,
+    void**                           ppNewMemory,
+    size_t                           dwSize
+    );
+
+
 uint32_t
 VmRESTUtilsConvertInttoString(
     int                              num,
@@ -316,7 +332,7 @@ VmSockPosixDecrementProcessedBytes(
     );
 
 uint32_t
-VmsockPosixWriteDataAtOnce(
+VmRESTCommonWriteDataAtOnce(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
     char*                            buffer,
@@ -324,12 +340,53 @@ VmsockPosixWriteDataAtOnce(
     );
 
 uint32_t
+VmRESTCommonGetPeerInfo(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    char*                            pIpAddress,
+    uint32_t                         nLen,
+    int*                             pPortNo
+    );
+
+uint32_t
+VmRESTGetRequestHandle(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    PREST_REQUEST*                   ppRequest
+    );
+
+void
+VmRESTFreeRequestHandle(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest
+    );
+
+uint32_t
+VmRESTProcessBuffer(
+    PVMREST_HANDLE                   pRESTHandle,
+    char*                            pszBuffer,
+    uint32_t                         nBytes,
+    PREST_REQUEST                    pRequest,
+    uint32_t*                        nProcessed
+    );
+
+uint32_t
+VmRESTSendFailureResponse(
+     PVMREST_HANDLE                  pRESTHandle,
+     uint32_t                        errorCode,
+     PREST_REQUEST                   pRequest
+     );
+
+#if 0
+uint32_t
 VmRESTProcessIncomingData(
     PVMREST_HANDLE                   pRESTHandle,
     char*                            buffer,
     uint32_t                         byteRead,
     PVM_SOCKET                       pSocket
     );
+
+#endif
 
 void
 VmRESTSetConfig(
