@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
     memset(expected, '\0', 512);
     memset(expected1, '\0', 512);
     memset(out, '\0', 512);
-    strcpy(expected, "HTTP/1.1 400 Bad Request\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
-    strcpy(expected1, "HTTP/1.1 431 Large Header Field\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+    strcpy(expected, "HTTP/1.1 408 Request Timeout\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
+    strcpy(expected1, "HTTP/1.1 414 URI too Long\r\nConnection:close\r\nContent-Length:0\r\n\r\n");
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
     freeaddrinfo(servinfo);
 
     res = expected;
-    if (((strcmp(argv[4], "TEST 7") == 0) || (strcmp(argv[4], "TEST 8") == 0))) 
+    if (((strcmp(argv[4], "TEST 1") == 0) || (strcmp(argv[4], "TEST 8") == 0))) 
     {
         res = expected1;
     }
@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
     write(sockfd, buf, max_data_size);
     x = read(sockfd, out, 512);
 
+//    printf("\n\n%s\n\n", out);
     sleep(1);
 
     if (strcmp(out, res) == 0)
