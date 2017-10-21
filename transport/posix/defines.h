@@ -11,16 +11,10 @@
 *
 */
 
-#define VM_SOCK_POSIX_DEFAULT_LISTEN_QUEUE_SIZE (5)
+#define VM_SOCK_POSIX_DEFAULT_LISTEN_QUEUE_SIZE 8092
 
-#define VM_SOCK_POSIX_DEFAULT_QUEUE_SIZE        (64)
-
-#define BAIL_ON_POSIX_SOCK_ERROR(dwError)  \
-    do {                                  \
-        if (dwError) {                    \
-            goto error;                   \
-        }                                 \
-    } while(0)
+#define VM_SOCK_POSIX_DEFAULT_QUEUE_SIZE        (256)
+#define VM_SOCK_POSIX_DEFAULT_WORKER_THR_COUNT   5
 
 #ifndef PopEntryList
 #define PopEntryList(ListHead) \
@@ -55,7 +49,6 @@ typedef enum
 } VM_SOCK_POSIX_EVENT_STATE;
 
 /**** Transport internal error codes ****/
-#define INVALID                                -1
 #define VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED    5100
 #define MAX_RETRY_ATTEMPTS                     50000
 
