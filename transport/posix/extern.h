@@ -14,4 +14,4 @@
 extern int                           gSSLisedInstaceCount;
 extern pthread_mutex_t*              gSSLThreadLock;
 extern pthread_mutex_t               gGlobalMutex;
-
+extern SSL_CTX*                      gpSSLCTX;

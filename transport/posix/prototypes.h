@@ -14,18 +14,13 @@
 DWORD
 VmSockPosixOpenServer(
     PVMREST_HANDLE                   pRESTHandle,
-    USHORT                           usPort,
-    int                              iListenQueueSize,
     VM_SOCK_CREATE_FLAGS             dwFlags,
-    PVM_SOCKET*                      ppSocket,
-    char*                            sslCert,
-    char*                            sslKey
+    PVM_SOCKET*                      ppSocket
     );
 
 DWORD
 VmSockPosixCreateEventQueue(
     PVMREST_HANDLE                   pRESTHandle,
-    int                              iEventQueueSize,
     PVM_SOCK_EVENT_QUEUE*            ppQueue
     );
 
@@ -42,14 +37,14 @@ VmSockPosixWaitForEvent(
     PVM_SOCK_EVENT_QUEUE             pQueue,
     int                              iTimeoutMS,
     PVM_SOCKET*                      ppSocket,
-    PVM_SOCK_EVENT_TYPE              pEventType,
-    PVM_SOCK_IO_BUFFER*              ppIoBuffer
+    PVM_SOCK_EVENT_TYPE              pEventType
     );
 
-VOID
+DWORD
 VmSockPosixCloseEventQueue(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCK_EVENT_QUEUE             pQueue
+    PVMREST_HANDLE                  pRESTHandle,
+    PVM_SOCK_EVENT_QUEUE            pQueue,
+    uint32_t                        waitSecond
     );
 
 DWORD
@@ -62,23 +57,16 @@ DWORD
 VmSockPosixRead(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
-    PVM_SOCK_IO_BUFFER               pIoBuffer
+    char**                           ppszBuffer,
+    uint32_t*                        nBufLen
     );
 
 DWORD
 VmSockPosixWrite(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
-    const struct sockaddr*           pClientAddress,
-    socklen_t                        addrLength,
-    PVM_SOCK_IO_BUFFER               pIoBuffer
-    );
-
-
-PVM_SOCKET
-VmSockPosixAcquireSocket(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCKET                       pSocket
+    char*                            pszBuffer,
+    uint32_t                         nBufLen
     );
 
 VOID
@@ -94,31 +82,28 @@ VmSockPosixCloseSocket(
     );
 
 DWORD
-VmSockPosixAllocateIoBuffer(
-    PVMREST_HANDLE                   pRESTHandle,
-    VM_SOCK_EVENT_TYPE               eventType,
-    DWORD                            dwSize,
-    PVM_SOCK_IO_BUFFER*              ppIoBuffer
-    );
-
-VOID
-VmSockPosixFreeIoBuffer(
-    PVMREST_HANDLE                   pRESTHandle,
-    PVM_SOCK_IO_BUFFER               pIoBuffer
-    );
-
-VOID
-VmSockPosixGetStreamBuffer(
+VmSockPosixGetRequestHandle(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
-    PVM_STREAM_BUFFER*               ppStreamBuffer
+    PREST_REQUEST*                   ppRequest
     );
 
-VOID
-VmSockPosixSetStreamBuffer(
+DWORD
+VmSockPosixSetRequestHandle(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
-    PVM_STREAM_BUFFER                pStreamBuffer
+    PREST_REQUEST                    pRequest,
+    uint32_t                         nProcessed,
+    PVM_SOCK_EVENT_QUEUE             pQueue
+    );
+
+DWORD
+VmSockPosixGetPeerInfo(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCKET                       pSocket,
+    char*                            pIpAddress,
+    uint32_t                         nLen,
+    int*                             pPortNo
     );
 
 uint32_t
@@ -131,3 +116,24 @@ VmRESTFreeSockPackagePosix(
     PVM_SOCK_PACKAGE                 pSockPackagePosix
     );
 
+uint32_t
+VmRESTSSLThreadLockInit(
+    void
+    );
+
+void
+VmRESTSSLThreadLockShutdown(
+    void
+    );
+
+uint32_t
+VmRESTSecureSocket(
+    PVMREST_HANDLE                   pRESTHandle,
+    char*                            certificate,
+    char*                            key
+    );
+
+void
+VmRESTSecureSocketShutdown(
+    PVMREST_HANDLE                   pRESTHandle
+    );

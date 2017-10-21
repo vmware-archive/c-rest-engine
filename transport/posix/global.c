@@ -16,5 +16,5 @@
 int                                  gSSLisedInstaceCount = INVALID;
 pthread_mutex_t*                     gSSLThreadLock = NULL;
 pthread_mutex_t                      gGlobalMutex = PTHREAD_MUTEX_INITIALIZER;
-
+SSL_CTX*                             gpSSLCTX = NULL;
 
