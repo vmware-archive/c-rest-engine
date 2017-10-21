@@ -605,3 +605,44 @@ cleanup:
 error:
     goto cleanup;
 }
+
+uint32_t
+VmRESTGetConnectionInfo(
+    PREST_REQUEST                    pRequest,
+    char**                           ppszIpAddress,
+    int*                             pPort
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char*                            pszIpAddress = NULL;
+
+    if (!pRequest || !ppszIpAddress || !pPort)
+    {
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    dwError = VmRESTAllocateMemory(
+                  MAX_CLIENT_IP_ADDR_LEN,
+                  (void **)&pszIpAddress
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    strncpy(pszIpAddress, pRequest->clientIP, MAX_CLIENT_IP_ADDR_LEN);
+
+    *pPort = pRequest->clientPort;
+    *ppszIpAddress = pszIpAddress;
+
+cleanup:
+
+    return dwError;
+
+error:
+    if (ppszIpAddress)
+    {
+        *ppszIpAddress = NULL;
+    }
+
+    goto cleanup;
+
+}

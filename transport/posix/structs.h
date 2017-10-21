@@ -13,19 +13,19 @@
 
 typedef struct _VM_SOCKET
 {
-    LONG                             refCount;
     VM_SOCK_TYPE                     type;
-    VM_SOCK_PROTOCOL                 protocol;
     struct sockaddr                  addr;
     socklen_t                        addrLen;
-    PVM_STREAM_BUFFER                pStreamBuffer;
-    struct sockaddr*                 pAddr;
     PVMREST_MUTEX                    pMutex;
     int                              fd;
     SSL*                             ssl;
-    PVOID                            pData;
-    uint32_t                         inUse;
     uint32_t                         wThrCnt;
+    char*                            pszBuffer;
+    uint32_t                         nBufData;
+    uint32_t                         nProcessed;
+    PREST_REQUEST                    pRequest;
+    struct _VM_SOCKET*               pIoSocket;
+    struct _VM_SOCKET*               pTimerSocket;
 } VM_SOCKET;
 
 typedef struct _VM_SOCK_EVENT_QUEUE
@@ -42,11 +42,3 @@ typedef struct _VM_SOCK_EVENT_QUEUE
     int                              iReady;
     uint32_t                         thrCnt;
 } VM_SOCK_EVENT_QUEUE;
-
-typedef struct _VM_SOCK_IO_CONTEXT
-{
-    VM_SOCK_EVENT_TYPE               eventType;
-    VM_SOCK_IO_BUFFER                IoBuffer;
-    CHAR                             DataBuffer[1];
-} VM_SOCK_IO_CONTEXT, *PVM_SOCK_IO_CONTEXT;
-

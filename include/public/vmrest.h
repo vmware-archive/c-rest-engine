@@ -536,7 +536,21 @@ VmRESTGetHttpPayload(
     uint32_t*                        bytesRead
     );
 
-
+/*
+ * @brief Get peer IP and port information.
+ *
+ * @param[in]                        Handle to Library instance.
+ * @param[out]                       IP address buffer(must be freed by caller).
+ * @param[out]                       Port number.
+ * @return                           Returns 0 success,
+ */
+VMREST_API
+uint32_t
+VmRESTGetConnectionInfo(
+    PREST_REQUEST                    pRequest,
+    char**                           ppszIpAddress,
+    int*                             pPort
+    );
 /*
  * @brief Set payload in HTTP response object.
  *
