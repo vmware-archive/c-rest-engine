@@ -885,6 +885,20 @@ VmSockPosixRead(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
+/*
+    else if (nRead < 0)
+    {
+        VMREST_LOG_ERROR(pRESTHandle, "Socket read failed with error code %u", errorCode);
+        dwError = errorCode;
+    }
+    else if (nRead == 0)
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"%s", "Socket read failed due to broken pipe");
+        dwError = VM_SOCK_POSIX_ERROR_BROKEN_PIPE;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+*/
+
     if (nPrevBuf >= pRESTHandle->pRESTConfig->maxDataPerConnMB)
     {
         /**** Discard the request here itself. This might be the first read IO cycle ****/
@@ -980,7 +994,7 @@ VmSockPosixWrite(
              nWritten = write(pSocket->fd, (pszBuffer + nWrittenTotal) ,nRemaining);
              errorCode = errno;
          }
-         if (nWritten > 0)
+         if (nWritten >= 0)
          {
              nWrittenTotal += nWritten;
              nRemaining -= nWritten;
@@ -1019,9 +1033,9 @@ VmSockPosixWrite(
              }
              else
              {
-                 dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
+                // dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
                  VMREST_LOG_ERROR(pRESTHandle,"Socket write failed with error code %u, dwError %u, nWritten %d", errorCode, dwError, nWritten);
-                 BAIL_ON_VMREST_ERROR(dwError);
+               //  BAIL_ON_VMREST_ERROR(dwError);
              }
         }
     }
