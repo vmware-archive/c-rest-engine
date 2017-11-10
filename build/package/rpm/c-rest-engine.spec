@@ -1,7 +1,7 @@
 Name:          c-rest-engine
 Summary:       Minimal http(s) server library
 Version:       1.1
-Release:       2%{?dist}
+Release:       3%{?dist}
 Group:         Applications/System
 Vendor:        VMware, Inc.
 License:       Apache 2.0
@@ -65,6 +65,8 @@ find %{buildroot} -name '*.la' -delete
 %{_lib64dir}/*.so
 
 %changelog
+*   Thu Nov 09 2017 Kumar Kaushik <kaushikk@vmware.com> 1.1-3
+-   Handling 0 bytes read
 *   Wed Nov 08 2017 Kumar Kaushik <kaushikk@vmware.com> 1.1-2
 -   Handling error in write data.
 *   Fri Oct 20 2017 Kumar Kaushik <kaushikk@vmware.com> 1.1-1
