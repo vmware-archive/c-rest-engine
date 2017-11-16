@@ -1,7 +1,7 @@
 Name:          c-rest-engine
 Summary:       Minimal http(s) server library
 Version:       1.1
-Release:       1%{?dist}
+Release:       3%{?dist}
 Group:         Applications/System
 Vendor:        VMware, Inc.
 License:       Apache 2.0
@@ -65,6 +65,10 @@ find %{buildroot} -name '*.la' -delete
 %{_lib64dir}/*.so
 
 %changelog
+*   Tue Nov 14 2017 Kumar Kaushik <kaushikk@vmware.com> 1.1-3
+-   Removing syslog init and shutdown from library.
+*   Wed Nov 08 2017 Kumar Kaushik <kaushikk@vmware.com> 1.1-2
+-   Handling error in write data.
 *   Fri Oct 20 2017 Kumar Kaushik <kaushikk@vmware.com> 1.1-1
 -   Asyn support.
 *   Fri Oct 06 2017 Kumar Kaushik <kaushikk@vmware.com> 1.0.4-2
