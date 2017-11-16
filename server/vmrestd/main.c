@@ -116,7 +116,7 @@ int main()
     pConfig1->maxDataPerConnMB = 10;
     pConfig1->nWorkerThr = 5;
     pConfig1->nClientCnt = 5;
-    pConfig1->useSysLog = FALSE;
+    pConfig1->useSysLog = TRUE;
     pConfig1->pszSSLCertificate = "/root/mycert.pem";
     pConfig1->isSecure = TRUE;
     pConfig1->pszSSLKey = "/root/mycert.pem";
@@ -126,6 +126,10 @@ int main()
     pConfig1->pSSLContext = sslCtx;
     pConfig1->pszSSLCipherList = NULL;
     pConfig1->SSLCtxOptionsFlag = 0;
+
+    /**** Init sys log ****/
+    openlog("VMREST_KAUSHIK", 0, LOG_DAEMON);
+    setlogmask(LOG_UPTO(LOG_DEBUG));
 
     dwError = VmRESTInit(pConfig, &gpRESTHandle);
     dwError = VmRESTInit(pConfig1, &gpRESTHandle1);
@@ -176,6 +180,8 @@ int main()
     VmRESTShutdownSSL(sslCtx);
  //   VmRESTShutdownSSL(sslCtx1);
 #endif
+
+    closelog();
 
 return dwError;
 
