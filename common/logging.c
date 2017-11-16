@@ -41,23 +41,13 @@ VmRESTLogInitialize(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if (pRESTHandle->pRESTConfig->useSysLog)
-    {
-        /**** Use syslog ****/
-        openlog(pRESTHandle->pRESTConfig->pszDaemonName, 0, LOG_DAEMON);
-        setlogmask(LOG_UPTO(logLevelToSysLogLevel(pRESTHandle->debugLogLevel)));
-    }
-    else if (!(IsNullOrEmptyString(pRESTHandle->pRESTConfig->pszDebugLogFile)))
+    if ((!(IsNullOrEmptyString(pRESTHandle->pRESTConfig->pszDebugLogFile))) && (pRESTHandle->pRESTConfig->useSysLog == FALSE))
     {
         if ((pRESTHandle->logFile = fopen(pRESTHandle->pRESTConfig->pszDebugLogFile, "a")) == NULL)
         {
             fprintf( stderr, "logFileName: \"%s\" open failed", pRESTHandle->pRESTConfig->pszDebugLogFile);
             dwError = REST_ENGINE_FAILURE;
         }
-    }
-    else
-    {
-        dwError = REST_ENGINE_FAILURE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -76,11 +66,7 @@ VmRESTLogTerminate(
     PVMREST_HANDLE                   pRESTHandle
     )
 {
-    if (pRESTHandle && pRESTHandle->pRESTConfig->useSysLog)
-    {
-        closelog();
-    }
-    else if (pRESTHandle && pRESTHandle->logFile != NULL)
+    if (pRESTHandle && pRESTHandle->logFile != NULL)
     {
        fclose(pRESTHandle->logFile);
        pRESTHandle->logFile = NULL;
@@ -95,10 +81,9 @@ VmRESTLog(
     ...)
 {
     char        extraLogMessage[EXTRA_LOG_MESSAGE_LEN] = {0};
-    struct      timespec tspec = {0};
-    time_t      ltime;
-    struct      tm mytm = {0};
     char        logMessage[MAX_LOG_MESSAGE_LEN];
+    struct      tm* tm_info = NULL;
+    struct      timeval tv = {0};
 	
     va_list     va;
     const char* logLevelTag = "";
@@ -115,30 +100,20 @@ VmRESTLog(
         vsnprintf( logMessage, sizeof(logMessage), fmt, va );
         logMessage[sizeof(logMessage)-1] = '\0';
         va_end( va );
-        ltime = time(&ltime);
+        gettimeofday(&tv, NULL);
+
+        tm_info = localtime(&tv.tv_sec);
         logLevelTag = logLevelToTag(level);
-        localtime_r(&ltime, &mytm);
-        snprintf(extraLogMessage, sizeof(extraLogMessage) - 1,
-                  "%4d%2d%2d%2d%2d%2d.%03ld:t@%lu:%-3.7s: ",
-                  mytm.tm_year+1900,
-                  mytm.tm_mon+1,
-                  mytm.tm_mday,
-                  mytm.tm_hour,
-                  mytm.tm_min,
-                  mytm.tm_sec,
-                  tspec.tv_nsec/NSECS_PER_MSEC,
-                  (unsigned long) pthread_self(),
-                  logLevelTag? logLevelTag : "UNKNOWN");
+        strftime(extraLogMessage, sizeof(extraLogMessage) - 1, "%F %T", tm_info);   
 
         if (pRESTHandle->pRESTConfig->useSysLog)
         {
             sysLogLevel = logLevelToSysLogLevel(level);
-            snprintf(extraLogMessage, sizeof(extraLogMessage) - 1, "t@%lu: ", (unsigned long) pthread_self());
-            syslog(sysLogLevel, "%s: %s%s", logLevelToTag(level), extraLogMessage, logMessage);
+            syslog(sysLogLevel, "%s:%lu t@%lu %-3.7s: %s\n", extraLogMessage, (long unsigned)(tv.tv_usec), (unsigned long) pthread_self(),(logLevelTag? logLevelTag : "UNKNOWN"),logMessage);
         }
         else if (pRESTHandle->logFile != NULL)
         {
-            fprintf(pRESTHandle->logFile, "%s%s\n", extraLogMessage, logMessage);
+            fprintf(pRESTHandle->logFile, "%s:%lu t@%lu %-3.7s: %s\n", extraLogMessage, (long unsigned)(tv.tv_usec), (unsigned long) pthread_self(),(logLevelTag? logLevelTag : "UNKNOWN"),logMessage);
             fflush( pRESTHandle->logFile );
         }
     }
