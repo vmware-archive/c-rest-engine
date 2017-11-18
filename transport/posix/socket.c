@@ -879,15 +879,9 @@ VmSockPosixRead(
     {
         dwError = REST_ENGINE_SUCCESS;
     }
-    else if (nRead < 0)
+    else
     {
-        VMREST_LOG_ERROR(pRESTHandle, "Socket read failed with error code %u", errorCode);
         dwError = errorCode;
-    }
-    else if (nRead == 0)
-    {
-        VMREST_LOG_ERROR(pRESTHandle,"%s", "Socket read failed due to broken pipe");
-        dwError = VM_SOCK_POSIX_ERROR_BROKEN_PIPE;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
