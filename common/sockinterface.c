@@ -521,11 +521,10 @@ cleanup:
    {
        VMREST_LOG_DEBUG(pRESTHandle,"%s","Calling closed connection....");
        /**** Close connection ****/ 
-       dwError = VmRESTDisconnectClient(
-                     pRESTHandle,
-                     pSocket
-                     );
-       BAIL_ON_VMREST_ERROR(dwError);
+       VmRESTDisconnectClient(
+           pRESTHandle,
+           pSocket
+           );
 
        /****  free request object memory ****/
        if (pRequest)
@@ -542,7 +541,7 @@ cleanup:
 
 error:
 
-    VMREST_LOG_DEBUG(pRESTHandle,"ERROR code %u", dwError);
+    VMREST_LOG_ERROR(pRESTHandle,"ERROR code %u", dwError);
     goto cleanup;
 }
 
