@@ -539,6 +539,8 @@ VmSockPosixWaitForEvent(
                 BAIL_ON_VMREST_ERROR(dwError);
             }
 
+            VMREST_LOG_DEBUG(pRESTHandle,"Notification on socket fd %d", pEventSocket->fd);
+
             if (pEvent->events & (EPOLLERR | EPOLLHUP))
             {
                 eventType = VM_SOCK_EVENT_TYPE_CONNECTION_CLOSED;
@@ -919,8 +921,23 @@ cleanup:
 
 error:
 
-    if (pszBufPrev && pSocket)
+    if (pSocket)
     {
+        VMREST_LOG_ERROR(pRESTHandle,"Socket read failed with Socket fd %d, dwError = %u, nRead = %d, errno = %u, errorCode = %u", pSocket->fd, dwError, nRead, errno, errorCode);
+    }
+    else
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"Socket read failed with dwError = %u, nRead = %d, errno = %u, errorCode = %u", dwError, nRead, errno, errorCode);
+    }
+
+    if (pszBufPrev && pSocket && pRESTHandle->pSockContext)
+    {
+        /**** Delete the socket from poller ****/
+        VmSockPosixEventQueueDelete_inlock(
+            pRESTHandle->pSockContext->pEventQueue,
+            pSocket
+            );
+
         VmRESTFreeMemory(pszBufPrev);
         pszBufPrev = NULL;
         pSocket->pszBuffer = NULL;
@@ -1542,6 +1559,14 @@ VmSockPosixSetRequestHandle(
                       pSocket->pTimerSocket
                       );
         BAIL_ON_VMREST_ERROR(dwError);
+
+        /**** Delete actual IO socket from poller ****/
+        dwError = VmSockPosixEventQueueDelete_inlock(
+                      pQueue,
+                      pSocket
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
         if (pSocket->pTimerSocket->fd > 0)
         {
             close(pSocket->pTimerSocket->fd);
