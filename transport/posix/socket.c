@@ -853,6 +853,8 @@ VmSockPosixRead(
     do
     {
         nRead = 0;
+        errno = 0;
+        errorCode = 0;
         if (pRESTHandle->pSSLInfo->isSecure && (pSocket->ssl != NULL))
         {
             nRead = SSL_read(pSocket->ssl, (pszBufPrev + nPrevBuf), MAX_DATA_BUFFER_LEN);
@@ -864,7 +866,7 @@ VmSockPosixRead(
             errorCode = errno;
         }
 
-        if ((nRead > 0) && (nRead <= MAX_DATA_BUFFER_LEN))
+        if (nRead > 0)
         {
             nPrevBuf += nRead;
             dwError = VmRESTReallocateMemory(
@@ -877,27 +879,38 @@ VmSockPosixRead(
         }
     }while((nRead > 0) && (nPrevBuf < pRESTHandle->pRESTConfig->maxDataPerConnMB));
 
-    if (((pSocket->fd > 0) && (errorCode == EAGAIN || errorCode == EWOULDBLOCK)) || ((pRESTHandle->pSSLInfo->isSecure) && (errorCode == SSL_ERROR_WANT_READ)))
-    {
-        dwError = REST_ENGINE_SUCCESS;
-    }
-    else if (nRead < 0)
-    {
-        VMREST_LOG_ERROR(pRESTHandle, "Socket read failed with error code %u", errorCode);
-        dwError = errorCode;
-    }
-    else if (nRead == 0)
-    {
-        VMREST_LOG_ERROR(pRESTHandle,"%s", "Socket read failed due to broken pipe");
-        dwError = VM_SOCK_POSIX_ERROR_BROKEN_PIPE;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
     if (nPrevBuf >= pRESTHandle->pRESTConfig->maxDataPerConnMB)
     {
         /**** Discard the request here itself. This might be the first read IO cycle ****/
         VMREST_LOG_ERROR(pRESTHandle,"Total Data in request %u bytes is over allowed limit of %u bytes, closing connection...", nPrevBuf, pRESTHandle->pRESTConfig->maxDataPerConnMB);
         dwError = REST_ENGINE_FAILURE;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (nRead == -1)
+    {
+        if (((pSocket->fd > 0) && (errorCode == EAGAIN || errorCode == EWOULDBLOCK)) || ((pRESTHandle->pSSLInfo->isSecure) && (errorCode == SSL_ERROR_WANT_READ)))
+        {
+            dwError = REST_ENGINE_SUCCESS;
+        }
+        else
+        {
+            VMREST_LOG_ERROR(pRESTHandle,"%s","Unknown socket read error: errno %u, errorCode %u, nRead %d", errno, errorCode, nRead);
+            dwError = REST_ENGINE_FAILURE;
+        }
+    }
+    else
+    {
+        if (nRead == 0)
+        {
+            VMREST_LOG_ERROR(pRESTHandle,"%s","Socket Read Failed: Remote has closed the connection");
+            dwError = VM_SOCK_POSIX_ERROR_BROKEN_PIPE;
+        }
+        else
+        {
+            VMREST_LOG_ERROR(pRESTHandle, "Socket read failed with error code %u", errorCode);
+            dwError = errorCode;
+        }
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -933,11 +946,12 @@ error:
     if (pszBufPrev && pSocket && pRESTHandle->pSockContext)
     {
         /**** Delete the socket from poller ****/
+        
         VmSockPosixEventQueueDelete_inlock(
             pRESTHandle->pSockContext->pEventQueue,
             pSocket
             );
-
+        
         VmRESTFreeMemory(pszBufPrev);
         pszBufPrev = NULL;
         pSocket->pszBuffer = NULL;
@@ -1566,6 +1580,7 @@ VmSockPosixSetRequestHandle(
                       pSocket
                       );
         BAIL_ON_VMREST_ERROR(dwError);
+       
 
         if (pSocket->pTimerSocket->fd > 0)
         {
