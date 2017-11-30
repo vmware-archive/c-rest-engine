@@ -1,6 +1,7 @@
 #!/bin/bash
 # script to build for Linux and optionally install the resulted RPM
 # Author: Danut Moraru
+# Test for gerrit
 
 install=false
 while [ $# -gt 0 ]
