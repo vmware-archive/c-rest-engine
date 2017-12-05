@@ -104,7 +104,6 @@ VmRESTCreateSSLObject(
     );
 
 
-
 DWORD
 VmSockPosixOpenServer(
     PVMREST_HANDLE                   pRESTHandle,
@@ -221,6 +220,7 @@ VmSockPosixOpenServer(
         pSSLInfo->isSecure = 0;
     }
 
+    errno = 0;
     fd = socket(socketParams.domain, socketParams.type, socketParams.protocol);
     if (fd < 0)
     {
@@ -273,6 +273,7 @@ VmSockPosixOpenServer(
         addrLen = sizeof(servaddr.servaddr_ipv4);
     }
 
+    errno  = 0;
     if (bind(fd, pSockAddr, addrLen) < 0)
     {
         VMREST_LOG_ERROR(pRESTHandle,"bind() call failed with Error code %d", errno);
@@ -286,6 +287,7 @@ VmSockPosixOpenServer(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
+    errno = 0;
     if (listen(fd, VM_SOCK_POSIX_DEFAULT_LISTEN_QUEUE_SIZE) < 0)
     {
          VMREST_LOG_ERROR(pRESTHandle,"Listen() on server socket with fd %d failed with Error code %d", fd, errno);
@@ -382,6 +384,7 @@ VmSockPosixCreateEventQueue(
     pQueue->dwSize = iEventQueueSize;
 
     pQueue->epollFd = epoll_create1(0);
+    errno = 0;
     if (pQueue->epollFd < 0)
     {
         VMREST_LOG_ERROR(pRESTHandle,"epoll create failed with Error code %d", errno);
@@ -509,6 +512,7 @@ VmSockPosixWaitForEvent(
 
         while (pQueue->nReady < 0)
         {
+            errno = 0;
             pQueue->nReady = epoll_wait(
                                  pQueue->epollFd,
                                  pQueue->pEventArray,
@@ -1007,6 +1011,9 @@ VmSockPosixWrite(
 
     while(nWrittenTotal < nBufLen )
     {
+         nWritten = 0;
+         errorCode = 0;
+         errno = 0;
          if (pRESTHandle->pSSLInfo->isSecure && (pSocket->ssl != NULL))
          {
              nWritten = SSL_write(pSocket->ssl,(pszBuffer + nWrittenTotal),nRemaining);
@@ -1022,7 +1029,6 @@ VmSockPosixWrite(
              nWrittenTotal += nWritten;
              nRemaining -= nWritten;
              VMREST_LOG_DEBUG(pRESTHandle,"\nBytes written this write %d, Total bytes written %u", nWritten, nWrittenTotal);
-             nWritten = 0;
              /**** reset to original values ****/
              maxTry = 1000;
              timerMs = 1;
@@ -1030,7 +1036,7 @@ VmSockPosixWrite(
          }
          else
          {
-             if (errorCode == EAGAIN || errorCode == EWOULDBLOCK || errorCode == SSL_ERROR_WANT_WRITE)
+             if ((nWritten  < 0) && (errorCode == EAGAIN || errorCode == EWOULDBLOCK || errorCode == SSL_ERROR_WANT_WRITE))
              {
                  if (timeOutSec >= 0)
                  {
@@ -1044,7 +1050,6 @@ VmSockPosixWrite(
                          cntRty = 0;
                      }
                      VMREST_LOG_DEBUG(pRESTHandle,"retry write");
-                     nWritten = 0;
                      continue;
                  }
                  else
@@ -1631,6 +1636,7 @@ VmSockPosixGetPeerInfo(
 
     len = sizeof(addr);
 
+    errno = 0;
     ret = getpeername(pSocket->fd, (struct sockaddr*)&addr, &len);
 
     if (ret < 0)
@@ -1742,6 +1748,7 @@ VmSockPosixIsSafeToCloseConnOnTimeOut(
     BAIL_ON_VMREST_ERROR(dwError);
 
     pSocket = pTimerSocket->pIoSocket;
+    errno = 0;
 
     if ((pRESTHandle->pSSLInfo->isSecure) && (pSocket->ssl))
     {
@@ -1772,6 +1779,7 @@ VmSockPosixIsSafeToCloseConnOnTimeOut(
             {
                 errorCode = 0;
                 nRead = 0;
+                errno = 0;
                 nRead = read(pTimerSocket->fd, &res, sizeof(res));
                 errorCode = errno;
                 res = 0;
