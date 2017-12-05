@@ -104,7 +104,6 @@ VmRESTCreateSSLObject(
     );
 
 
-
 DWORD
 VmSockPosixOpenServer(
     PVMREST_HANDLE                   pRESTHandle,
@@ -1007,6 +1006,8 @@ VmSockPosixWrite(
 
     while(nWrittenTotal < nBufLen )
     {
+         nWritten = 0;
+         errorCode = 0;
          if (pRESTHandle->pSSLInfo->isSecure && (pSocket->ssl != NULL))
          {
              nWritten = SSL_write(pSocket->ssl,(pszBuffer + nWrittenTotal),nRemaining);
@@ -1022,7 +1023,6 @@ VmSockPosixWrite(
              nWrittenTotal += nWritten;
              nRemaining -= nWritten;
              VMREST_LOG_DEBUG(pRESTHandle,"\nBytes written this write %d, Total bytes written %u", nWritten, nWrittenTotal);
-             nWritten = 0;
              /**** reset to original values ****/
              maxTry = 1000;
              timerMs = 1;
@@ -1030,7 +1030,7 @@ VmSockPosixWrite(
          }
          else
          {
-             if (errorCode == EAGAIN || errorCode == EWOULDBLOCK || errorCode == SSL_ERROR_WANT_WRITE)
+             if ((nWritten  < 0) && (errorCode == EAGAIN || errorCode == EWOULDBLOCK || errorCode == SSL_ERROR_WANT_WRITE))
              {
                  if (timeOutSec >= 0)
                  {
@@ -1044,7 +1044,6 @@ VmSockPosixWrite(
                          cntRty = 0;
                      }
                      VMREST_LOG_DEBUG(pRESTHandle,"retry write");
-                     nWritten = 0;
                      continue;
                  }
                  else
