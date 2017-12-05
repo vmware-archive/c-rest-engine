@@ -104,7 +104,6 @@ VmRESTCreateSSLObject(
     );
 
 
-
 DWORD
 VmSockPosixOpenServer(
     PVMREST_HANDLE                   pRESTHandle,
