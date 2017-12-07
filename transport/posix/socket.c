@@ -576,7 +576,6 @@ VmSockPosixWaitForEvent(
                                    FALSE
                                    );
                     BAIL_ON_VMREST_ERROR(dwError);
-                
                 }
 
                 dwError = VmSockPosixEventQueueAdd_inlock(
@@ -895,7 +894,7 @@ VmSockPosixRead(
         }
         else
         {
-            VMREST_LOG_ERROR(pRESTHandle,"%s","Unknown socket read error: errno %u, errorCode %u, nRead %d", errno, errorCode, nRead);
+            VMREST_LOG_ERROR(pRESTHandle,"Unknown socket read error: errno %u, errorCode %u, nRead %d", errno, errorCode, nRead);
             dwError = REST_ENGINE_FAILURE;
         }
     }
@@ -1007,6 +1006,9 @@ VmSockPosixWrite(
 
     while(nWrittenTotal < nBufLen )
     {
+         nWritten = 0;
+         errorCode = 0;
+         errno = 0;
          if (pRESTHandle->pSSLInfo->isSecure && (pSocket->ssl != NULL))
          {
              nWritten = SSL_write(pSocket->ssl,(pszBuffer + nWrittenTotal),nRemaining);
@@ -1030,7 +1032,7 @@ VmSockPosixWrite(
          }
          else
          {
-             if (errorCode == EAGAIN || errorCode == EWOULDBLOCK || errorCode == SSL_ERROR_WANT_WRITE)
+             if ((nWritten < 0) && (errorCode == EAGAIN || errorCode == EWOULDBLOCK || errorCode == SSL_ERROR_WANT_WRITE))
              {
                  if (timeOutSec >= 0)
                  {
@@ -1101,6 +1103,8 @@ VmSockPosixCloseSocket(
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
+    int                              ret = 0;
+    uint32_t                         errorCode = 0;
     BOOLEAN                          bLocked = FALSE;
 
     if (!pRESTHandle || !pSocket )
@@ -1121,18 +1125,24 @@ VmSockPosixCloseSocket(
         pSocket->pTimerSocket->fd = -1;
     }
 
+    if (pRESTHandle->pSSLInfo->isSecure && pSocket->ssl)
+    {
+        ret = SSL_shutdown(pSocket->ssl);
+        if (ret < 0)
+        {
+            errorCode = SSL_get_error(pSocket->ssl, ret);
+            VMREST_LOG_ERROR(pRESTHandle,"Error on SSL_shutdown on socket %d, return value %d, errorCode %u", pSocket->fd, ret, errorCode);
+        }
+        SSL_free(pSocket->ssl);
+        pSocket->ssl = NULL;
+    }
+
     if (pSocket->fd >= 0)
     {
         close(pSocket->fd);
         pSocket->fd = -1;
     }
 
-    if (pRESTHandle->pSSLInfo->isSecure && pSocket->ssl)
-    {
-        SSL_shutdown(pSocket->ssl);
-        SSL_free(pSocket->ssl);
-        pSocket->ssl = NULL;
-    }
 
 cleanup:
 
@@ -1742,6 +1752,7 @@ VmSockPosixIsSafeToCloseConnOnTimeOut(
     BAIL_ON_VMREST_ERROR(dwError);
 
     pSocket = pTimerSocket->pIoSocket;
+    errno = 0;
 
     if ((pRESTHandle->pSSLInfo->isSecure) && (pSocket->ssl))
     {
@@ -1771,6 +1782,7 @@ VmSockPosixIsSafeToCloseConnOnTimeOut(
             do
             {
                 errorCode = 0;
+                errno = 0;
                 nRead = 0;
                 nRead = read(pTimerSocket->fd, &res, sizeof(res));
                 errorCode = errno;
@@ -1918,13 +1930,13 @@ VmRESTAcceptSSLContext(
     }
     else if ((ret == -1) && ((errorCode == SSL_ERROR_WANT_READ) || (errorCode == SSL_ERROR_WANT_WRITE)))
     {
-       VMREST_LOG_DEBUG(pRESTHandle,"SSL handshake not completed for socket %d", pSocket->fd);
+       VMREST_LOG_DEBUG(pRESTHandle," SSL handshake not completed for socket %d, ret %d, errorCode %u", pSocket->fd, ret, errorCode);
        pSocket->bSSLHandShakeCompleted = FALSE;
        bReArm = TRUE;
     }
     else
     {
-        VMREST_LOG_ERROR(pRESTHandle, "SSL handshake failed...connection will be closed for socket with fd %d", pSocket->fd);
+        VMREST_LOG_ERROR(pRESTHandle, "SSL handshake failed...connection will be closed for socket with fd %d, ret %d, errorCode %u", pSocket->fd, ret, errorCode);
         dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
         BAIL_ON_VMREST_ERROR(dwError);
     }
