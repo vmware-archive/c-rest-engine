@@ -258,7 +258,7 @@ cleanup:
 
     return dwError;
 error:
-
+    VMREST_LOG_ERROR(pRESTHandle,"Get payload failed with error code %u", dwError);
     goto cleanup;
 
 }
@@ -375,7 +375,7 @@ VmRESTSetHttpPayload(
 cleanup:
     return dwError;
 error:
-    VMREST_LOG_ERROR(pRESTHandle,"%s","Set Payload Failed");
+    VMREST_LOG_ERROR(pRESTHandle,"Set Payload Failed with error Code %u", dwError);
     goto cleanup;
 }
 
