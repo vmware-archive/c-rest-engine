@@ -598,6 +598,7 @@ error:
             );
         buffer = NULL;
     }
+    VMREST_LOG_ERROR(pRESTHandle,"%s","Sending header data failed");
     goto cleanup;
 }
 
@@ -669,6 +670,7 @@ error:
             );
         buffer = NULL;
     }
+    VMREST_LOG_ERROR(pRESTHandle,"%s","Sending chunked payload data failed");
     goto cleanup;
 }
 
@@ -777,6 +779,7 @@ error:
             );
         buffer = NULL;
     }
+    VMREST_LOG_ERROR(pRESTHandle,"%s","Sending header and payload data failed");
     goto cleanup;
 }
 
@@ -1209,6 +1212,7 @@ error:
     {
         *nProcessed = 0;
     }
+    VMREST_LOG_ERROR(pRESTHandle,"Failed while processing headers... dwError %u", dwError);
     goto cleanup;
 
 }
@@ -1313,12 +1317,14 @@ cleanup:
     return dwError;
 
 error:
-    VMREST_LOG_ERROR(pRESTHandle,"Errorcode %u", dwError);
-
     if (dwError == REST_ENGINE_MORE_IO_REQUIRED)
     {
         *nProcessed = 0;
         dwError = REST_ENGINE_SUCCESS;
+    }
+    else
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"Failed while processing payload ... dwError %u", dwError);
     }
     goto cleanup;
 
@@ -1396,12 +1402,17 @@ VmRESTProcessBuffer(
 
              case PROCESS_APPLICATION_CALLBACK:
                  /**** Give callback to application ****/
-                 VMREST_LOG_DEBUG(pRESTHandle,"%s","Giving callback to application...");
+                 VMREST_LOG_INFO(pRESTHandle,"%s","C-REST-ENGINE: Giving callback to application...");
                  dwError = VmRESTTriggerAppCb(
                                pRESTHandle,
                                pRequest,
                                &(pRequest->pResponse)
                                );
+                 VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Application callback returns dwError %u", dwError);
+                 if ((dwError != REST_ENGINE_SUCCESS) && pRequest && pRequest->pResponse && pRequest->pResponse->statusLine)
+                 {
+                     VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Status code: %s, header sent %d", pRequest->pResponse->statusLine->statusCode, pRequest->pResponse->bHeaderSent);
+                 }
                  BAIL_ON_VMREST_ERROR(dwError);
                  bInitiateClose = TRUE;
                  break;
@@ -1428,6 +1439,7 @@ cleanup:
 
 error:
 
+    VMREST_LOG_ERROR(pRESTHandle,"Process buffer failed with error code %u, sending failure response", dwError);
     ret = VmRESTSendFailureResponse(
                   pRESTHandle,
                   dwError,
@@ -1475,6 +1487,7 @@ VmRESTTriggerAppCb(
         dwError = VMREST_APPLICATION_VALIDATION_FAILED;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+    
 
     pRequest->state = PROCESS_INVALID;
 

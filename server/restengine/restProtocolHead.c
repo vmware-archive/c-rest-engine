@@ -76,7 +76,7 @@ VmRestEngineHandler(
         ptr = NULL;
     }
 
-    VMREST_LOG_DEBUG(pRESTHandle,"HTTP URI %s", httpURI);
+    VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: HTTP URI %s", httpURI);
 
     /**** 4. Get the End point from URI ****/
     dwError = VmRestGetEndPointURIfromRequestURI(

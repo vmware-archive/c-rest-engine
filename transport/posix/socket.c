@@ -553,10 +553,12 @@ VmSockPosixWaitForEvent(
             }
             else if (pEventSocket->type == VM_SOCK_TYPE_LISTENER)
             {
+                VMREST_LOG_INFO(pRESTHandle,"%s","C-REST-ENGINE: ========================  NEW REQUEST ==========================");
                 dwError = VmSockPosixAcceptConnection(
                               pEventSocket,
                               &pSocket);
                 BAIL_ON_VMREST_ERROR(dwError);
+                VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Accepted new connection with socket fd %d", pSocket->fd);
 
                 dwError = VmSockPosixSetNonBlocking(pRESTHandle,pSocket);
                 BAIL_ON_VMREST_ERROR(dwError);
@@ -694,6 +696,7 @@ cleanup:
 
 error:
 
+    VMREST_LOG_ERROR(pRESTHandle,"%s","Socket layer - wait for event error");
     if (ppSocket)
     {
         *ppSocket = NULL;
@@ -1077,6 +1080,7 @@ cleanup:
 
 error:
 
+    VMREST_LOG_ERROR(pRESTHandle,"%s", "Socket write failed");
     goto cleanup;
 }
 
@@ -1113,6 +1117,8 @@ VmSockPosixCloseSocket(
         dwError = ERROR_INVALID_PARAMETER;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+
+    VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Closing socket with fd %d", pSocket->fd);
 
     dwError = VmRESTLockMutex(pSocket->pMutex);
     BAIL_ON_VMREST_ERROR(dwError);
