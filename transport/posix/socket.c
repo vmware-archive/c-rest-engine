@@ -1137,7 +1137,7 @@ VmSockPosixCloseSocket(
         if (ret < 0)
         {
             errorCode = SSL_get_error(pSocket->ssl, ret);
-            VMREST_LOG_ERROR(pRESTHandle,"Error on SSL_shutdown on socket %d, return value %d, errorCode %u", pSocket->fd, ret, errorCode);
+            VMREST_LOG_ERROR(pRESTHandle,"Error on SSL_shutdown on socket %d, return value %d, errorCode %u, errno %d", pSocket->fd, ret, errorCode, errno);
         }
         SSL_free(pSocket->ssl);
         pSocket->ssl = NULL;
