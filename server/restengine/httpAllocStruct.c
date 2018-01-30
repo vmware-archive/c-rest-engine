@@ -519,10 +519,12 @@ VmRESTAllocateMiscQueue(
     PMISC_HEADER_QUEUE               pMiscQueue = NULL;
 
     dwError = VmRESTAllocateMemory(
-                  sizeof(VM_REST_HTTP_MESSAGE_BODY),
+                  sizeof(MISC_HEADER_QUEUE),
                   (void**)&pMiscQueue
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+
+    pMiscQueue->head = NULL;
 
     *ppMiscHeaderQueue = pMiscQueue;
 
