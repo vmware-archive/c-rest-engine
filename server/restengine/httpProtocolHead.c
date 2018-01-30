@@ -1448,8 +1448,13 @@ error:
     if (ret != REST_ENGINE_SUCCESS)
     {
         VMREST_LOG_ERROR(pRESTHandle,"%s","Double Failure case detected ....");
+        VMREST_LOG_ERROR(pRESTHandle,"%s","possible memory leak");
+        dwError = REST_ENGINE_ERROR_DOUBLE_FAILURE;
     }
-    dwError = REST_ENGINE_SUCCESS;
+    else
+    {
+        dwError = REST_ENGINE_SUCCESS;
+    }
     goto cleanup;
 
 }

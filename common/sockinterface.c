@@ -327,14 +327,13 @@ VmRESTHandleSocketEvent(
             break;
 
         case VM_SOCK_EVENT_TYPE_CONNECTION_TIMEOUT:
-            /**** Free Associated memory ****/
-            VMREST_LOG_DEBUG(pRESTHandle,"%s","EVENT-HANDLER: Connection timeout happened..Disconnecting client ...");
-            dwError = VmRESTOnConnectionTimeout(
+             VMREST_LOG_DEBUG(pRESTHandle,"%s","EVENT-HANDLER: Connection timeout happened..Disconnecting client");
+             dwError = VmRESTOnConnectionTimeout(
                           pRESTHandle,
                           pSocket
                           );
-            BAIL_ON_VMREST_ERROR(dwError);
-            break;
+             BAIL_ON_VMREST_ERROR(dwError);
+             break;
 
         case VM_SOCK_EVENT_TYPE_UNKNOWN:
              VMREST_LOG_DEBUG(pRESTHandle,"%s","EVENT-HANDLER: Unknown Socket Event, do nothing");
@@ -436,6 +435,7 @@ VmRESTTcpReceiveNewData(
     char*                            pszBuffer = NULL;
     uint32_t                         nProcessed = 0;
     uint32_t                         nBufLen = 0;
+    uint32_t                         ret = REST_ENGINE_SUCCESS;
     BOOLEAN                          bNextIO = FALSE;
 
     if (!pSocket || !pRESTHandle || !pQueue)
@@ -517,7 +517,7 @@ VmRESTTcpReceiveNewData(
 
 cleanup:
 
-   if (!bNextIO)
+   if (!bNextIO && dwError != REST_ENGINE_ERROR_DOUBLE_FAILURE)
    {
        VMREST_LOG_DEBUG(pRESTHandle,"%s","Calling closed connection....");
        /**** Close connection ****/ 
@@ -542,6 +542,20 @@ cleanup:
 error:
 
     VMREST_LOG_ERROR(pRESTHandle,"ERROR code %u", dwError);
+
+    if ((dwError == VMREST_TRANSPORT_DEFERRED_TIMEOUT_PROCESS) && (bNextIO))
+    {
+         ret = VmRESTOnConnectionTimeout(
+                     pRESTHandle,
+                     pSocket
+                     );
+
+         if (ret != REST_ENGINE_SUCCESS)
+         {
+            VMREST_LOG_ERROR(pRESTHandle,"Double failure on deferred timeout processing dwError, = %u", dwError);
+            dwError = REST_ENGINE_ERROR_DOUBLE_FAILURE;
+         }
+    }
     goto cleanup;
 }
 
