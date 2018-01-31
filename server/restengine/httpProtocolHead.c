@@ -1001,7 +1001,7 @@ VmRESTProcessRequestLine(
         {
             /**** 1. Parsing HTTP METHOD ****/
             pszFirstSpace = strchr(pszStartNewLine, ' ');
-            if (pszFirstSpace != NULL && ((pszFirstSpace - pszStartNewLine) <= MAX_METHOD_LEN))
+            if (pszFirstSpace != NULL && ((pszFirstSpace - pszStartNewLine) <= MAX_METHOD_LEN) && ((pszFirstSpace - pszStartNewLine) > 0))
             {
                 strncpy(pRequest->requestLine->method, pszStartNewLine, (pszFirstSpace - pszStartNewLine));
                 pRequest->requestLine->method[pszFirstSpace - pszStartNewLine] = '\0';
@@ -1016,13 +1016,13 @@ VmRESTProcessRequestLine(
                 /**** 2. Parse HTTP URI****/
                 pszSecondSpace = strchr((pszFirstSpace + 1), ' ');
              
-                if (pszSecondSpace != NULL && ((pszSecondSpace - pszFirstSpace) < MAX_URI_LEN))
+                if (pszSecondSpace != NULL && ((pszSecondSpace - pszFirstSpace) < MAX_URI_LEN) && ((pszSecondSpace - pszFirstSpace) > 0))
                 {
                     strncpy(pRequest->requestLine->uri, (pszFirstSpace + 1), (pszSecondSpace - pszFirstSpace - 1));
                     pRequest->requestLine->uri[pszSecondSpace - pszFirstSpace - 1] = '\0';
 
                     /**** 3. Parse HTTP Version ****/
-                    if ((pszEndNewLine - pszSecondSpace - 1) <= HTTP_VER_LEN)
+                    if (((pszEndNewLine - pszSecondSpace - 1) <= HTTP_VER_LEN) && ((pszEndNewLine - pszSecondSpace - 1) > 0))
                     {
                         strncpy(pRequest->requestLine->version, (pszSecondSpace + 1), (pszEndNewLine - pszSecondSpace - 1));
                         pRequest->requestLine->version[pszEndNewLine - pszSecondSpace - 1] = '\0';
@@ -1198,10 +1198,16 @@ VmRESTProcessHeaders(
             BAIL_ON_VMREST_ERROR(dwError);
         }
     }
-    else     /**** pszEndNewLine = NULL  ****/
+    else if (nBytes < MAX_REQ_LIN_LEN)    /**** pszEndNewLine = NULL  ****/
     {
         VMREST_LOG_DEBUG(pRESTHandle,"Incomplete line processing.. wait for IO.., bytesProcessed %u, nBytes %u", bytesProcessed, nBytes);
     }
+    else
+    {
+        dwError = BAD_REQUEST;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+    
 
 cleanup:
 
