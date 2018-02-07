@@ -1,0 +1,41 @@
+Bugzilla Id: 2052415
+
+Category: Catastrophic/Crash 
+
+Description:
+Server crash observed when client opens number of connection and times out. No data is sent.
+
+Step to reproduce:
+
+Specific configuration:
+1. Worker threads count 2.
+2. No Secure connection required.
+
+
+Start server( Keep it running ) 
+Refer RUN-SIMPLE-SERVER doc in test/scripts directory. (TODO)
+
+Open terminal on Ubuntu VM( or any other distro)
+1. Wget the source file from the same directory (restclient.c)
+2. Edit SERVER_IP and SERVER_PORT macro in the source file to your server.
+3. Compile the downloaded client source (gcc -o restclient restclient.c)
+4. Install "parallel" on the Ubuntu distro
+5. Run following command
+   "seq 0 100 | parallel -j50 ./restclient"
+
+
+Server will crash. This might take anything between couple of second to 10-15 mins.
+
+
+ROOT CAUSE:
+Bad memory write happened for back pointer reference for timer socket which was already freed.
+This was reported by valgrind also.
+
+Fix:
+Setting appropiate back pointer to NULL at right place.
+
+
+Test:
+Ran the same test for serveral hours. No crash seen.
+Ran under valgrind, no bad write reported.
+All c-rest-engine BVT
