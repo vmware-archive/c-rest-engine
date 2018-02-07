@@ -661,6 +661,7 @@ VmSockPosixWaitForEvent(
                                            );
                         }
                     }
+                    pEventSocket->pIoSocket->pTimerSocket = NULL;
                 }
 
                 /** Close and free the timer socket ****/
