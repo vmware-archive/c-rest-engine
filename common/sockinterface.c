@@ -71,6 +71,40 @@ VmRESTInitProtocolServer(
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
+
+    if (!pRESTHandle)
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid REST config");
+        dwError = REST_ERROR_INVALID_HANDLER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** Init Logging ****/
+    dwError = VmRESTLogInitialize(
+                  pRESTHandle
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    /**** Init Transport ****/
+    dwError = VmwSockInitialize(pRESTHandle);
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+
+}
+
+DWORD
+VmRESTStartProtocolServer(
+    PVMREST_HANDLE                   pRESTHandle
+    )
+{
+    DWORD                            dwError = REST_ENGINE_SUCCESS;
     PVMREST_SOCK_CONTEXT             pSockContext = NULL;
     DWORD                            dwFlags = VM_SOCK_CREATE_FLAGS_REUSE_ADDR |
                                                VM_SOCK_CREATE_FLAGS_NON_BLOCK;
@@ -92,7 +126,7 @@ VmRESTInitProtocolServer(
 
     /**** Handle IPv4 case ****/
 
-    dwError = VmwSockOpenServer(
+    dwError = VmwSockStartServer(
                          pRESTHandle,
                         dwFlags | VM_SOCK_CREATE_FLAGS_TCP |
                                   VM_SOCK_CREATE_FLAGS_IPV4,
@@ -103,7 +137,7 @@ VmRESTInitProtocolServer(
 #ifdef AF_INET6
     /**** Handle IPv6 case ****/
 
-    dwError = VmwSockOpenServer(
+    dwError = VmwSockStartServer(
                    pRESTHandle,
                    dwFlags | VM_SOCK_CREATE_FLAGS_TCP |
                           VM_SOCK_CREATE_FLAGS_IPV6,
@@ -122,7 +156,7 @@ VmRESTInitProtocolServer(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmwSockEventQueueAdd(
+    dwError = VmwSockAddEventToQueueInLock(
                   pRESTHandle,
                   pSockContext->pEventQueue,
                   pSockContext->pListenerTCP
@@ -132,7 +166,7 @@ VmRESTInitProtocolServer(
 #ifdef AF_INET6
     if (!bNoIpV6)
     {
-        dwError = VmwSockEventQueueAdd(
+        dwError = VmwSockAddEventToQueueInLock(
                       pRESTHandle,
                       pSockContext->pEventQueue,
                       pSockContext->pListenerTCP6
@@ -194,7 +228,7 @@ error:
 }
 
 uint32_t
-VmRESTShutdownProtocolServer(
+VmRESTStopProtocolServer(
     PVMREST_HANDLE                   pRESTHandle,
     uint32_t                         waitSecond
     )
@@ -219,6 +253,18 @@ error:
 
     goto cleanup;
 
+}
+
+void
+VmRESTShutdownProtocolServer(
+    PVMREST_HANDLE                   pRESTHandle
+    )
+{
+    if (pRESTHandle)
+    {
+        VmwSockShutdown(pRESTHandle);
+        VmRESTLogTerminate(pRESTHandle);
+    }
 }
 
 static
@@ -569,6 +615,34 @@ VmRESTSockContextFree(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
+    if (!pRESTHandle || !pSockContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+
+    if (pSockContext->pListenerTCP)
+    {
+        dwError = VmwSockDeleteEventFromQueue(
+                      pRESTHandle,
+                      pSockContext->pEventQueue,
+                      pSockContext->pListenerTCP
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+        VmwSockClose( pRESTHandle, pSockContext->pListenerTCP);
+    }
+    if (pSockContext->pListenerTCP6)
+    {
+        dwError = VmwSockDeleteEventFromQueue(
+                      pRESTHandle,
+                      pSockContext->pEventQueue,
+                      pSockContext->pListenerTCP6
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+        VmwSockClose( pRESTHandle, pSockContext->pListenerTCP6);
+    }
+
     if (pSockContext->pEventQueue)
     {
         dwError = VmwSockCloseEventQueue(pRESTHandle, pSockContext->pEventQueue, waitSecond);
@@ -577,14 +651,14 @@ VmRESTSockContextFree(
 
     if (pSockContext->pListenerTCP)
     {
-        VmwSockClose( pRESTHandle, pSockContext->pListenerTCP);
         VmwSockRelease( pRESTHandle, pSockContext->pListenerTCP);
     }
+
     if (pSockContext->pListenerTCP6)
     {
-        VmwSockClose( pRESTHandle, pSockContext->pListenerTCP6);
         VmwSockRelease( pRESTHandle, pSockContext->pListenerTCP6);
     }
+
     if (pSockContext->pWorkerThreads)
     {
         DWORD iThr = 0;

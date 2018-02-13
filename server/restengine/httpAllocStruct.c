@@ -345,6 +345,8 @@ VmRESTAllocateHandle(
 
     pRESTHandle->pHttpHandler = NULL;
 
+    pRESTHandle->instanceState = VMREST_INSTANCE_UNINITIALIZED;
+
     *ppRESTHandle = pRESTHandle;
 
 cleanup:
