@@ -260,14 +260,14 @@ typedef struct _REST_ENG_GLOBALS *PREST_ENG_GLOBALS;
 typedef struct _VMREST_HANDLE
 {
     int                              debugLogLevel;
+    int                              instanceState;
     FILE*                            logFile;
     PVM_SOCK_PACKAGE                 pPackage;
     PVM_SOCK_SSL_INFO                pSSLInfo;
     PREST_PROCESSOR                  pHttpHandler;
     PREST_ENG_GLOBALS                pInstanceGlobal;
     PVMREST_SOCK_CONTEXT             pSockContext;
-    PVM_REST_CONFIG                  pRESTConfig;                     
-
+    PVM_REST_CONFIG                  pRESTConfig;
 } VMREST_HANDLE;
 
 typedef struct _VM_WORKER_THREAD_DATA
@@ -296,9 +296,19 @@ VmRESTInitProtocolServer(
     );
 
 DWORD
-VmRESTShutdownProtocolServer(
+VmRESTStartProtocolServer(
+    PVMREST_HANDLE                   pRESTHandle
+    );
+
+DWORD
+VmRESTStopProtocolServer(
     PVMREST_HANDLE                   pRESTHandle,
     uint32_t                         waitSecond
+    );
+
+VOID
+VmRESTShutdownProtocolServer(
+    PVMREST_HANDLE                   pRESTHandle
     );
 
 uint32_t
