@@ -47,9 +47,10 @@ VmRESTGetSockPackagePosix(
 
     pSockPackagePosix = *ppSockPackagePosix;
 
-    pSockPackagePosix->pfnOpenServerSocket = &VmSockPosixOpenServer;
+    pSockPackagePosix->pfnStartServerSocket = &VmSockPosixStartServer;
     pSockPackagePosix->pfnCreateEventQueue = &VmSockPosixCreateEventQueue;
-    pSockPackagePosix->pfnAddEventQueue = &VmSockPosixEventQueueAdd;
+    pSockPackagePosix->pfnAddEventToQueue = &VmSockPosixAddEventToQueueInLock;
+    pSockPackagePosix->pfnDeleteEventFromQueue = &VmSockPosixDeleteEventFromQueue;
     pSockPackagePosix->pfnWaitForEvent = &VmSockPosixWaitForEvent;
     pSockPackagePosix->pfnCloseEventQueue = &VmSockPosixCloseEventQueue;
     pSockPackagePosix->pfnRead = &VmSockPosixRead;
