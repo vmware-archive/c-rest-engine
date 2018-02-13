@@ -23,7 +23,6 @@ VmHTTPInit(
 
     if (!pRESTHandle || !pConfig)
     {
-        VMREST_LOG_DEBUG(pRESTHandle,"%s","Invalid params");
         dwError = REST_ERROR_INVALID_CONFIG;
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -41,20 +40,18 @@ VmHTTPInit(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    pRESTHandle->debugLogLevel = pRESTHandle->pRESTConfig->debugLogLevel;
-
-    /**** Init the debug log ****/
-    dwError = VmRESTLogInitialize(
+    /**** Init logging and transport ****/
+    dwError = VmRESTInitProtocolServer(
                   pRESTHandle
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    /**** Init Transport ****/
-    dwError = VmwSockInitialize(pRESTHandle);
-    BAIL_ON_VMREST_ERROR(dwError);
+    pRESTHandle->debugLogLevel = pRESTHandle->pRESTConfig->debugLogLevel;
 
     /**** Update context Info for this lib instance ****/
     pRESTHandle->pInstanceGlobal->useEndPoint = 0;
+
+    VMREST_LOG_INFO(pRESTHandle,"%s","C-REST_ENGINE: Library initialized ...");
 
 cleanup:
 
@@ -72,8 +69,12 @@ VmHTTPStart(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    dwError = VmRESTInitProtocolServer(pRESTHandle);
+    dwError = VmRESTStartProtocolServer(
+                  pRESTHandle
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
+
+    VMREST_LOG_INFO(pRESTHandle,"%s","C-REST_ENGINE: Library started ...");
 
 cleanup:
 
@@ -132,14 +133,22 @@ VmHTTPStop(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    VMREST_LOG_DEBUG(pRESTHandle,"%s","Shutting down rest engine ....");
-    dwError = VmRESTShutdownProtocolServer(pRESTHandle, waitSecond);
+    VMREST_LOG_INFO(pRESTHandle,"%s","C-REST_ENGINE: Stopping library ... No more requests will be accepted");
+
+    dwError = VmRESTStopProtocolServer(
+                  pRESTHandle, 
+                  waitSecond
+                  );
     BAIL_ON_VMREST_ERROR(dwError);
 
+    VMREST_LOG_INFO(pRESTHandle,"%s", "C-REST-ENGINE: Library stopped ...");
+
 cleanup:
-    VMREST_LOG_DEBUG(pRESTHandle,"Stop returning %u", dwError);
+
     return dwError;
 error:
+
+    VMREST_LOG_ERROR(pRESTHandle,"C-REST-ENGINE: Library stop failed ... Do not attempt shutdown, dwError = %u", dwError);
     goto cleanup;
 }
 
@@ -148,11 +157,13 @@ VmHTTPShutdown(
     PVMREST_HANDLE                  pRESTHandle
     )
 {
-    VmwSockShutdown(pRESTHandle);
+    VMREST_LOG_INFO(pRESTHandle,"%s","C-REST-ENGINE: Shutting down Library");
+    VmRESTShutdownProtocolServer(
+        pRESTHandle
+        );
 
     if (pRESTHandle)
     {
-        VmRESTLogTerminate(pRESTHandle);
         VmRESTFreeHandle(pRESTHandle);        
     }
 }

@@ -46,6 +46,7 @@
 #define     REST_ERROR_BAD_CONFIG_FILE_PATH                110
 #define     REST_ERROR_PREV_INSTANCE_NOT_CLEAN             111
 #define     REST_ERROR_INVALID_HANDLER                     112
+#define     REST_ENGINE_ERROR_INVALID_PARAM                112
 #define     REST_ENGINE_SSL_CONFIG_FILE                    113
 #define     REST_ENGINE_NO_DEBUG_LOGGING                   114
 #define     REST_ENGINE_BAD_LOG_LEVEL                      115
