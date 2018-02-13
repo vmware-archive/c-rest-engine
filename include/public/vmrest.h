@@ -32,6 +32,7 @@
 /**** REST ENGINE ERROR CODES ****/
 #define     REST_ENGINE_SUCCESS                            0
 #define     REST_ENGINE_FAILURE                            1
+#define     REST_ENGINE_ERROR_INVALID_PARAM                2
 #define     REST_ENGINE_ERROR_DOUBLE_FAILURE               99
 #define     REST_ERROR_MISSING_CONFIG                      100
 #define     REST_ERROR_INVALID_CONFIG                      101
