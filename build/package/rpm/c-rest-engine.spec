@@ -1,7 +1,7 @@
 Name:          c-rest-engine
 Summary:       Minimal http(s) server library
 Version:       1.1
-Release:       3%{?dist}
+Release:       4%{?dist}
 Group:         Applications/System
 Vendor:        VMware, Inc.
 License:       Apache 2.0
