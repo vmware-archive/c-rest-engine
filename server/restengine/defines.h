@@ -17,11 +17,12 @@ typedef void* (PFN_VMREST_THR_ROUTINE)(void*);
 
 /* HTTP protocol header defines */
 
-#define MAX_METHOD_LEN             10
-#define MAX_URI_LEN                10240
+#define MAX_METHOD_LEN              10
+#define MAX_URI_LEN                 10240
 #define MAX_VERSION_LEN             9
 #define MAX_STATUS_LEN              4
-#define MAX_REA_PHRASE_LEN         32
+#define MAX_REA_PHRASE_LEN          32
+#define MAX_STOP_WAIT_SECONDS       600
 #define HTTP_VER_LEN                8
 #define HTTP_CHUNK_DATA_MIN_LEN     3
 #define HTTP_CHUNKED_DATA_LEN       8
@@ -61,6 +62,15 @@ typedef enum _HTTP_PAYLOAD_TYPE
     HTTP_PAYLOAD_CONTENT_LENGTH = 1,
     HTTP_PAYLOAD_TRANSFER_ENCODING
 }HTTP_PAYLOAD_TYPE;
+
+typedef enum _VM_REST_INSTANCE_STATE
+{
+    VMREST_INSTANCE_UNINITIALIZED      = -1,
+    VMREST_INSTANCE_INITIALIZED        = 1,
+    VMREST_INSTANCE_STARTED            = 2,
+    VMREST_INSTANCE_STOPPED            = 3,
+    VMREST_INSTANCE_SHUTDOWN           = 4
+}VM_REST_INSTANCE_STATE;
 
 typedef enum _VM_REST_PROCESSING_STATE
 {
