@@ -12,7 +12,7 @@
 */
 
 DWORD
-VmSockPosixOpenServer(
+VmSockPosixStartServer(
     PVMREST_HANDLE                   pRESTHandle,
     VM_SOCK_CREATE_FLAGS             dwFlags,
     PVM_SOCKET*                      ppSocket
@@ -25,7 +25,14 @@ VmSockPosixCreateEventQueue(
     );
 
 DWORD
-VmSockPosixEventQueueAdd(
+VmSockPosixAddEventToQueueInLock(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCK_EVENT_QUEUE             pQueue,
+    PVM_SOCKET                       pSocket
+    );
+
+DWORD
+VmSockPosixDeleteEventFromQueue(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     PVM_SOCKET                       pSocket
