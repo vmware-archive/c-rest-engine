@@ -19,7 +19,7 @@
 #endif
 
 DWORD
-VmwSockOpenServer(
+VmwSockStartServer(
     PVMREST_HANDLE                   pRESTHandle,
     VM_SOCK_CREATE_FLAGS             dwFlags,
     PVM_SOCKET*                      ppSocket
@@ -33,7 +33,7 @@ VmwSockOpenServer(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = pRESTHandle->pPackage->pfnOpenServerSocket(
+    dwError = pRESTHandle->pPackage->pfnStartServerSocket(
                                      pRESTHandle,
                                      dwFlags,
                                      ppSocket);
@@ -64,7 +64,7 @@ error:
 }
 
 DWORD
-VmwSockEventQueueAdd(
+VmwSockAddEventToQueueInLock(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     PVM_SOCKET                       pSocket
@@ -78,12 +78,35 @@ VmwSockEventQueueAdd(
         BAIL_ON_VMSOCK_ERROR(dwError);
     }
 
-    dwError = pRESTHandle->pPackage->pfnAddEventQueue(pRESTHandle,pQueue, pSocket);
+    dwError = pRESTHandle->pPackage->pfnAddEventToQueue(pRESTHandle,pQueue, pSocket);
 
 error:
 
     return dwError;
 }
+
+DWORD
+VmwSockDeleteEventFromQueue(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCK_EVENT_QUEUE             pQueue,
+    PVM_SOCKET                       pSocket
+    )
+{
+    DWORD                            dwError = REST_ENGINE_SUCCESS;
+
+    if (!pQueue || !pSocket || !pRESTHandle)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMSOCK_ERROR(dwError);
+    }
+
+    dwError = pRESTHandle->pPackage->pfnDeleteEventFromQueue(pRESTHandle,pQueue, pSocket);
+
+error:
+
+    return dwError;
+}
+
 
 DWORD
 VmwSockWaitForEvent(
