@@ -48,9 +48,9 @@ VmRESTInit(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PVMREST_HANDLE                   pRESTHandle = NULL;
 
-    if (!ppRESTHandle)
+    if (!pConfig || !ppRESTHandle)
     {
-        dwError = REST_ERROR_INVALID_HANDLER;
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -68,6 +68,8 @@ VmRESTInit(
                   pConfig
                   );
     BAIL_ON_VMREST_ERROR(dwError);
+
+    pRESTHandle->instanceState = VMREST_INSTANCE_INITIALIZED;
 
     *ppRESTHandle = pRESTHandle;
 
@@ -102,7 +104,7 @@ VmRESTSetSSLInfo(
 
     if (!pRESTHandle || !pDataBuffer || (bufferSize == 0) || (bufferSize > MAX_SSL_DATA_BUF_LEN) || (sslDataType < SSL_DATA_TYPE_KEY) || (sslDataType > SSL_DATA_TYPE_CERT))
     {
-        dwError = REST_ERROR_INVALID_HANDLER;
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -177,9 +179,9 @@ VmRESTStart(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     int                              ret = 0;
 
-    if (!pRESTHandle)
+    if (!pRESTHandle || (pRESTHandle->instanceState != VMREST_INSTANCE_INITIALIZED))
     {
-        dwError = REST_ERROR_INVALID_REST_PROCESSER;
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -218,9 +220,14 @@ VmRESTStart(
         BAIL_ON_VMREST_ERROR(dwError);
     }
 
+    pRESTHandle->instanceState = VMREST_INSTANCE_STARTED;
+
 cleanup:
+
     return dwError;
+
 error:
+
     goto cleanup;
 
 }
@@ -236,9 +243,9 @@ VmRESTRegisterHandler(
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     PREST_PROCESSOR                  pzHandler = NULL;
 
-    if (!pHandler || !pRESTHandle)
+    if (!pHandler || !pRESTHandle || (pRESTHandle->instanceState != VMREST_INSTANCE_INITIALIZED))
     {
-        dwError = REST_ERROR_INVALID_REST_PROCESSER;
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -292,6 +299,12 @@ VmRESTFindEndpoint(
     PREST_ENDPOINT                   temp = NULL;
     PREST_ENDPOINT                   pEndPoint = NULL;
 
+    if (!pRESTHandle || !pszEndpoint || !ppEndpoint || (pRESTHandle->instanceState == VMREST_INSTANCE_UNINITIALIZED) || (pRESTHandle->instanceState == VMREST_INSTANCE_SHUTDOWN))
+    {
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     dwError = VmRestEngineGetEndPoint(
                   pRESTHandle,
                   (char*)pszEndpoint,
@@ -329,12 +342,18 @@ error:
 uint32_t
 VmRESTUnRegisterHandler(
     PVMREST_HANDLE                   pRESTHandle,
-    char const*                      pzEndPointURI
+    char const*                      pcszEndPointURI
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (!pzEndPointURI)
+    if (!pRESTHandle || !pcszEndPointURI || (pRESTHandle->instanceState != VMREST_INSTANCE_STOPPED))
+    {
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (!pcszEndPointURI)
     {
         /**** Interacting with HTTP directly ****/
         dwError = VmHTTPUnRegisterHandler(
@@ -346,7 +365,7 @@ VmRESTUnRegisterHandler(
         /**** Endpoint based library instance ****/
         dwError = VmRestEngineRemoveEndpoint(
                       pRESTHandle,
-                      pzEndPointURI
+                      pcszEndPointURI
                       );
     }
     BAIL_ON_VMREST_ERROR(dwError);
@@ -365,11 +384,13 @@ VmRESTStop(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (!pRESTHandle)
+    if (!pRESTHandle || (waitSeconds > MAX_STOP_WAIT_SECONDS) || (pRESTHandle->instanceState != VMREST_INSTANCE_STARTED))
     {  
-        dwError = REST_ERROR_INVALID_HANDLER;
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+
+    pRESTHandle->instanceState = VMREST_INSTANCE_STOPPED;
 
     dwError = VmHTTPStop(
                   pRESTHandle,
@@ -388,14 +409,18 @@ VmRESTShutdown(
     PVMREST_HANDLE                   pRESTHandle
     )
 {
-    if (pRESTHandle->pInstanceGlobal->useEndPoint == 1)
+    if (pRESTHandle && (pRESTHandle->instanceState == VMREST_INSTANCE_STOPPED))
     {
-        VmRestEngineShutdownEndPointRegistration(
-            pRESTHandle
-            );
+        pRESTHandle->instanceState = VMREST_INSTANCE_SHUTDOWN;
+        if (pRESTHandle->pInstanceGlobal->useEndPoint == 1)
+        {
+            VmRestEngineShutdownEndPointRegistration(
+                pRESTHandle
+                );
+        }
+        
+        VmHTTPShutdown(pRESTHandle);
     }
-
-    VmHTTPShutdown(pRESTHandle);
 }
 
 uint32_t
@@ -408,14 +433,28 @@ VmRESTGetData(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
+    if (!pRESTHandle || (pRESTHandle->instanceState != VMREST_INSTANCE_STARTED))
+    {
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     dwError = VmRESTGetHttpPayload(
                   pRESTHandle,
                   pRequest,
                   pBuffer,
                   bytesRead
                   );
+    BAIL_ON_VMREST_ERROR(dwError);
                   
+cleanup:
+
     return dwError;
+
+error:
+
+    goto cleanup;
+
 }
 
 /*** GetData Zero copy API ****/
@@ -427,14 +466,12 @@ VmRESTGetDataZC(
     uint32_t*                        nBytes
     )
 {
-
-
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
-    if (!pRESTHandle || !pRequest || !ppBuffer  || !nBytes)
+    if (!pRESTHandle || !pRequest || !ppBuffer  || !nBytes || (pRESTHandle->instanceState != VMREST_INSTANCE_STARTED))
     {
         VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
-        dwError = VMREST_HTTP_INVALID_PARAMS;
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
@@ -463,22 +500,37 @@ uint32_t
 VmRESTSetData(
     PVMREST_HANDLE                   pRESTHandle,
     PREST_RESPONSE*                  ppResponse,
-    char const*                      buffer,
+    char const*                      pcszBuffer,
     uint32_t                         dataLen,
     uint32_t*                        bytesWritten
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
+
+    if (!pRESTHandle || !ppResponse || !pcszBuffer || !bytesWritten || (pRESTHandle->instanceState != VMREST_INSTANCE_STARTED))
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
     dwError = VmRESTSetHttpPayload(
                   pRESTHandle,
                   ppResponse,
-                  buffer,
+                  pcszBuffer,
                   dataLen,
                   bytesWritten
                   );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
 
     return dwError;
+
+error:
+
+    goto cleanup;
 
 }
 
@@ -487,20 +539,36 @@ uint32_t
 VmRESTSetDataZC(
     PVMREST_HANDLE                   pRESTHandle,
     PREST_RESPONSE*                  ppResponse,
-    char const*                      pBuffer,
+    char const*                      pcszBuffer,
     uint32_t                         nBytes
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
 
+
+    if (!pRESTHandle || !ppResponse || !pcszBuffer || (pRESTHandle->instanceState != VMREST_INSTANCE_STARTED))
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+
     dwError = VmRESTSetHttpPayloadZeroCopy(
                   pRESTHandle,
                   ppResponse,
-                  pBuffer,
+                  pcszBuffer,
                   nBytes
                   );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+cleanup:
 
     return dwError;
+
+error:
+
+    goto cleanup;
 
 }
 
@@ -512,6 +580,12 @@ VmRESTSetSuccessResponse(
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
     char*                            connection = NULL;
+
+    if (!pRequest || !ppResponse)
+    {
+        dwError = REST_ENGINE_ERROR_INVALID_PARAM;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
 
     dwError = VmRESTSetHttpStatusCode(
                   ppResponse,
@@ -571,8 +645,8 @@ error:
 uint32_t
 VmRESTSetFailureResponse(
     PREST_RESPONSE*                  ppResponse,
-    char const*                      pErrorCode,
-    char const*                      pErrorMessage
+    char const*                      pcszErrorCode,
+    char const*                      pcszErrorMessage
     )
 {   
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -584,22 +658,22 @@ VmRESTSetFailureResponse(
 
     /**** If error code and message is not provided, send internal server error ****/
 
-    if (!pErrorCode)
+    if (!pcszErrorCode)
     {
         strcpy(errorCode,"500");
     }
-    else if ((strlen(pErrorCode) > 0) && (strlen(pErrorCode) <= MAX_STATUS_LEN))
+    else if ((strlen(pcszErrorCode) > 0) && (strlen(pcszErrorCode) <= MAX_STATUS_LEN))
     {
-        strcpy(errorCode, pErrorCode);
+        strcpy(errorCode, pcszErrorCode);
     }
 
-    if (!pErrorMessage)
+    if (!pcszErrorMessage)
     {
         strcpy(errorMessage, "Internal Server Error");
     }
-    else if ((strlen(pErrorMessage) > 0) && (strlen(pErrorMessage) <= MAX_REA_PHRASE_LEN))
+    else if ((strlen(pcszErrorMessage) > 0) && (strlen(pcszErrorMessage) <= MAX_REA_PHRASE_LEN))
     {
-        strcpy(errorMessage, pErrorMessage);
+        strcpy(errorMessage, pcszErrorMessage);
     }
 
     dwError = VmRESTSetHttpStatusCode(
