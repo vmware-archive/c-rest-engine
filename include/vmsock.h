@@ -87,7 +87,7 @@ VmwSockInitialize(
     );
 
 /**
- * @brief Opens a server socket
+ * @brief Starts a server socket
  *
  * @param[in] Handle to library instance.
  * @param[in]  dwFlags 32 bit flags defining socket creation preferences
@@ -96,7 +96,7 @@ VmwSockInitialize(
  * @return 0 on success
  */
 DWORD
-VmwSockOpenServer(
+VmwSockStartServer(
     PVMREST_HANDLE                   pRESTHandle,
     VM_SOCK_CREATE_FLAGS             dwFlags,
     PVM_SOCKET*                      ppSocket
@@ -117,7 +117,7 @@ VmwSockCreateEventQueue(
     );
 
 /**
- * @brief Adds a socket to the event queue
+ * @brief Add a socket to the event queue
  *
  * @param[in] Handle to library instance.
  * @param[in] pQueue  Pointer to Event queue
@@ -126,7 +126,23 @@ VmwSockCreateEventQueue(
  * @return 0 on success
  */
 DWORD
-VmwSockEventQueueAdd(
+VmwSockAddEventToQueueInLock(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCK_EVENT_QUEUE             pQueue,
+    PVM_SOCKET                       pSocket
+    );
+
+/**
+ * @brief Deletes a socket from the event queue
+ *
+ * @param[in] Handle to library instance.
+ * @param[in] pQueue  Pointer to Event queue
+ * @param[in] pSocket Pointer to Socket
+ *
+ * @return 0 on success
+ */
+DWORD
+VmwSockDeleteEventFromQueue(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     PVM_SOCKET                       pSocket
@@ -280,7 +296,7 @@ typedef enum
     VM_SOCK_TYPE_TCP_V6
 } VM_SOCK_TYPE;
 
-typedef DWORD (*PFN_OPEN_SERVER_SOCKET)(
+typedef DWORD (*PFN_START_SERVER_SOCKET)(
                     PVMREST_HANDLE       pRESTHandle,
                     VM_SOCK_CREATE_FLAGS dwFlags,
                     PVM_SOCKET*          ppSocket
@@ -291,7 +307,13 @@ typedef DWORD (*PFN_CREATE_EVENT_QUEUE)(
                     PVM_SOCK_EVENT_QUEUE* ppQueue
                     );
 
-typedef DWORD (*PFN_ADD_EVENT_QUEUE)(
+typedef DWORD (*PFN_ADD_EVENT_TO_QUEUE)(
+                    PVMREST_HANDLE       pRESTHandle,
+                    PVM_SOCK_EVENT_QUEUE pQueue,
+                    PVM_SOCKET           pSocket
+                    );
+
+typedef DWORD (*PFN_DELETE_EVENT_FROM_QUEUE)(
                     PVMREST_HANDLE       pRESTHandle,
                     PVM_SOCK_EVENT_QUEUE pQueue,
                     PVM_SOCKET           pSocket
@@ -359,9 +381,10 @@ typedef DWORD(*PFN_GET_PEER_INFO)(
 
 typedef struct _VM_SOCK_PACKAGE
 {
-    PFN_OPEN_SERVER_SOCKET              pfnOpenServerSocket;
+    PFN_START_SERVER_SOCKET             pfnStartServerSocket;
     PFN_CREATE_EVENT_QUEUE              pfnCreateEventQueue;
-    PFN_ADD_EVENT_QUEUE                 pfnAddEventQueue;
+    PFN_ADD_EVENT_TO_QUEUE              pfnAddEventToQueue;
+    PFN_DELETE_EVENT_FROM_QUEUE         pfnDeleteEventFromQueue;
     PFN_WAIT_FOR_EVENT                  pfnWaitForEvent;
     PFN_CLOSE_EVENT_QUEUE               pfnCloseEventQueue;
     PFN_READ                            pfnRead;
