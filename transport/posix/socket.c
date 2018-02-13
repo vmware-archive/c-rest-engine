@@ -22,16 +22,9 @@ VmSockPosixCreateSignalSockets(
 
 static
 DWORD
-VmSockPosixEventQueueAdd_inlock(
+VmSockPosixAddEventToQueue(
     PVM_SOCK_EVENT_QUEUE             pQueue,
     BOOLEAN                          bOneShot,
-    PVM_SOCKET                       pSocket
-    );
-
-static
-DWORD
-VmSockPosixEventQueueDelete_inlock(
-    PVM_SOCK_EVENT_QUEUE             pQueue,
     PVM_SOCKET                       pSocket
     );
 
@@ -99,7 +92,7 @@ VmRESTCreateSSLObject(
 
 
 DWORD
-VmSockPosixOpenServer(
+VmSockPosixStartServer(
     PVMREST_HANDLE                   pRESTHandle,
     VM_SOCK_CREATE_FLAGS             dwFlags,
     PVM_SOCKET*                      ppSocket
@@ -388,7 +381,7 @@ VmSockPosixCreateEventQueue(
     pQueue->bShutdown = 0;
     pQueue->thrCnt = pRESTHandle->pRESTConfig->nWorkerThr;
 
-    dwError = VmSockPosixEventQueueAdd_inlock(
+    dwError = VmSockPosixAddEventToQueue(
                   pQueue,
                   FALSE,
                   pQueue->pSignalReader
@@ -420,7 +413,7 @@ error:
 }
 
 DWORD
-VmSockPosixEventQueueAdd(
+VmSockPosixAddEventToQueueInLock(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCK_EVENT_QUEUE             pQueue,
     PVM_SOCKET                       pSocket
@@ -441,7 +434,7 @@ VmSockPosixEventQueueAdd(
 
     bLocked = TRUE;
 
-    dwError = VmSockPosixEventQueueAdd_inlock(
+    dwError = VmSockPosixAddEventToQueue(
                   pQueue,
                   FALSE,
                   pSocket
@@ -461,6 +454,39 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmSockPosixDeleteEventFromQueue(
+    PVMREST_HANDLE                   pRESTHandle,
+    PVM_SOCK_EVENT_QUEUE             pQueue,
+    PVM_SOCKET                       pSocket
+    )
+{
+    DWORD                            dwError = REST_ENGINE_SUCCESS;
+    struct                           epoll_event event = {0};
+
+    if (!pSocket || !pQueue || !pRESTHandle)
+    {
+        dwError = REST_ERROR_INVALID_HANDLER;
+    }
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if (epoll_ctl(pQueue->epollFd, EPOLL_CTL_DEL, pSocket->fd, &event) < 0)
+    {
+        dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+
+}
+
 
 DWORD
 VmSockPosixWaitForEvent(
@@ -539,7 +565,8 @@ VmSockPosixWaitForEvent(
             if (pEvent->events & (EPOLLERR | EPOLLHUP))
             {
                 eventType = VM_SOCK_EVENT_TYPE_CONNECTION_CLOSED;
-                dwError = VmSockPosixEventQueueDelete_inlock(
+                dwError = VmSockPosixDeleteEventFromQueue(
+                              pRESTHandle,
                               pQueue,
                               pEventSocket
                               );
@@ -577,7 +604,7 @@ VmSockPosixWaitForEvent(
                 }
 
                 /**** Start watching new connection ****/
-                dwError = VmSockPosixEventQueueAdd_inlock(
+                dwError = VmSockPosixAddEventToQueue(
                               pQueue,
                               TRUE,
                               pSocket
@@ -639,6 +666,7 @@ VmSockPosixWaitForEvent(
                     if (bFound)
                     {
                         VMREST_LOG_DEBUG(pRESTHandle,"Action: DEFERRED, IO sock found in queue(Succeeding),  Io Sock %d, timer %d", pSocket->pIoSocket->fd, pSocket->fd );
+                        pEventSocket->pIoSocket->pTimerSocket = NULL;
                     }
                     else
                     {
@@ -651,17 +679,30 @@ VmSockPosixWaitForEvent(
                         {
                              /**** We are good to close actual IO Socket here ****/
                              VMREST_LOG_INFO(pRESTHandle,"Action: IO DELETION, IoSocket %d, timer %d", pSocket->pIoSocket->fd, pSocket->fd );
-                             eventType = VM_SOCK_EVENT_TYPE_CONNECTION_TIMEOUT;
-                             pSocket = pSocket->pIoSocket;
-                             
+
+                             pSocket = pEventSocket->pIoSocket;
                              /**** Delete IO from queue ****/
-                             VmSockPosixEventQueueDelete_inlock(
+                             VmSockPosixDeleteEventFromQueue(
+                                           pRESTHandle,
                                            pQueue,
                                            pSocket
                                            );
+
+                             if ((pRESTHandle->pSSLInfo->isSecure) && (!(pSocket->bSSLHandShakeCompleted)))
+                             {
+                                 /**** SSL handshake is not completed, no response will be sent, free IoSocket ****/
+                                 pEventSocket->pIoSocket = NULL;
+                                 VmSockPosixCloseSocket(pRESTHandle,pSocket);
+                                 VmSockPosixReleaseSocket(pRESTHandle,pSocket);
+                                 eventType = VM_SOCK_EVENT_TYPE_UNKNOWN;
+                             }
+                             else
+                             {
+                                 eventType = VM_SOCK_EVENT_TYPE_CONNECTION_TIMEOUT;
+                                 pEventSocket->pIoSocket->pTimerSocket = NULL;
+                             }
                         }
                     }
-                    pEventSocket->pIoSocket->pTimerSocket = NULL;
                 }
 
                 /** Close and free the timer socket ****/
@@ -747,7 +788,14 @@ cleanup:
 
 error:
 
-    VMREST_LOG_ERROR(pRESTHandle,"Error while processing socket event, dwError = %u", dwError);
+    if ((dwError == ERROR_SHUTDOWN_IN_PROGRESS) && pQueue)
+    {
+        VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Shutting down...Cleaning worker thread %d", (pQueue->thrCnt  + 1));
+    }
+    else
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"Error while processing socket event, dwError = %u", dwError);
+    }
     if (ppSocket)
     {
         *ppSocket = NULL;
@@ -987,10 +1035,11 @@ cleanup:
 
 error:
 
-    if (pSocket && pRESTHandle->pSockContext)
+    if (pSocket && pRESTHandle && pRESTHandle->pSockContext)
     {
         /**** Delete the socket from poller ****/
-            VmSockPosixEventQueueDelete_inlock(
+            VmSockPosixDeleteEventFromQueue(
+            pRESTHandle,
             pRESTHandle->pSockContext->pEventQueue,
             pSocket
             );
@@ -1001,15 +1050,12 @@ error:
 
         if (pSocket->pTimerSocket)
         {
+            pSocket->pTimerSocket->pIoSocket = NULL;
             VmSockPosixReArmTimer(
                 pRESTHandle,
                 pSocket->pTimerSocket,
-                ((pRESTHandle->pRESTConfig->connTimeoutSec) * 1000)
+                1
                 );
-
-            write(pSocket->pTimerSocket->fd, "NotifyPQ", 8);
-            pSocket->pTimerSocket->pIoSocket = NULL;
-            
         }
 
     }
@@ -1191,7 +1237,7 @@ VmSockPosixCloseSocket(
         if (ret < 0)
         {
             errorCode = SSL_get_error(pSocket->ssl, ret);
-            VMREST_LOG_ERROR(pRESTHandle,"Error on SSL_shutdown on socket %d, return value %d, errorCode %u", pSocket->fd, ret, errorCode);
+            VMREST_LOG_ERROR(pRESTHandle,"Error on SSL_shutdown on socket %d, return value %d, errorCode %u, errno %d", pSocket->fd, ret, errorCode, errno);
         }
         SSL_free(pSocket->ssl);
         pSocket->ssl = NULL;
@@ -1303,7 +1349,7 @@ error:
 
 static
 DWORD
-VmSockPosixEventQueueAdd_inlock(
+VmSockPosixAddEventToQueue(
     PVM_SOCK_EVENT_QUEUE             pQueue,
     BOOLEAN                          bOneShot,
     PVM_SOCKET                       pSocket
@@ -1327,33 +1373,6 @@ VmSockPosixEventQueueAdd_inlock(
     }
 
     if (epoll_ctl(pQueue->epollFd, EPOLL_CTL_ADD, pSocket->fd, &event) < 0)
-    {
-        dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
-        BAIL_ON_VMREST_ERROR(dwError);
-    }
-
-error:
-
-    return dwError;
-}
-
-static
-DWORD
-VmSockPosixEventQueueDelete_inlock(
-    PVM_SOCK_EVENT_QUEUE             pQueue,
-    PVM_SOCKET                       pSocket
-    )
-{
-    DWORD                            dwError = REST_ENGINE_SUCCESS;
-    struct                           epoll_event event = {0};
-
-    if (!pSocket || !pQueue)
-    {
-        dwError = REST_ERROR_INVALID_HANDLER;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    if (epoll_ctl(pQueue->epollFd, EPOLL_CTL_DEL, pSocket->fd, &event) < 0)
     {
         dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         BAIL_ON_VMREST_ERROR(dwError);
@@ -1637,7 +1656,8 @@ VmSockPosixSetRequestHandle(
         }
 
         /**** Delete actual IO socket from poller ****/
-        dwError = VmSockPosixEventQueueDelete_inlock(
+        dwError = VmSockPosixDeleteEventFromQueue(
+                      pRESTHandle,
                       pQueue,
                       pSocket
                       );
@@ -1868,7 +1888,7 @@ VmSockPosixCreateTimer(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
     
-    dwError = VmSockPosixEventQueueAdd_inlock(
+    dwError = VmSockPosixAddEventToQueue(
                   pRESTHandle->pSockContext->pEventQueue,
                   TRUE,
                   pTimerSocket
@@ -1923,50 +1943,44 @@ VmRESTAcceptSSLContext(
 
     if (ret == 1)
     {
-        VMREST_LOG_DEBUG(pRESTHandle," SSL accept successful on socket %d, ret %d, errorCode %u", pSocket->fd, ret, errorCode);
+        VMREST_LOG_DEBUG(pRESTHandle,"SSL accept successful on socket %d, ret %d, errorCode %u", pSocket->fd, ret, errorCode);
         pSocket->bSSLHandShakeCompleted = TRUE;
         bReArm = TRUE;
     }
     else if ((ret == -1) && ((errorCode == SSL_ERROR_WANT_READ) || (errorCode == SSL_ERROR_WANT_WRITE)))
     {
-       VMREST_LOG_DEBUG(pRESTHandle," SSL handshake not completed for socket %d, ret %d, errorCode %u", pSocket->fd, ret, errorCode);
+       VMREST_LOG_DEBUG(pRESTHandle,"SSL handshake not completed for socket %d, ret %d, errorCode %u", pSocket->fd, ret, errorCode);
        pSocket->bSSLHandShakeCompleted = FALSE;
        bReArm = TRUE;
     }
-    else if ((ret == 0) && (errorCode == SSL_ERROR_SYSCALL))
+    else
     {
-         VMREST_LOG_ERROR(pRESTHandle," Client closed the connection during SSL handshake, socket fd %d, ret %d, errorCode %u, errno %d", pSocket->fd, ret, errorCode, errno);
+         VMREST_LOG_ERROR(pRESTHandle,"SSL handshake failed on socket fd %d, ret %d, errorCode %u, errno %d", pSocket->fd, ret, errorCode, errno);
          dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
          BAIL_ON_VMREST_ERROR(dwError);
     }
-    else
+
+    if (bReArm && bWatched)
     {
-        VMREST_LOG_ERROR(pRESTHandle, "SSL handshake failed...connection will be closed for socket with fd %d, ret %d, errorCode %u, errno %d", pSocket->fd, ret, errorCode, errno);
-        dwError = VMREST_TRANSPORT_SSL_ACCEPT_FAILED;
+        /**** Rearm and add the socket ****/
+        dwError = VmSockPosixReArmTimer(
+                      pRESTHandle,
+                      pSocket->pTimerSocket,
+                      ((pRESTHandle->pRESTConfig->connTimeoutSec) * 1000)
+                      );
         BAIL_ON_VMREST_ERROR(dwError);
+
+        event.data.ptr = pSocket;
+        event.events = EPOLLIN;
+
+        event.events = event.events | EPOLLONESHOT;
+
+        if (epoll_ctl(pRESTHandle->pSockContext->pEventQueue->epollFd, EPOLL_CTL_MOD, pSocket->fd, &event) < 0)
+        {
+            dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
+            BAIL_ON_VMREST_ERROR(dwError);
+        }
     }
-
-     if (bReArm && bWatched)
-     {
-         /**** Rearm and add the socket ****/
-         dwError = VmSockPosixReArmTimer(
-                       pRESTHandle,
-                       pSocket->pTimerSocket,
-                       ((pRESTHandle->pRESTConfig->connTimeoutSec) * 1000)
-                       );
-         BAIL_ON_VMREST_ERROR(dwError);
-
-         event.data.ptr = pSocket;
-         event.events = EPOLLIN;
-
-         event.events = event.events | EPOLLONESHOT;
-
-         if (epoll_ctl(pRESTHandle->pSockContext->pEventQueue->epollFd, EPOLL_CTL_MOD, pSocket->fd, &event) < 0)
-         {
-             dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
-             BAIL_ON_VMREST_ERROR(dwError);
-         }
-     }
   
 cleanup:
 
@@ -1977,7 +1991,8 @@ error:
     if (pRESTHandle && pRESTHandle->pSockContext)
     {
         /**** Delete from poller ****/
-        VmSockPosixEventQueueDelete_inlock(
+        VmSockPosixDeleteEventFromQueue(
+            pRESTHandle,
             pRESTHandle->pSockContext->pEventQueue,
             pSocket
             );
