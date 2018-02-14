@@ -13,7 +13,7 @@
 
 #include "includes.h"
 
-//#define USE_APP_CTX 1
+//#define USE_APP_CTX o
 
 #ifdef WIN32
 #include "..\transport\win\includes.h"
