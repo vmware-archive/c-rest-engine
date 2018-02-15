@@ -520,7 +520,7 @@ VmRESTCopyConfig(
 
     if (!(IsNullOrEmptyString(pConfig->pszDebugLogFile)))
     {
-        strncpy(pRESTConfig->pszDebugLogFile, pConfig->pszDebugLogFile, (MAX_DEAMON_NAME_LEN - 1));
+        strncpy(pRESTConfig->pszDebugLogFile, pConfig->pszDebugLogFile, (MAX_PATH_LEN - 1));
     }
 
     if (!(IsNullOrEmptyString(pConfig->pszDaemonName)))
