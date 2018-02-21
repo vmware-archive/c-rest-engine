@@ -1347,7 +1347,6 @@ VmRESTProcessBuffer(
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    uint32_t                         ret = REST_ENGINE_SUCCESS;
     VM_REST_PROCESSING_STATE         prevState = PROCESS_INVALID;
     VM_REST_PROCESSING_STATE         currState = PROCESS_INVALID;
     uint32_t                         nProcessed = 0;
@@ -1415,10 +1414,6 @@ VmRESTProcessBuffer(
                                &(pRequest->pResponse)
                                );
                  VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Application callback returns dwError %u", dwError);
-                 if ((dwError != REST_ENGINE_SUCCESS) && pRequest && pRequest->pResponse && pRequest->pResponse->statusLine)
-                 {
-                     VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Status code: %s, header sent %d", pRequest->pResponse->statusLine->statusCode, pRequest->pResponse->bHeaderSent);
-                 }
                  BAIL_ON_VMREST_ERROR(dwError);
                  bInitiateClose = TRUE;
                  break;
@@ -1446,21 +1441,14 @@ cleanup:
 error:
 
     VMREST_LOG_ERROR(pRESTHandle,"Process buffer failed with error code %u, sending failure response", dwError);
-    ret = VmRESTSendFailureResponse(
-                  pRESTHandle,
-                  dwError,
-                  pRequest
-                  );
-    if (ret != REST_ENGINE_SUCCESS)
-    {
-        VMREST_LOG_ERROR(pRESTHandle,"%s","Double Failure case detected ....");
-        VMREST_LOG_ERROR(pRESTHandle,"%s","possible memory leak");
-        dwError = REST_ENGINE_ERROR_DOUBLE_FAILURE;
-    }
-    else
-    {
-        dwError = REST_ENGINE_SUCCESS;
-    }
+    VmRESTSendFailureResponse(
+        pRESTHandle,
+        dwError,
+        pRequest
+        );
+
+    dwError = REST_ENGINE_SUCCESS;
+
     goto cleanup;
 
 }
@@ -1524,12 +1512,18 @@ VmRESTSendFailureResponse(
     uint32_t                         nBytesWritten = 0;
     PVM_REST_HTTP_RESPONSE_PACKET    pResponse = NULL;
 
-    if (!pRequest || !pRequest->pResponse)
+    if (!pRESTHandle || !pRequest || !pRequest->pResponse)
     {
         VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
         dwError =  VMREST_APPLICATION_INVALID_PARAMS;
     }
     BAIL_ON_VMREST_ERROR(dwError);
+
+    if (pRESTHandle->instanceState == VMREST_INSTANCE_STOPPED)
+    {
+        VMREST_LOG_ERROR(pRESTHandle, "%s", "Library trying to stop .. Rejecting request to send negative response");
+        goto cleanup;
+    }
 
     pResponse = pRequest->pResponse;
 
@@ -1625,7 +1619,7 @@ cleanup:
     return dwError;
 
 error:
-    VMREST_LOG_ERROR(pRESTHandle,"%s", "Double failure observed ... No response will be sent to client and connection will be forcefully closed.");
+    VMREST_LOG_ERROR(pRESTHandle,"%s", "Double failure observed while sending negative response...");
 
     goto cleanup;
 
