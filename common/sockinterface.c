@@ -431,17 +431,11 @@ VmRESTOnConnectionTimeout(
 
     VMREST_LOG_DEBUG(pRESTHandle,"%s","Connection Timeout..Closing conn..");
 
-    dwError = VmRESTSendFailureResponse(
-                  pRESTHandle,
-                  errCodeTimeOut,
-                  pRequest
-                  );
-    if (dwError != REST_ENGINE_SUCCESS)
-    {
-        VMREST_LOG_ERROR(pRESTHandle,"Double Failure case detected with error code %u....", dwError);
-    }
-    dwError = REST_ENGINE_SUCCESS;
-
+    VmRESTSendFailureResponse(
+        pRESTHandle,
+        errCodeTimeOut,
+        pRequest
+        );
 
     dwError = VmRESTDisconnectClient(
                      pRESTHandle,
@@ -481,7 +475,6 @@ VmRESTTcpReceiveNewData(
     char*                            pszBuffer = NULL;
     uint32_t                         nProcessed = 0;
     uint32_t                         nBufLen = 0;
-    uint32_t                         ret = REST_ENGINE_SUCCESS;
     BOOLEAN                          bNextIO = FALSE;
 
     if (!pSocket || !pRESTHandle || !pQueue)
@@ -589,19 +582,6 @@ error:
 
     VMREST_LOG_ERROR(pRESTHandle,"ERROR code %u", dwError);
 
-    if ((dwError == VMREST_TRANSPORT_DEFERRED_TIMEOUT_PROCESS) && (bNextIO))
-    {
-         ret = VmRESTOnConnectionTimeout(
-                     pRESTHandle,
-                     pSocket
-                     );
-
-         if (ret != REST_ENGINE_SUCCESS)
-         {
-            VMREST_LOG_ERROR(pRESTHandle,"Double failure on deferred timeout processing dwError, = %u", dwError);
-            dwError = REST_ENGINE_ERROR_DOUBLE_FAILURE;
-         }
-    }
     goto cleanup;
 }
 
