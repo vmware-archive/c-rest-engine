@@ -20,7 +20,7 @@ typedef struct _VM_SOCKET
     int                              fd;
     SSL*                             ssl;
     BOOLEAN                          bSSLHandShakeCompleted;
-    BOOLEAN                          bInUse;
+    BOOLEAN                          bTimerExpired;
     char*                            pszBuffer;
     uint32_t                         nBufData;
     uint32_t                         nProcessed;
