@@ -426,7 +426,7 @@ VmSockPosixAddEventToQueueInLock(
     )
 {
     DWORD                            dwError = REST_ENGINE_SUCCESS;
-    BOOLEAN                          bLocked = TRUE;
+    BOOLEAN                          bLocked = FALSE;
 
     if (!pQueue || !pSocket)
     {
@@ -579,7 +579,6 @@ VmSockPosixWaitForEvent(
             {
                 eventType = VM_SOCK_EVENT_TYPE_CONNECTION_CLOSED;
                 pSocket = pEventSocket;
-                BAIL_ON_VMREST_ERROR(dwError);
             }
             else if (pEventSocket->type == VM_SOCK_TYPE_LISTENER)    // New connection request
             {
@@ -651,10 +650,10 @@ VmSockPosixWaitForEvent(
             else if (pEventSocket->type == VM_SOCK_TYPE_TIMER) // Time out event
             {
                 pSocket = pEventSocket;
-                VMREST_LOG_INFO(pRESTHandle, "Timeout event happened on IO Socket fd %d, timer fd %d", pSocket->pIoSocket->fd, pSocket->fd);
 
                 if (pSocket->pIoSocket)
                 {
+                   VMREST_LOG_INFO(pRESTHandle, "Timeout event happened on IO Socket fd %d, timer fd %d", pSocket->pIoSocket->fd, pSocket->fd);
                    /**** Delete IO socket from queue so that we don't get any further notification ****/
                     dwError = VmSockPosixDeleteEventFromQueue(
                                   pRESTHandle,
