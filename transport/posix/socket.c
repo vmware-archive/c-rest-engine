@@ -940,7 +940,9 @@ VmSockPosixRead(
 
     if (nRead == -1)
     {
-        if (((pSocket->fd > 0) && (errorCode == EAGAIN || errorCode == EWOULDBLOCK)) || ((pRESTHandle->pSSLInfo->isSecure) && (errorCode == SSL_ERROR_WANT_READ)))
+        if (((pSocket->fd > 0) && (errorCode == EAGAIN || errorCode == EWOULDBLOCK)) || 
+           ((pRESTHandle->pSSLInfo->isSecure) && 
+           ((errorCode == SSL_ERROR_WANT_READ) || ((errorCode == SSL_ERROR_SSL) && (errno == EAGAIN)))))
         {
             dwError = REST_ENGINE_SUCCESS;
         }
