@@ -612,7 +612,7 @@ VmRESTSetSuccessResponse(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    if ((connection != NULL) && (strcmp(connection, " keep-alive") == 0))
+    if ((connection != NULL) && ((strncmp(connection, "keep-alive", strlen("keep-alive")) == 0)))
     {
         dwError = VmRESTSetHttpHeader(
                       ppResponse,

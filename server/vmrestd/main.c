@@ -63,7 +63,7 @@ int main()
     PREST_CONF                       pConfig1 = NULL;
     SSL_CTX*                         sslCtx = NULL;
 //    SSL_CTX*                         sslCtx1 = NULL;
-//    uint32_t                         cnt = 0;
+    uint32_t                         cnt = 0;
 
 #ifndef WIN32
     signal(SIGPIPE, sig_handler);
@@ -77,11 +77,11 @@ int main()
     gVmRestHandlers.pfnHandleOthers = &VmHandleEchoData;
 
     gVmRestHandlers1.pfnHandleRequest = NULL;
-    gVmRestHandlers1.pfnHandleCreate = &VmHandleEchoData1;
-    gVmRestHandlers1.pfnHandleRead = &VmHandleEchoData1;
-    gVmRestHandlers1.pfnHandleUpdate = &VmHandleEchoData1;
-    gVmRestHandlers1.pfnHandleDelete = &VmHandleEchoData1;
-    gVmRestHandlers1.pfnHandleOthers = &VmHandleEchoData1;
+    gVmRestHandlers1.pfnHandleCreate = &VmHandleEchoData;
+    gVmRestHandlers1.pfnHandleRead = &VmHandleEchoData;
+    gVmRestHandlers1.pfnHandleUpdate = &VmHandleEchoData;
+    gVmRestHandlers1.pfnHandleDelete = &VmHandleEchoData;
+    gVmRestHandlers1.pfnHandleOthers = &VmHandleEchoData;
 
 
 
@@ -94,16 +94,16 @@ int main()
 
     pConfig = (PREST_CONF)malloc(sizeof(REST_CONF));
     pConfig->serverPort = 81;
-    pConfig->connTimeoutSec = 5;
+    pConfig->connTimeoutSec = 10;
     pConfig->maxDataPerConnMB = 0;
-    pConfig->nWorkerThr = 5;
-    pConfig->nClientCnt = 5;
+    pConfig->nWorkerThr = 32;
+    pConfig->nClientCnt = 64;
     pConfig->useSysLog = FALSE;
     pConfig->pszSSLCertificate = "/root/mycert.pem";
-    pConfig->isSecure = FALSE;
+    pConfig->isSecure = TRUE;  //FALSE;
     pConfig->pszSSLKey = "/root/mycert.pem";
     pConfig->pszDebugLogFile = "/tmp/restServer.log";
-    pConfig->debugLogLevel = VMREST_LOG_LEVEL_DEBUG;
+    pConfig->debugLogLevel = VMREST_LOG_LEVEL_INFO;
     pConfig->pszDaemonName = "VMREST-ECHOSERVER";
     pConfig->pSSLContext = sslCtx;
     pConfig->pszSSLCipherList = NULL;
@@ -112,15 +112,15 @@ int main()
 
     pConfig1 = (PREST_CONF)malloc(sizeof(REST_CONF));
     pConfig1->serverPort = 82;
-    pConfig1->connTimeoutSec = 5;
+    pConfig1->connTimeoutSec = 10;  //30;
     pConfig1->maxDataPerConnMB = 10;
-    pConfig1->nWorkerThr = 5;
-    pConfig1->nClientCnt = 5;
-    pConfig1->useSysLog = TRUE;
+    pConfig1->nWorkerThr = 32;
+    pConfig1->nClientCnt = 64;
+    pConfig1->useSysLog = FALSE;
     pConfig1->pszSSLCertificate = "/root/mycert.pem";
-    pConfig1->isSecure = TRUE;
+    pConfig1->isSecure = FALSE; //TRUE;
     pConfig1->pszSSLKey = "/root/mycert.pem";
-    pConfig1->pszDebugLogFile = "/tmp/restServer1.log";
+    pConfig1->pszDebugLogFile = "/tmp/restServer-NonSecure.log";
     pConfig1->pszDaemonName = "VMREST-D";
     pConfig1->debugLogLevel = VMREST_LOG_LEVEL_DEBUG;
     pConfig1->pSSLContext = sslCtx;
@@ -154,14 +154,14 @@ int main()
     VmRESTStart(gpRESTHandle1);
 
 
-    while(1)   ///cnt < 10)
+    while(1) //cnt < 5)
     {
 #ifdef WIN32
         Sleep(1000);
 #else
 		sleep(1);
 #endif
-      //  cnt++;
+        cnt++;
     }
 
     dwError = VmRESTStop(gpRESTHandle, 10);
@@ -351,13 +351,25 @@ VmHandleEchoData(
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
-    dwError = VmRESTSetDataZC(
+    if (nPayloadLen > 0)
+    {
+        dwError = VmRESTSetDataZC(
               pRESTHandle,
               ppResponse,
               pszPayload,
               nPayloadLen
               );
-    BAIL_ON_VMREST_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmRESTSetDataZC(
+                  pRESTHandle,
+                  ppResponse,
+                  "",
+                  0
+                  );
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
 
 error:
 

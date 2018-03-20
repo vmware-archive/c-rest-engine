@@ -268,12 +268,12 @@ VmwSockSetRequestHandle(
     PVM_SOCKET                       pSocket,
     PREST_REQUEST                    pRequest,
     uint32_t                         nProcessed,
-    PVM_SOCK_EVENT_QUEUE             pQueue
+    BOOLEAN                          bPersistentConn
     )
 {
      DWORD                            dwError = REST_ENGINE_SUCCESS;
 
-     dwError = pRESTHandle->pPackage->pfnSetRequestHandle(pRESTHandle,pSocket,pRequest, nProcessed, pQueue);
+     dwError = pRESTHandle->pPackage->pfnSetRequestHandle(pRESTHandle,pSocket,pRequest, nProcessed, bPersistentConn);
 
      return dwError;
 }
