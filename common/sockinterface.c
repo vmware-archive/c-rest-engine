@@ -476,6 +476,7 @@ VmRESTTcpReceiveNewData(
     uint32_t                         nProcessed = 0;
     uint32_t                         nBufLen = 0;
     BOOLEAN                          bNextIO = FALSE;
+    BOOLEAN                          bKeepConnOpen = FALSE;
 
     if (!pSocket || !pRESTHandle || !pQueue)
     {
@@ -543,6 +544,16 @@ VmRESTTcpReceiveNewData(
     {
         pSetReq = pRequest;
     }
+    else
+    {
+        /**** Verify and act on persistent connection requests ****/
+        dwError = VmRESTEntertainPersistentConn(
+                      pRESTHandle,
+                      pRequest,
+                      &bKeepConnOpen
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+    }
 
     /**** Save state of request processing in socket context ****/
     dwError = VmwSockSetRequestHandle(
@@ -550,31 +561,35 @@ VmRESTTcpReceiveNewData(
                   pSocket,
                   pSetReq,
                   nProcessed,
-                  pQueue
+                  bKeepConnOpen
                   );
     BAIL_ON_VMREST_ERROR(dwError);
 
 cleanup:
 
-   if (!bNextIO && dwError != REST_ENGINE_ERROR_DOUBLE_FAILURE)
-   {
-       VMREST_LOG_DEBUG(pRESTHandle,"%s","Calling closed connection....");
-       /**** Close connection ****/ 
-       VmRESTDisconnectClient(
-           pRESTHandle,
-           pSocket
-           );
+    if (!bNextIO && dwError != REST_ENGINE_ERROR_DOUBLE_FAILURE)
+    {
 
-       /****  free request object memory ****/
-       if (pRequest)
-       {
-           VmRESTFreeRequestHandle(
-               pRESTHandle,
-               pRequest
-               );
-           pRequest = NULL;
-       }
-   }
+        if (!bKeepConnOpen)
+        {
+            VMREST_LOG_DEBUG(pRESTHandle,"%s","Calling closed connection....");
+            /**** Close connection ****/
+            VmRESTDisconnectClient(
+                pRESTHandle,
+                pSocket
+                );
+        }
+
+        /****  free request object memory ****/
+        if (pRequest)
+        {
+            VmRESTFreeRequestHandle(
+                pRESTHandle,
+                pRequest
+                );
+            pRequest = NULL;
+        }
+    }
 
     return dwError;
 
@@ -622,6 +637,9 @@ VmRESTSockContextFree(
         BAIL_ON_VMREST_ERROR(dwError);
         VmwSockClose( pRESTHandle, pSockContext->pListenerTCP6);
     }
+
+    /**** give 2 second time for existing connection cleanup ****/
+    sleep(2);
 
     if (pSockContext->pEventQueue)
     {

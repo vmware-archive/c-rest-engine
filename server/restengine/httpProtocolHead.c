@@ -783,6 +783,7 @@ error:
     goto cleanup;
 }
 
+#if 0
 uint32_t
 VmRESTCloseClient(
     PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
@@ -853,6 +854,8 @@ cleanup:
 error:
     goto cleanup;
 }
+
+#endif
 
 uint32_t
 VmRESTGetRequestHandle(
@@ -1360,7 +1363,6 @@ VmRESTProcessBuffer(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-
     /**** Get the request processing state ****/
     currState = pRequest->state;
     *nBytesProcessed = 0;
@@ -1692,3 +1694,76 @@ error:
     VMREST_LOG_ERROR(pRESTHandle,"%s","Set Zero copy payload Failed");
     goto cleanup;
 }
+
+uint32_t
+VmRESTEntertainPersistentConn(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    BOOLEAN*                         bKeepOpen
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char*                            pszKeepAliveRequest = NULL;
+    char*                            pszKeepAliveResponse = NULL;
+    BOOLEAN                          bKeepConnOpen = FALSE;
+
+    if (!pRESTHandle || !pRequest || !bKeepOpen || !pRequest->pResponse)
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+
+    /**** Get client's say on persistent connection ****/
+    dwError = VmRESTGetHttpHeader(
+                  pRequest,
+                  "Connection",
+                  &pszKeepAliveRequest
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if ((pszKeepAliveRequest != NULL) && (strncmp(pszKeepAliveRequest, "keep-alive", strlen("keep-alive")) == 0))
+    {
+        bKeepConnOpen = TRUE;
+    }
+
+    /**** Inspect application response on connection (set from application callback) ****/
+    if (bKeepConnOpen)
+    {
+        dwError = VmRESTGetHttpResponseHeader(
+                      pRequest->pResponse,
+                      "Connection",
+                      &pszKeepAliveResponse
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        if (!((pszKeepAliveResponse != NULL) && (strncmp(pszKeepAliveResponse, "keep-alive", strlen("keep-alive")) == 0)))
+        {
+            VMREST_LOG_WARNING(pRESTHandle,"%s","Client's request for persistent connection not entertained by server");
+            bKeepConnOpen = FALSE;
+        }
+    }
+
+    *bKeepOpen = bKeepConnOpen;
+
+cleanup:
+
+    if (pszKeepAliveRequest)
+    {
+        VmRESTFreeMemory(
+            pszKeepAliveRequest
+            );
+        pszKeepAliveRequest = NULL;
+    }
+
+    return dwError;
+
+error:
+
+    if (bKeepOpen)
+    {
+        *bKeepOpen = FALSE;
+    }
+
+    goto cleanup;
+}    
+
