@@ -1590,7 +1590,7 @@ VmSockPosixSetRequestHandle(
     PVM_SOCKET                       pSocket,
     PREST_REQUEST                    pRequest,
     uint32_t                         nProcessed,
-    PVM_SOCK_EVENT_QUEUE             pQueue
+    BOOLEAN                          bPersistentConn
     )
 {
     uint32_t                         dwError = REST_ENGINE_SUCCESS;
@@ -1598,7 +1598,7 @@ VmSockPosixSetRequestHandle(
     BOOLEAN                          bCompleted = FALSE;
     struct                           epoll_event event = {0};
 
-    if (!pSocket || !pRESTHandle || !pQueue)
+    if (!pSocket || !pRESTHandle || !pRESTHandle->pSockContext || !pRESTHandle->pSockContext->pEventQueue)
     {
         VMREST_LOG_ERROR(pRESTHandle, "%s", "Invalid params ...");
         dwError = ERROR_INVALID_PARAMETER;
@@ -1613,14 +1613,28 @@ VmSockPosixSetRequestHandle(
     if (pRequest)
     {
         pSocket->pRequest = pRequest;
+        pSocket->nProcessed = nProcessed;
     }
     else
     {
         pSocket->pRequest = NULL;
-        bCompleted = TRUE;
-    }
 
-    pSocket->nProcessed = nProcessed;
+        if (bPersistentConn)
+        {
+            /**** reset the socket object for new request *****/
+            if (pSocket->pszBuffer)
+            {
+                VmRESTFreeMemory(pSocket->pszBuffer);
+                pSocket->pszBuffer = NULL;
+            }
+            pSocket->nProcessed = 0;
+            pSocket->nBufData = 0;
+        }
+        else
+        {
+            bCompleted = TRUE;
+        }
+    }
 
     if (!bCompleted)
     {
@@ -1637,7 +1651,7 @@ VmSockPosixSetRequestHandle(
 
         event.events = event.events | EPOLLONESHOT;
 
-        if (epoll_ctl(pQueue->epollFd, EPOLL_CTL_MOD, pSocket->fd, &event) < 0)
+        if (epoll_ctl(pRESTHandle->pSockContext->pEventQueue->epollFd, EPOLL_CTL_MOD, pSocket->fd, &event) < 0)
         {
             dwError = VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED;
         }
@@ -1657,7 +1671,6 @@ error:
 
     goto cleanup;
     
-
 }
 
 
