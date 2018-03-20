@@ -117,11 +117,6 @@ VmRESTTriggerAppCb(
     );
 
 uint32_t
-VmRESTCloseClient(
-    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
-    );
-
-uint32_t
 VmRESTSetHttpPayloadZeroCopy(
     PVMREST_HANDLE                   pRESTHandle,
     PREST_RESPONSE*                  ppResponse,

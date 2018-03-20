@@ -101,7 +101,7 @@ VmSockPosixSetRequestHandle(
     PVM_SOCKET                       pSocket,
     PREST_REQUEST                    pRequest,
     uint32_t                         nProcessed,
-    PVM_SOCK_EVENT_QUEUE             pQueue
+    BOOLEAN                          bKeepAlive
     );
 
 DWORD

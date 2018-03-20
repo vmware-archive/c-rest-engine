@@ -784,77 +784,6 @@ error:
 }
 
 uint32_t
-VmRESTCloseClient(
-    PVM_REST_HTTP_RESPONSE_PACKET    pResPacket
-    )
-{
-    uint32_t                         dwError = REST_ENGINE_SUCCESS;
-    char*                            connection = NULL;
-    uint32_t                         closeSocket = 1;
-    char*                            statusStartChar = NULL;
-
-    if (!pResPacket)
-    {
-        dwError = VMREST_HTTP_INVALID_PARAMS;
-    }
-    BAIL_ON_VMREST_ERROR(dwError);
-
-    /**** Look for response status ****/
-    statusStartChar = pResPacket->statusLine->statusCode;
-
-    if(statusStartChar != NULL && (*statusStartChar == '4' || *statusStartChar == '5'))
-    {
-        /**** Failure response sent, must close client ****/
-        closeSocket = 1;
-    }
-    else
-    {
-        /**** Non failure response sent, respect client say on connection close ****/
-        if (pResPacket->requestPacket != NULL)
-        {
-            dwError = VmRESTGetHttpHeader(
-                          pResPacket->requestPacket,
-                          "Connection",
-                          &connection
-                          );
-        }
-
-        if ((connection != NULL) && (strcmp(connection, " keep-alive") == 0))
-        {
-            closeSocket = 0;
-        }
-    }
-    if (closeSocket == 1)
-    {
-        /**** TODO: Inform transport to close connection else MUST NOT close it****/
-    }
-
-    /**** Free all associcated request and response object memory ****/
-    if (pResPacket->requestPacket)
-    {
-        VmRESTFreeHTTPRequestPacket(
-            &(pResPacket->requestPacket)
-            );
-        pResPacket->requestPacket = NULL;
-    }
-        
-    VmRESTFreeHTTPResponsePacket(
-        &pResPacket
-        );
-    BAIL_ON_VMREST_ERROR(dwError);
-
-cleanup:
-    if (connection != NULL)
-    {
-        VmRESTFreeMemory(connection);
-        connection = NULL;
-    }
-    return dwError;
-error:
-    goto cleanup;
-}
-
-uint32_t
 VmRESTGetRequestHandle(
     PVMREST_HANDLE                   pRESTHandle,
     PVM_SOCKET                       pSocket,
@@ -1360,7 +1289,6 @@ VmRESTProcessBuffer(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-
     /**** Get the request processing state ****/
     currState = pRequest->state;
     *nBytesProcessed = 0;
@@ -1692,3 +1620,76 @@ error:
     VMREST_LOG_ERROR(pRESTHandle,"%s","Set Zero copy payload Failed");
     goto cleanup;
 }
+
+uint32_t
+VmRESTEntertainPersistentConn(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    BOOLEAN*                         bKeepOpen
+    )
+{
+    uint32_t                         dwError = REST_ENGINE_SUCCESS;
+    char*                            pszKeepAliveRequest = NULL;
+    char*                            pszKeepAliveResponse = NULL;
+    BOOLEAN                          bKeepConnOpen = FALSE;
+
+    if (!pRESTHandle || !pRequest || !bKeepOpen || !pRequest->pResponse)
+    {
+        VMREST_LOG_ERROR(pRESTHandle,"%s","Invalid params");
+        dwError = VMREST_HTTP_INVALID_PARAMS;
+    }
+
+    /**** Get client's say on persistent connection ****/
+    dwError = VmRESTGetHttpHeader(
+                  pRequest,
+                  "Connection",
+                  &pszKeepAliveRequest
+                  );
+    BAIL_ON_VMREST_ERROR(dwError);
+
+    if ((pszKeepAliveRequest != NULL) && (strncmp(pszKeepAliveRequest, "keep-alive", strlen("keep-alive")) == 0))
+    {
+        bKeepConnOpen = TRUE;
+    }
+
+    /**** Inspect application response on connection (set from application callback) ****/
+    if (bKeepConnOpen)
+    {
+        dwError = VmRESTGetHttpResponseHeader(
+                      pRequest->pResponse,
+                      "Connection",
+                      &pszKeepAliveResponse
+                      );
+        BAIL_ON_VMREST_ERROR(dwError);
+
+        if (!((pszKeepAliveResponse != NULL) && (strncmp(pszKeepAliveResponse, "keep-alive", strlen("keep-alive")) == 0)))
+        {
+            VMREST_LOG_WARNING(pRESTHandle,"%s","Client's request for persistent connection not entertained by server");
+            bKeepConnOpen = FALSE;
+        }
+    }
+
+    *bKeepOpen = bKeepConnOpen;
+
+cleanup:
+
+    if (pszKeepAliveRequest)
+    {
+        VmRESTFreeMemory(
+            pszKeepAliveRequest
+            );
+        pszKeepAliveRequest = NULL;
+    }
+
+    return dwError;
+
+error:
+
+    if (bKeepOpen)
+    {
+        *bKeepOpen = FALSE;
+    }
+
+    goto cleanup;
+}    
+
