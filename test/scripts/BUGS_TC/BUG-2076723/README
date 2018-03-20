@@ -1,0 +1,26 @@
+Bugzilla Id: 2076723
+
+Category: New feature/Critical
+
+Description:
+In secure version (HTTPS) of c-rest-engine, all connection requests are transactional. 
+This means each request is served via new connection. This introduces steps involving 
+openssl handshake which is known to cause significant performance delays.
+
+Requirements:
+1. Re-use TCP connections originating from same host and port to server.
+2. Support HTTP header "connection: keep-alive"
+
+Feature Testing:
+Use available libcurl based client to open one single connection and send multiple
+HTTP(S) request.
+
+Steps to test.
+1. Compile the persistentConnection.c file with the following command.
+   "gcc -o persistentConnection persistentConnection.c -lcurl"
+2. Run the test with following command.
+   "./persistentConnection https://<SERVER_IP>:<PORT>/v1/pkg?x=y 2>/dev/null"
+
+   Example:
+   "./persistentConnection https://172.16.127.131:81/v1/pkg?x=y 2>/dev/null"
+
