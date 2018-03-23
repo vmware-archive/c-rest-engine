@@ -265,7 +265,7 @@ VmwSockSetRequestHandle(
     PVM_SOCKET                       pSocket,
     PREST_REQUEST                    pRequest,
     uint32_t                         nProcessed,
-    PVM_SOCK_EVENT_QUEUE             pQueue
+    BOOLEAN                          bPersistentConn
     );
 
 DWORD
@@ -368,7 +368,7 @@ typedef DWORD(*PFN_SET_REQUEST_HANDLE)(
                     PVM_SOCKET            pSocket,
                     PREST_REQUEST         pRequest,
                     uint32_t              nProcessed,
-                    PVM_SOCK_EVENT_QUEUE  pQueue
+                    BOOLEAN               bPersistentConn
                     );
 
 typedef DWORD(*PFN_GET_PEER_INFO)(

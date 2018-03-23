@@ -351,6 +351,13 @@ VmRESTProcessBuffer(
     );
 
 uint32_t
+VmRESTEntertainPersistentConn(
+    PVMREST_HANDLE                   pRESTHandle,
+    PREST_REQUEST                    pRequest,
+    BOOLEAN*                         bKeepOpen
+    );
+
+uint32_t
 VmRESTSendFailureResponse(
      PVMREST_HANDLE                  pRESTHandle,
      uint32_t                        errorCode,
