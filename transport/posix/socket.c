@@ -1160,8 +1160,6 @@ VmSockPosixCloseSocket(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Closing socket with fd %d, Socket Type %u ( 2-Io / 5-Timer )", pSocket->fd, pSocket->type);
-
     pTimerSocket = pSocket->pTimerSocket;
 
     /**** Close the timer socket ****/
@@ -1196,12 +1194,12 @@ VmSockPosixCloseSocket(
     /**** Delete from queue if this is NOT timeout ****/
     if ((pSocket->type == VM_SOCK_TYPE_SERVER) && (!(pSocket->bTimerExpired)))
     {
-         dwError = VmSockPosixDeleteEventFromQueue(
-                       pRESTHandle,
-                       pRESTHandle->pSockContext->pEventQueue,
-                       pSocket
-                       );
-         BAIL_ON_VMREST_ERROR(dwError);
+        /**** we do not care about return status ****/ 
+        VmSockPosixDeleteEventFromQueue(
+             pRESTHandle,
+             pRESTHandle->pSockContext->pEventQueue,
+             pSocket
+             );
     }
 
     /**** Close IO socket fd ****/
@@ -1222,6 +1220,7 @@ VmSockPosixCloseSocket(
 
     if (pSocket->fd >= 0)
     {
+        VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Closing socket with fd %d, Socket Type %u ( 2-Io / 5-Timer )", pSocket->fd, pSocket->type);
         close(pSocket->fd);
         pSocket->fd = -1;
     }
@@ -1234,7 +1233,7 @@ cleanup:
     return dwError;
 
 error:
-
+    VMREST_LOG_ERROR(pRESTHandle,"Error while closing socket...possible file descriptor leak, dwError = %u", dwError);
     if (bLockedTimer)
     {
         VmRESTUnlockMutex(pTimerSocket->pMutex);
