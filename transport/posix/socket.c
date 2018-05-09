@@ -1160,8 +1160,6 @@ VmSockPosixCloseSocket(
     }
     BAIL_ON_VMREST_ERROR(dwError);
 
-    VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Closing socket with fd %d, Socket Type %u ( 2-Io / 5-Timer )", pSocket->fd, pSocket->type);
-
     pTimerSocket = pSocket->pTimerSocket;
 
     /**** Close the timer socket ****/
@@ -1196,15 +1194,20 @@ VmSockPosixCloseSocket(
     /**** Delete from queue if this is NOT timeout ****/
     if ((pSocket->type == VM_SOCK_TYPE_SERVER) && (!(pSocket->bTimerExpired)))
     {
-         dwError = VmSockPosixDeleteEventFromQueue(
-                       pRESTHandle,
-                       pRESTHandle->pSockContext->pEventQueue,
-                       pSocket
-                       );
-         BAIL_ON_VMREST_ERROR(dwError);
+        dwError = VmSockPosixDeleteEventFromQueue(
+                      pRESTHandle,
+                      pRESTHandle->pSockContext->pEventQueue,
+                      pSocket
+                      );
+        if (dwError == VM_SOCK_POSIX_ERROR_SYS_CALL_FAILED)
+        {
+            VMREST_LOG_WARNING(pRESTHandle,"Delete of IO socket fd %d from event queue failed, still progressing with conn close", pSocket->fd);
+            dwError = REST_ENGINE_SUCCESS;
+        }
+        BAIL_ON_VMREST_ERROR(dwError);
     }
 
-    /**** Close IO socket fd ****/
+    /**** Cleanup the SSL object associated with connection ****/
     if (pRESTHandle->pSSLInfo->isSecure && pSocket->ssl && (pSocket->type != VM_SOCK_TYPE_TIMER))
     {
         if (pSocket->bSSLHandShakeCompleted)
@@ -1220,29 +1223,31 @@ VmSockPosixCloseSocket(
         pSocket->ssl = NULL;
     }
 
-    if (pSocket->fd >= 0)
-    {
-        close(pSocket->fd);
-        pSocket->fd = -1;
-    }
-
-    VmRESTUnlockMutex(pSocket->pMutex);
-    bLockedIO = FALSE;
-
 cleanup:
 
-    return dwError;
-
-error:
-
-    if (bLockedTimer)
+    /**** Close IO socket fd ****/
+    if (pSocket && pSocket->fd >= 0)
     {
-        VmRESTUnlockMutex(pTimerSocket->pMutex);
+        VMREST_LOG_INFO(pRESTHandle,"C-REST-ENGINE: Closing socket with fd %d, Socket Type %u ( 2-Io / 5-Timer )", pSocket->fd, pSocket->type);
+        close(pSocket->fd);
+        pSocket->fd = -1;
     }
 
     if (bLockedIO)
     {
         VmRESTUnlockMutex(pSocket->pMutex);
+        bLockedIO = FALSE;
+    }
+
+    return dwError;
+
+error:
+    VMREST_LOG_ERROR(pRESTHandle,"Error while closing socket..dwError = %u", dwError);
+
+    if (bLockedTimer)
+    {
+        VmRESTUnlockMutex(pTimerSocket->pMutex);
+        bLockedTimer = FALSE;
     }
 
     goto cleanup;
