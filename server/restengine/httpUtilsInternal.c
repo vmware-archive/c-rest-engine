@@ -687,7 +687,7 @@ VmRESTGetHTTPMiscHeader(
     temp = miscHeaderQueue->head;
     while (temp != NULL)
     {
-        if (strcmp(temp->header, header) == 0)
+        if (strcasecmp(temp->header, header) == 0)
         {
             *response = temp->value;
             break;
