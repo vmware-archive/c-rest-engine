@@ -692,6 +692,9 @@ VmSockPosixWaitForEvent(
                  /**** If SSL handshake is not yet complete, do the needful ****/
                  if ((pRESTHandle->pSSLInfo->isSecure) && (!(pSocket->bSSLHandShakeCompleted)))
                  {
+                     VMREST_LOG_INFO(
+                             pRESTHandle," C-REST-ENGINE: SSL handshake on socket fd %d", pSocket->fd);
+
                       dwError = VmRESTAcceptSSLContext(
                                     pRESTHandle,
                                     pSocket,
@@ -974,7 +977,11 @@ VmSockPosixRead(
     *ppszBuffer = pSocket->pszBuffer;
     *nBufLen = pSocket->nBufData;
 
-    VMREST_LOG_DEBUG(pRESTHandle,"Read status, total bytes(including prev) %u", *nBufLen);
+    VMREST_LOG_INFO(
+            pRESTHandle,
+            "C-REST-ENGINE Read status, total bytes(including prev) %u fd:%d",
+            *nBufLen,
+            pSocket->fd);
 
 cleanup:
 
