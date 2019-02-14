@@ -869,6 +869,8 @@ VmSockPosixRead(
     dwError = VmRESTLockMutex(pSocket->pMutex);
     BAIL_ON_VMREST_ERROR(dwError);
 
+    VMREST_LOG_INFO(pRESTHandle, "C-REST-ENGINE start reading payload fd:%d", pSocket->fd);
+
     bLocked = TRUE;
     if (pSocket->pszBuffer)
     {
@@ -940,8 +942,8 @@ VmSockPosixRead(
 
     if (nRead == -1)
     {
-        if (((pSocket->fd > 0) && (errorCode == EAGAIN || errorCode == EWOULDBLOCK)) || 
-           ((pRESTHandle->pSSLInfo->isSecure) && 
+        if (((pSocket->fd > 0) && (errorCode == EAGAIN || errorCode == EWOULDBLOCK)) ||
+           ((pRESTHandle->pSSLInfo->isSecure) &&
            ((errorCode == SSL_ERROR_WANT_READ) || ((errorCode == SSL_ERROR_SSL) && (errno == EAGAIN)))))
         {
             dwError = REST_ENGINE_SUCCESS;
@@ -970,11 +972,15 @@ VmSockPosixRead(
     pSocket->pszBuffer = pszBufPrev;
     pSocket->nProcessed = 0;
     pSocket->nBufData = nPrevBuf;
-    
+
     *ppszBuffer = pSocket->pszBuffer;
     *nBufLen = pSocket->nBufData;
 
-    VMREST_LOG_DEBUG(pRESTHandle,"Read status, total bytes(including prev) %u", *nBufLen);
+    VMREST_LOG_INFO(
+            pRESTHandle,
+            "C-REST-ENGINE Read status, total bytes(including prev) %u fd:%d",
+            *nBufLen,
+            pSocket->fd);
 
 cleanup:
 
