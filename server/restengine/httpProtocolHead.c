@@ -1335,7 +1335,7 @@ VmRESTProcessBuffer(
 
              case PROCESS_APPLICATION_CALLBACK:
                  /**** Give callback to application ****/
-                 VMREST_LOG_INFO(pRESTHandle,"%s","C-REST-ENGINE: Giving callback to application...");
+                 VMREST_LOG_DEBUG(pRESTHandle,"%s","C-REST-ENGINE: Giving callback to application...");
                  dwError = VmRESTTriggerAppCb(
                                pRESTHandle,
                                pRequest,
